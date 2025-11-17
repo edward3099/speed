@@ -61,10 +61,11 @@ export default function spin() {
   const handleCountdownComplete = () => {
     // after countdown ends, check result
     if (userVote === "yes") {
-      // User voted yes - check if other person also voted yes
+      // User voted yes - check if other person also voted yes (both users clicked yes = match)
       const otherYes = Math.random() < 0.5
       if (otherYes) {
-        window.location.href = "/match"
+        // Both users clicked yes - match for video date
+        window.location.href = "/video-date"
       } else {
         // Other person passed - automatically spin to next profile
         setRevealed(false)
@@ -481,7 +482,7 @@ export default function spin() {
                         name={profiles[selected].name}
                         age={profiles[selected].age}
                         bio={profiles[selected].bio}
-                        isSelected={userVote === "yes"}
+                        isSelected={false}
                       />
                     </motion.div>
 
