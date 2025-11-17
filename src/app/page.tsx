@@ -29,7 +29,7 @@ export default function landing() {
         }}
       />
 
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between px-4 sm:px-6 md:px-12 lg:px-16 max-w-7xl mx-auto pt-12 sm:pt-16 md:pt-20 gap-8 sm:gap-12 md:gap-16">
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between px-3 sm:px-4 md:px-6 lg:px-12 xl:px-16 max-w-7xl mx-auto pt-8 sm:pt-12 md:pt-16 lg:pt-20 gap-6 sm:gap-8 md:gap-12 lg:gap-16">
         {/* Left hero content with fade-up animation */}
         <div className="flex flex-col gap-4 sm:gap-6 max-w-xl animate-fadeUp text-center md:text-left w-full">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-teal-300 drop-shadow-sm leading-tight">

@@ -111,14 +111,14 @@ export default function spin() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#050810] text-white px-6 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#050810] text-white px-3 sm:px-4 md:px-6 flex items-center justify-center relative overflow-hidden">
       {/* Background layers */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <AnimatedGradientBackground />
       
       {/* Floating orbs */}
       <motion.div
-        className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
+        className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
         animate={{
           x: [0, 50, 0],
           y: [0, -30, 0],
@@ -131,7 +131,7 @@ export default function spin() {
         }}
       />
       <motion.div
-        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+        className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
         animate={{
           x: [0, -40, 0],
           y: [0, 40, 0],
@@ -223,7 +223,7 @@ export default function spin() {
                 ease: "easeInOut",
               }}
             >
-              <div className="w-96 h-96 bg-teal-300/20 rounded-full blur-3xl" />
+              <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-teal-300/20 rounded-full blur-3xl" />
             </motion.div>
 
             <motion.div
@@ -303,7 +303,7 @@ export default function spin() {
                   ease: "easeInOut",
                 }}
               >
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-teal-300/20 rounded-full blur-3xl" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-teal-300/20 rounded-full blur-3xl" />
               </motion.div>
 
               {userVote === "yes" && (
@@ -330,14 +330,14 @@ export default function spin() {
                     },
                   }}
                 >
-                  <div className="w-16 h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
-                    <span className="text-4xl font-bold text-black">✓</span>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">✓</span>
                   </div>
                 </motion.div>
               )}
               
               <motion.div
-                className="relative w-48 h-48 rounded-2xl overflow-hidden border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+                className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
                 whileHover={{ scale: 1.05 }}
                 animate={{
                   boxShadow: [
@@ -419,7 +419,7 @@ export default function spin() {
                     ease: "easeInOut",
                   }}
                 >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-blue-500/20 rounded-full blur-3xl" />
                 </motion.div>
               )}
 
@@ -556,7 +556,7 @@ export default function spin() {
         isOpen={showFilters}
         onClose={() => setShowFilters(false)}
         title="filters"
-        className="max-w-md mx-4"
+        className="max-w-md"
       >
         <div className="flex flex-col gap-6">
           {/* Age Range */}
@@ -665,7 +665,7 @@ export default function spin() {
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}
         title="your profile"
-        className="max-w-lg mx-4"
+        className="max-w-lg"
       >
         <motion.div
           className="flex flex-col gap-6"

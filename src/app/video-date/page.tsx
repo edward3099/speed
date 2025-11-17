@@ -194,7 +194,7 @@ export default function VideoDate() {
 
             {/* Floating orbs */}
             <motion.div
-              className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
+              className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
               animate={{
                 x: [0, 50, 0],
                 y: [0, -30, 0],
@@ -207,7 +207,7 @@ export default function VideoDate() {
               }}
             />
             <motion.div
-              className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+              className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
               animate={{
                 x: [0, -40, 0],
                 y: [0, 40, 0],
@@ -279,8 +279,8 @@ export default function VideoDate() {
                               <Video className="w-24 h-24 text-white/40" />
                             </motion.div>
                           </div>
-                          <div className="absolute bottom-4 left-4 flex items-center gap-3">
-                            <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
+                          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 flex items-center gap-2 sm:gap-3">
+                            <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
                               <Image
                                 src={user.photo}
                                 alt={user.name}
@@ -289,13 +289,13 @@ export default function VideoDate() {
                               />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold">{user.name}</p>
-                              <p className="text-xs opacity-60">you</p>
+                              <p className="text-xs sm:text-sm font-semibold">{user.name}</p>
+                              <p className="text-[10px] sm:text-xs opacity-60">you</p>
                             </div>
                           </div>
                           {!countdownMuted && (
                             <motion.div
-                              className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-green-500/90 backdrop-blur-sm flex items-center gap-2 text-xs font-semibold shadow-lg"
+                              className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-green-500/90 backdrop-blur-sm flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-semibold shadow-lg"
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ delay: 0.5 }}
@@ -316,11 +316,11 @@ export default function VideoDate() {
                           )}
                           {countdownMuted && (
                             <motion.div
-                              className="absolute top-4 right-4 p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg"
+                              className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg"
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                             >
-                              <MicOff className="w-5 h-5" />
+                              <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                             </motion.div>
                           )}
                         </div>
@@ -521,7 +521,7 @@ export default function VideoDate() {
 
           {/* Floating orbs */}
           <motion.div
-            className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
+            className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
             animate={{
               x: [0, 50, 0],
               y: [0, -30, 0],
@@ -534,7 +534,7 @@ export default function VideoDate() {
             }}
           />
           <motion.div
-            className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+            className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
             animate={{
               x: [0, -40, 0],
               y: [0, 40, 0],
@@ -660,7 +660,7 @@ export default function VideoDate() {
                   transition={{ duration: 0.6, delay: 0.2 }}
                   whileHover={{ scale: 1.01 }}
                 >
-                  <div className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-teal-300/50 transition-all duration-300 shadow-2xl">
+                  <div className="relative aspect-video rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-teal-300/50 transition-all duration-300 shadow-2xl">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <motion.div
@@ -679,8 +679,8 @@ export default function VideoDate() {
                       </div>
                     </div>
 
-                    <div className="absolute bottom-4 left-4 flex items-center gap-3">
-                      <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
+                    <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 flex items-center gap-2 sm:gap-3">
+                      <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
                         <Image
                           src={user.photo}
                           alt={user.name}
@@ -689,27 +689,27 @@ export default function VideoDate() {
                         />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{user.name}</p>
-                        <p className="text-xs opacity-60">you</p>
+                        <p className="text-xs sm:text-sm font-semibold">{user.name}</p>
+                        <p className="text-[10px] sm:text-xs opacity-60">you</p>
                       </div>
                     </div>
 
                     {isMuted && (
                       <motion.div
-                        className="absolute top-4 right-4 p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                       >
-                        <MicOff className="w-5 h-5" />
+                        <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                       </motion.div>
                     )}
                     {isVideoOff && (
                       <motion.div
-                        className="absolute top-4 right-4 p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                       >
-                        <VideoOff className="w-5 h-5" />
+                        <VideoOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                       </motion.div>
                     )}
                   </div>
@@ -753,27 +753,27 @@ export default function VideoDate() {
                         />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{partner.name}</p>
-                        <p className="text-xs opacity-60">partner</p>
+                        <p className="text-xs sm:text-sm font-semibold">{partner.name}</p>
+                        <p className="text-[10px] sm:text-xs opacity-60">partner</p>
                       </div>
                     </div>
 
                     {isPartnerMuted && (
                       <motion.div
-                        className="absolute top-4 right-4 p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                       >
-                        <MicOff className="w-5 h-5" />
+                        <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                       </motion.div>
                     )}
                     {isPartnerVideoOff && (
                       <motion.div
-                        className="absolute top-4 right-4 p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                       >
-                        <VideoOff className="w-5 h-5" />
+                        <VideoOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                       </motion.div>
                     )}
                   </div>
@@ -842,7 +842,7 @@ export default function VideoDate() {
         isOpen={showPostModal}
         onClose={() => {}}
         title="how was your date?"
-        className="max-w-lg mx-4"
+        className="max-w-lg"
       >
         <motion.div
           className="flex flex-col gap-6"
@@ -1074,7 +1074,7 @@ export default function VideoDate() {
         isOpen={showContactModal}
         onClose={() => {}}
         title="exchange contact details"
-        className="max-w-lg mx-4"
+        className="max-w-lg"
       >
         <motion.div
           className="flex flex-col gap-6"
@@ -1240,7 +1240,7 @@ export default function VideoDate() {
               onClick={() => {}}
             />
             <motion.div
-              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-6 sm:p-8 max-w-md w-full mx-4 border border-white/10 shadow-2xl text-center"
+              className="relative bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 max-w-md w-full max-w-[calc(100vw-1.5rem)] border border-white/10 shadow-2xl text-center"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0 }}
