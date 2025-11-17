@@ -27,11 +27,11 @@ export function PhotoGrid({ photos, className }: PhotoGridProps) {
       initial="hidden"
       animate="visible"
     >
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5">
         {photos.map((photo, index) => (
           <motion.div
             key={index}
-            className={index % 2 === 1 ? "mt-8" : ""}
+            className={index % 2 === 1 ? "mt-4 sm:mt-6 md:mt-8" : ""}
             variants={{
               hidden: { opacity: 0, y: 30 },
               visible: {

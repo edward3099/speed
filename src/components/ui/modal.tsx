@@ -28,18 +28,18 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pointer-events-none overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-3 md:p-4 pointer-events-none overflow-y-auto">
             <motion.div
               className={cn(
-                "relative bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 max-w-[calc(100vw-1.5rem)] sm:max-w-md w-full",
+                "relative bg-white/10 backdrop-blur-xl rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-6 lg:p-8 max-w-[calc(100vw-1rem)] sm:max-w-md w-full mt-4 sm:mt-0",
                 "border border-white/10 shadow-2xl",
                 "pointer-events-auto",
-                "max-h-[calc(100vh-1.5rem)] overflow-y-auto",
+                "max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-1.5rem)] overflow-y-auto",
                 className
               )}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{
                 type: "spring",
                 stiffness: 300,
@@ -58,7 +58,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
               {/* Title */}
               {title && (
                 <motion.h2
-                  className="text-lg sm:text-xl md:text-2xl font-bold text-teal-300 text-center mb-4 sm:mb-5 md:mb-6 pr-8 sm:pr-10"
+                  className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-teal-300 text-center mb-3 sm:mb-4 md:mb-5 lg:mb-6 pr-6 sm:pr-8 md:pr-10"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
