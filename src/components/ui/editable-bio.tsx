@@ -57,12 +57,12 @@ export function EditableBio({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsEditing(true)}
-            className="group relative w-full text-left p-4 rounded-xl bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300"
+            className="group relative w-full text-left p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-lg opacity-80 leading-relaxed flex-1">
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <p className="text-sm sm:text-lg opacity-80 leading-relaxed flex-1">
                 {bio || (
                   <span className="opacity-50 italic">
                     no bio yet. click to add one...
@@ -70,13 +70,13 @@ export function EditableBio({
                 )}
               </p>
               <motion.div
-                className="flex-shrink-0 p-2 rounded-lg bg-teal-300/10 group-hover:bg-teal-300/20 transition-colors"
+                className="flex-shrink-0 p-1.5 sm:p-2 rounded-lg bg-teal-300/10 group-hover:bg-teal-300/20 transition-colors"
                 whileHover={{ scale: 1.1, rotate: 5 }}
               >
-                <Edit2 className="w-4 h-4 text-teal-300" />
+                <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300" />
               </motion.div>
             </div>
-            <div className="absolute bottom-2 right-2 text-xs opacity-40 group-hover:opacity-60 transition-opacity">
+            <div className="absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 text-xs opacity-40 group-hover:opacity-60 transition-opacity">
               click to edit
             </div>
           </motion.button>
@@ -93,7 +93,7 @@ export function EditableBio({
               value={tempBio}
               onChange={(e) => setTempBio(e.target.value)}
               maxLength={maxLength}
-              className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 resize-none"
+              className="w-full p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 resize-none text-sm sm:text-base"
               rows={3}
               placeholder="tell us about yourself..."
             />

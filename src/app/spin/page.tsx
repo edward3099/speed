@@ -560,7 +560,7 @@ export default function spin() {
         title="filters"
         className="max-w-md"
       >
-        <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
+        <div className="flex flex-col gap-3 sm:gap-5 md:gap-6">
           {/* Age Range */}
           <FilterInput
             label="age range"
@@ -615,9 +615,9 @@ export default function spin() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
+              className="w-full p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-sm sm:text-base touch-manipulation"
               placeholder="enter city or zip code"
-              style={{ minHeight: '48px' }}
+              style={{ minHeight: '44px' }}
             />
           </FilterInput>
 
@@ -636,7 +636,7 @@ export default function spin() {
           </FilterInput>
 
           {/* Action Buttons - Mobile optimized */}
-          <div className="flex gap-3 mt-4 pb-safe sm:pb-0">
+          <div className="flex gap-2.5 sm:gap-3 mt-3 sm:mt-4 pb-safe sm:pb-0">
             <motion.button
               onClick={() => {
                 setMinAge(18)
@@ -644,10 +644,10 @@ export default function spin() {
                 setLocation("")
                 setMaxDistance(50)
               }}
-              className="flex-1 px-4 py-3.5 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm sm:text-base font-semibold touch-manipulation"
+              className="flex-1 px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm sm:text-base font-semibold touch-manipulation"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
-              style={{ minHeight: '48px' }}
+              style={{ minHeight: '44px' }}
             >
               reset
             </motion.button>
@@ -655,7 +655,7 @@ export default function spin() {
               onClick={() => setShowFilters(false)}
               size="sm"
               variant="primary"
-              className="flex-1 h-12 sm:h-auto min-h-[48px] font-semibold text-base touch-manipulation"
+              className="flex-1 h-11 sm:h-auto min-h-[44px] font-semibold text-sm sm:text-base touch-manipulation"
             >
               apply filters
             </PrimaryButton>
@@ -672,60 +672,62 @@ export default function spin() {
         className="max-w-lg"
       >
         <motion.div
-          className="flex flex-col gap-4 sm:gap-5 md:gap-6"
+          className="flex flex-col gap-3 sm:gap-5 md:gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
         >
           {/* Profile picture */}
           <motion.div
-            className="flex flex-col items-center gap-4"
+            className="flex flex-col items-center gap-3 sm:gap-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <EditableProfilePicture
-              src={user.photo}
-              alt={`${user.name}'s profile`}
-              size="lg"
-              onImageChange={(file) => {
-                const reader = new FileReader()
-                reader.onloadend = () => {
-                  setUser(prev => ({ ...prev, photo: reader.result as string }))
-                  // In a real app, upload to backend
-                }
-                reader.readAsDataURL(file)
-              }}
-            />
-            <h2 className="text-2xl font-bold text-teal-300">{user.name}</h2>
+            <div className="scale-75 sm:scale-100">
+              <EditableProfilePicture
+                src={user.photo}
+                alt={`${user.name}'s profile`}
+                size="lg"
+                onImageChange={(file) => {
+                  const reader = new FileReader()
+                  reader.onloadend = () => {
+                    setUser(prev => ({ ...prev, photo: reader.result as string }))
+                    // In a real app, upload to backend
+                  }
+                  reader.readAsDataURL(file)
+                }}
+              />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-teal-300">{user.name}</h2>
           </motion.div>
 
           {/* Age - Uneditable */}
           <motion.div
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1.5 sm:gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
+            <label className="text-xs sm:text-base font-medium opacity-80 flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-teal-300" />
               age
             </label>
-            <div className="p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10">
-              <p className="text-base sm:text-lg opacity-80">{user.age}</p>
+            <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-sm sm:text-lg opacity-80">{user.age}</p>
             </div>
-            <p className="text-xs sm:text-sm opacity-60">age cannot be changed</p>
+            <p className="text-xs opacity-60">age cannot be changed</p>
           </motion.div>
 
           {/* Location - Editable */}
           <motion.div
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1.5 sm:gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-teal-300" />
+            <label className="text-xs sm:text-sm font-medium opacity-80 flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300" />
               location
             </label>
             <EditableBio
@@ -744,8 +746,8 @@ export default function spin() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <label className="text-sm font-medium opacity-80 mb-2 block flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-teal-300" />
+            <label className="text-xs sm:text-sm font-medium opacity-80 mb-1.5 sm:mb-2 block flex items-center gap-2">
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300" />
               bio
             </label>
             <EditableBio
@@ -759,16 +761,16 @@ export default function spin() {
 
           {/* Info message */}
           <motion.div
-            className="p-4 rounded-xl bg-teal-300/10 border border-teal-300/20"
+            className="p-3 sm:p-4 rounded-xl bg-teal-300/10 border border-teal-300/20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
           >
-            <div className="flex items-start gap-3">
-              <MessageCircle className="w-5 h-5 text-teal-300 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 sm:gap-3">
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-teal-300 mb-1">profile tips</p>
-                <p className="text-xs opacity-70">
+                <p className="text-xs sm:text-sm font-medium text-teal-300 mb-0.5 sm:mb-1">profile tips</p>
+                <p className="text-xs opacity-70 leading-relaxed">
                   keep your bio and location updated. this helps others find you and get to know the real you!
                 </p>
               </div>

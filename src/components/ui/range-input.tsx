@@ -25,9 +25,9 @@ export function RangeInput({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       {label && (
-        <div className="flex items-center justify-between text-xs opacity-60 mb-1">
-          <span>{label}</span>
-          <span className="font-semibold text-teal-300">{value}</span>
+        <div className="flex items-center justify-between text-xs opacity-60 mb-0.5 sm:mb-1">
+          <span className="text-xs">{label}</span>
+          <span className="font-semibold text-teal-300 text-xs sm:text-sm">{value}</span>
         </div>
       )}
       <div className="relative">
