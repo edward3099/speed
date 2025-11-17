@@ -254,3 +254,17 @@
     height: 700px;
   }
 }
+
+/* Hide default range input thumb */
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+}
+
+input[type="range"]::-moz-range-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+  border: none;
+}
