@@ -2,6 +2,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Standard Development Mode
+
 First, run the development server:
 
 ```bash
@@ -15,6 +17,21 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Cloudflare Tunnel Mode
+
+To start the project with Cloudflare tunnel (exposes your local dev server to the internet):
+
+```bash
+npm run dev:tunnel
+```
+
+This will:
+1. Start the Next.js dev server on `http://localhost:3000`
+2. Create a Cloudflare tunnel and provide you with a public URL
+3. Make your local development server accessible from anywhere
+
+The tunnel URL will be displayed in the terminal. Press `Ctrl+C` to stop both the dev server and tunnel.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
