@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 export default function spin() {
   const profiles = [
@@ -26,9 +26,9 @@ export default function spin() {
   const [maxAge, setMaxAge] = useState("30")
   const [location, setLocation] = useState("")
   const [countdown, setCountdown] = useState(10)
-  const [userVote, setUserVote] = useState(null)
+  const [userVote, setUserVote] = useState<string | null>(null)
 
-  const startSpin = () => {
+  const startSpin = useCallback(() => {
     setUserVote(null)           // reset check mark every new spin
     setRevealed(false)
     setSpinning(true)
@@ -41,7 +41,7 @@ export default function spin() {
         setRevealed(true)
       }, 300)
     }, 5000)
-  }
+  }, [profiles.length])
 
   useEffect(() => {
     if (!revealed) return
@@ -50,7 +50,6 @@ export default function spin() {
     const interval = setInterval(() => {
       setCountdown(prev => {
         if (prev === 1) {
-          clearInterval(interval)
           // after countdown ends, check result
           if (userVote === "yes") {
             const otherYes = Math.random() < 0.5
@@ -64,12 +63,13 @@ export default function spin() {
             setRevealed(false)
             startSpin()
           }
+          return 0
         }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [revealed])
+  }, [revealed, userVote, startSpin])
 
   return (
     <div className="min-h-screen w-full bg-[#0a0f1f] text-white px-6 flex items-center justify-center relative">
