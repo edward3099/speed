@@ -1,24 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 export default function landing() {
   const [showModal, setShowModal] = useState(false)
   const [mode, setMode] = useState("signin")
-  const [scrollHintIndex, setScrollHintIndex] = useState(0)
-  
-  const scrollHints = [
-    "scroll to learn more",
-    "discover connections",
-    "explore possibilities"
-  ]
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setScrollHintIndex((prev) => (prev + 1) % scrollHints.length)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [scrollHints.length])
 
   return (
     <div className="min-h-screen w-full relative bg-[#0a0f1f] text-white overflow-hidden">
@@ -26,16 +12,9 @@ export default function landing() {
 
       <div className="absolute inset-0 pointer-events-none soft-pulse" />
 
-      <div className="relative flex-1 w-full flex flex-col md:flex-row items-center justify-between px-10 mt-20 gap-16 overflow-hidden">
-        {/* background gradient layer */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="landing-gradient-layer" />
-          <div className="landing-orb landing-orb-left" />
-          <div className="landing-orb landing-orb-right" />
-        </div>
-
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between px-8 md:px-12 lg:px-16 max-w-7xl mx-auto pt-20 gap-12 md:gap-16">
         {/* Left hero content with fade-up animation */}
-        <div className="flex flex-col gap-6 max-w-xl animate-fadeUp text-center md:text-left relative z-10">
+        <div className="flex flex-col gap-6 max-w-xl animate-fadeUp text-center md:text-left">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-teal-300 drop-shadow-sm leading-tight">
             meet someone new
           </h1>
@@ -49,10 +28,9 @@ export default function landing() {
             <div className="relative group">
               <button
                 onClick={() => setShowModal(true)}
-                className="spark-cta px-10 py-4 rounded-2xl text-lg font-semibold bg-teal-300 text-black transition transform hover:scale-105 hover:shadow-[0_0_20px_rgba(94,234,212,0.3)] active:scale-95 relative overflow-hidden"
+                className="px-10 py-4 rounded-2xl text-lg font-semibold bg-teal-300 text-black transition transform hover:scale-105 hover:shadow-[0_0_20px_rgba(94,234,212,0.3)] active:scale-95 relative"
               >
-                <span className="relative z-10">start now</span>
-                <span className="spark-cta-shimmer" />
+                start now
               </button>
               <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-white bg-opacity-10 px-3 py-1 text-xs rounded-xl whitespace-nowrap">
                 start your journey
@@ -74,35 +52,21 @@ export default function landing() {
         </div>
 
         {/* Right animated visual */}
-        <div className="relative flex items-center justify-center w-full md:w-1/2 h-96 animate-floatSlow z-10">
+        <div className="relative flex items-center justify-center w-full md:w-1/2 h-96 animate-floatSlow">
           <div className="grid grid-cols-2 gap-4">
-            <div className="animated-card spark-card-hover">
+            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all">
               <img src="https://i.pravatar.cc/200?img=12" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 1" />
             </div>
-            <div className="animated-card spark-card-hover mt-8">
+            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all mt-8">
               <img src="https://i.pravatar.cc/200?img=20" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 2" />
             </div>
-            <div className="animated-card spark-card-hover">
+            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all">
               <img src="https://i.pravatar.cc/200?img=33" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 3" />
             </div>
-            <div className="animated-card spark-card-hover mt-8">
+            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all mt-8">
               <img src="https://i.pravatar.cc/200?img=5" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 4" />
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Scroll hint */}
-      <div className="w-full flex justify-center pb-8 mt-10">
-        <div className="scroll-hint">
-          <span 
-            key={scrollHintIndex}
-            className="scroll-hint-text"
-            style={{ animation: 'fadeIn 0.5s ease-in-out' }}
-          >
-            {scrollHints[scrollHintIndex]}
-          </span>
-          <div className="scroll-arrow" />
         </div>
       </div>
 
