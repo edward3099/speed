@@ -10,6 +10,8 @@ import { ShuffleAnimation } from "@/components/ui/shuffle-animation"
 import { CountdownTimer } from "@/components/ui/countdown-timer"
 import { Modal } from "@/components/ui/modal"
 import { ShimmerButton } from "@/components/magicui/shimmer-button"
+import { Sparkles } from "@/components/magicui/sparkles"
+import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
 import Image from "next/image"
 
 export default function spin() {
@@ -71,9 +73,48 @@ export default function spin() {
 
   return (
     <div className="min-h-screen w-full bg-[#050810] text-white px-6 flex items-center justify-center relative overflow-hidden">
-      {/* Background gradient */}
+      {/* Background layers */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
-      <div className="fixed inset-0 bg-gradient-to-br from-teal-900/10 via-transparent to-blue-900/10 pointer-events-none" />
+      <AnimatedGradientBackground />
+      
+      {/* Floating orbs */}
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
+        animate={{
+          x: [0, 50, 0],
+          y: [0, -30, 0],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+        animate={{
+          x: [0, -40, 0],
+          y: [0, 40, 0],
+          scale: [1, 1.15, 1],
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2,
+        }}
+      />
+
+      {/* Sparkles effect */}
+      <Sparkles
+        sparklesCount={20}
+        className="absolute inset-0 pointer-events-none"
+        colors={{
+          first: "#5eead4",
+          second: "#3b82f6"
+        }}
+      />
 
       {/* Filter button top left */}
       <motion.div
@@ -99,22 +140,70 @@ export default function spin() {
       <AnimatePresence>
         {!started && (
           <motion.div
-            className="absolute inset-0 flex items-center justify-center z-10"
+            className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-8"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
           >
-            <PrimaryButton
-              onClick={startSpin}
-              size="md"
-              variant="primary"
+            {/* Pulsing glow behind button */}
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.6, 0.3],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             >
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                <span>start spin</span>
-              </div>
-            </PrimaryButton>
+              <div className="w-96 h-96 bg-teal-300/20 rounded-full blur-3xl" />
+            </motion.div>
+
+            <motion.div
+              animate={{
+                scale: [1, 1.05, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <PrimaryButton
+                onClick={startSpin}
+                size="md"
+                variant="primary"
+              >
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{
+                      rotate: [0, 360],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                  </motion.div>
+                  <span>start spin</span>
+                </div>
+              </PrimaryButton>
+            </motion.div>
+
+            {/* Subtitle */}
+            <motion.p
+              className="text-lg opacity-60 text-center max-w-md"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 0.6, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              discover your next connection
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -137,42 +226,165 @@ export default function spin() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
+              {/* Glow effect behind user card */}
+              <motion.div
+                className="absolute inset-0 -z-10"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.3, 0.5, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-teal-300/20 rounded-full blur-3xl" />
+              </motion.div>
+
               {userVote === "yes" && (
                 <motion.div
                   className="absolute -top-12 left-1/2 -translate-x-1/2 z-20"
                   initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 10, -10, 0],
+                  }}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 200, 
+                    damping: 15,
+                    rotate: {
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
+                    scale: {
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
+                  }}
                 >
-                  <div className="w-16 h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-lg">
+                  <div className="w-16 h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
                     <span className="text-4xl font-bold text-black">✓</span>
                   </div>
                 </motion.div>
               )}
               
-              <div className="relative w-48 h-48 rounded-2xl overflow-hidden border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]">
+              <motion.div
+                className="relative w-48 h-48 rounded-2xl overflow-hidden border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+                whileHover={{ scale: 1.05 }}
+                animate={{
+                  boxShadow: [
+                    "0 0 30px rgba(94,234,212,0.3)",
+                    "0 0 50px rgba(94,234,212,0.5)",
+                    "0 0 30px rgba(94,234,212,0.3)",
+                  ],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
                 <Image
                   src={user.photo}
                   alt={user.name}
                   fill
                   className="object-cover"
                 />
-              </div>
-              <h2 className="text-4xl font-bold text-teal-300">{user.name}</h2>
+                {/* Shimmer overlay */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  animate={{
+                    x: ["-100%", "100%"],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatDelay: 2,
+                    ease: "easeInOut",
+                  }}
+                />
+              </motion.div>
+              <motion.h2
+                className="text-4xl font-bold text-teal-300"
+                animate={{
+                  textShadow: [
+                    "0 0 10px rgba(94,234,212,0.5)",
+                    "0 0 20px rgba(94,234,212,0.8)",
+                    "0 0 10px rgba(94,234,212,0.5)",
+                  ],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                {user.name}
+              </motion.h2>
               <p className="text-lg opacity-80 max-w-xs leading-relaxed">{user.bio}</p>
             </motion.div>
 
+            {/* Connecting line */}
+            {started && !spinning && (
+              <motion.div
+                className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-32 bg-gradient-to-b from-teal-300/50 via-teal-300/30 to-transparent z-0"
+                initial={{ scaleY: 0, opacity: 0 }}
+                animate={{ scaleY: 1, opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+              />
+            )}
+
             {/* Right side - Match profile */}
-            <div className="w-full md:w-1/2 flex flex-col items-center">
+            <div className="w-full md:w-1/2 flex flex-col items-center relative">
+              {/* Glow effect behind match area */}
+              {revealed && (
+                <motion.div
+                  className="absolute inset-0 -z-10"
+                  initial={{ opacity: 0 }}
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.5, 0.3],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
+                </motion.div>
+              )}
+
               <AnimatePresence mode="wait">
                 {spinning && (
                   <motion.div
                     key="spinning"
+                    className="relative"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.3 }}
                   >
+                    {/* Pulsing glow around shuffle */}
+                    <motion.div
+                      className="absolute inset-0 -z-10 rounded-2xl"
+                      animate={{
+                        boxShadow: [
+                          "0 0 40px rgba(94,234,212,0.3)",
+                          "0 0 60px rgba(94,234,212,0.6)",
+                          "0 0 40px rgba(94,234,212,0.3)",
+                        ],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
                     <ShuffleAnimation
                       profiles={profiles.map(p => p.photo)}
                       duration={5000}
@@ -183,34 +395,71 @@ export default function spin() {
                 {revealed && (
                   <motion.div
                     key="revealed"
-                    className="w-full flex flex-col items-center gap-6"
+                    className="w-full flex flex-col items-center gap-6 relative"
                     initial={{ opacity: 0, scale: 0.8, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   >
                     {/* Vote header with countdown */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-lg font-semibold text-teal-300">vote</span>
+                    <motion.div
+                      className="flex items-center gap-3 mb-4 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <motion.span
+                        className="text-lg font-semibold text-teal-300"
+                        animate={{
+                          textShadow: [
+                            "0 0 10px rgba(94,234,212,0.5)",
+                            "0 0 15px rgba(94,234,212,0.8)",
+                            "0 0 10px rgba(94,234,212,0.5)",
+                          ],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        vote
+                      </motion.span>
                       <span className="text-lg opacity-60">•</span>
                       <CountdownTimer
                         resetKey={revealed ? "revealed" : "hidden"}
                         initialSeconds={10}
                         onComplete={handleCountdownComplete}
                       />
-                    </div>
+                    </motion.div>
 
-                    {/* Profile card */}
-                    <ProfileCardSpin
-                      photo={profiles[selected].photo}
-                      name={profiles[selected].name}
-                      age={profiles[selected].age}
-                      bio={profiles[selected].bio}
-                      isSelected={userVote === "yes"}
-                    />
+                    {/* Profile card with enhanced effects */}
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.02, 1],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <ProfileCardSpin
+                        photo={profiles[selected].photo}
+                        name={profiles[selected].name}
+                        age={profiles[selected].age}
+                        bio={profiles[selected].bio}
+                        isSelected={userVote === "yes"}
+                      />
+                    </motion.div>
 
-                    {/* Action buttons */}
-                    <div className="flex gap-4 w-full max-w-sm">
+                    {/* Action buttons with enhanced styling */}
+                    <motion.div
+                      className="flex gap-4 w-full max-w-sm"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
                       <SpinButton
                         variant="pass"
                         onClick={() => {
@@ -229,7 +478,7 @@ export default function spin() {
                       >
                         yes
                       </SpinButton>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
