@@ -56,14 +56,14 @@ export default function Header({
           {showProfile && (
             <button 
               onClick={onProfileClick || (() => router.push("/dashboard"))}
-              className="rounded-full overflow-hidden w-10 h-10 hover:opacity-80 transition"
+              className="w-10 h-10 rounded-full bg-white bg-opacity-10 flex items-center justify-center hover:bg-opacity-20 hover:scale-105 active:scale-95 transition overflow-hidden"
             >
               <Image
                 src={profileImage}
                 alt="profile"
                 width={40}
                 height={40}
-                className="object-cover"
+                className="object-cover rounded-full"
               />
             </button>
           )}

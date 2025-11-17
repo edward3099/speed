@@ -155,3 +155,26 @@
 .animate-shimmer-slide {
   animation: shimmer-slide var(--speed, 3s) linear infinite;
 }
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.8s ease-out forwards;
+}
+
+@keyframes floatSlow {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-floatSlow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.shadow-teal-soft {
+  box-shadow: 0 0 20px rgba(94, 234, 212, 0.3);
+}
