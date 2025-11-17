@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2, Star, Flag, MessageSquare, Eye, EyeOff, Clock, Settings2, Volume2 } from "lucide-react"
+import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2, Star, Flag, MessageSquare, Eye, EyeOff, Clock, Settings2, Volume2, Mail, Phone, Facebook, Instagram, Link as LinkIcon } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { Modal } from "@/components/ui/modal"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
@@ -21,6 +21,21 @@ export default function VideoDate() {
   const [showMatchModal, setShowMatchModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
+  const [showContactModal, setShowContactModal] = useState(false)
+  const [userContactDetails, setUserContactDetails] = useState({
+    email: "",
+    phone: "",
+    facebook: "",
+    instagram: "",
+    other: ""
+  })
+  const [partnerContactDetails, setPartnerContactDetails] = useState<{
+    email?: string
+    phone?: string
+    facebook?: string
+    instagram?: string
+    other?: string
+  } | null>(null)
   const [rating, setRating] = useState<number | null>(null)
   const [feedback, setFeedback] = useState("")
   const [reportReason, setReportReason] = useState("")
@@ -102,16 +117,33 @@ export default function VideoDate() {
     setShowPostModal(false)
     const otherYes = Math.random() < 0.5
     if (otherYes) {
-      setShowMatchModal(true)
-      setTimeout(() => {
-        router.push("/spin")
-      }, 3000)
+      // Both said yes - show contact details form
+      setShowContactModal(true)
     } else {
       setShowRejectModal(true)
       setTimeout(() => {
         router.push("/spin")
       }, 3000)
     }
+  }
+
+  const handleSubmitContactDetails = () => {
+    // In a real app, this would send contact details to backend
+    console.log("Contact details submitted:", userContactDetails)
+    
+    // Simulate receiving partner's contact details
+    setPartnerContactDetails({
+      email: "alex@example.com",
+      phone: "+1 (555) 123-4567",
+      facebook: "alex.smith",
+      instagram: "@alexsmith"
+    })
+    
+    setShowContactModal(false)
+    setShowMatchModal(true)
+    setTimeout(() => {
+      router.push("/spin")
+    }, 5000)
   }
 
   const handlePass = () => {
@@ -1042,7 +1074,164 @@ export default function VideoDate() {
         )}
       </AnimatePresence>
 
-      {/* Match modal */}
+      {/* Contact details modal */}
+      <Modal
+        isOpen={showContactModal}
+        onClose={() => {}}
+        title="exchange contact details"
+        className="max-w-lg"
+      >
+        <motion.div
+          className="flex flex-col gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="w-16 h-16 bg-teal-300/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="w-8 h-8 text-teal-300" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">you both want to connect!</h3>
+            <p className="text-sm opacity-70">
+              share your preferred contact details with {partner.name}
+            </p>
+          </motion.div>
+
+          <div className="space-y-4">
+            <motion.div
+              className="flex flex-col gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-teal-300" />
+                email (optional)
+              </label>
+              <input
+                type="email"
+                value={userContactDetails.email}
+                onChange={(e) => setUserContactDetails(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="your@email.com"
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              />
+            </motion.div>
+
+            <motion.div
+              className="flex flex-col gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-teal-300" />
+                phone number (optional)
+              </label>
+              <input
+                type="tel"
+                value={userContactDetails.phone}
+                onChange={(e) => setUserContactDetails(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+1 (555) 123-4567"
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              />
+            </motion.div>
+
+            <motion.div
+              className="flex flex-col gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                <Facebook className="w-4 h-4 text-teal-300" />
+                facebook (optional)
+              </label>
+              <input
+                type="text"
+                value={userContactDetails.facebook}
+                onChange={(e) => setUserContactDetails(prev => ({ ...prev, facebook: e.target.value }))}
+                placeholder="your.facebook.username"
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              />
+            </motion.div>
+
+            <motion.div
+              className="flex flex-col gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                <Instagram className="w-4 h-4 text-teal-300" />
+                instagram (optional)
+              </label>
+              <input
+                type="text"
+                value={userContactDetails.instagram}
+                onChange={(e) => setUserContactDetails(prev => ({ ...prev, instagram: e.target.value }))}
+                placeholder="@yourusername"
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              />
+            </motion.div>
+
+            <motion.div
+              className="flex flex-col gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-teal-300" />
+                other (optional)
+              </label>
+              <input
+                type="text"
+                value={userContactDetails.other}
+                onChange={(e) => setUserContactDetails(prev => ({ ...prev, other: e.target.value }))}
+                placeholder="snapchat, discord, etc."
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              />
+            </motion.div>
+          </div>
+
+          <motion.div
+            className="flex gap-3 pt-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+          >
+            <motion.button
+              onClick={() => {
+                setShowContactModal(false)
+                router.push("/spin")
+              }}
+              className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 font-semibold"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              skip
+            </motion.button>
+            <motion.button
+              onClick={handleSubmitContactDetails}
+              className="flex-1 px-6 py-3 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 transition-all duration-300 shadow-lg shadow-teal-300/30"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Heart className="w-5 h-5" />
+                <span>share details</span>
+              </div>
+            </motion.button>
+          </motion.div>
+        </motion.div>
+      </Modal>
+
+      {/* Match modal - shows contact details */}
       <AnimatePresence>
         {showMatchModal && (
           <motion.div
@@ -1056,7 +1245,7 @@ export default function VideoDate() {
               onClick={() => {}}
             />
             <motion.div
-              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-sm w-full border border-white/10 shadow-2xl text-center"
+              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full border border-white/10 shadow-2xl text-center"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -1083,45 +1272,64 @@ export default function VideoDate() {
               </motion.div>
               
               <motion.h2
-                className="text-2xl font-bold text-teal-300 mb-4"
+                className="text-2xl font-bold text-teal-300 mb-2"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                you both want to see each other again
+                connection made!
               </motion.h2>
               
-              <motion.div
-                className="flex gap-4 justify-center mb-4"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
-                  <Image
-                    src={partner.photo}
-                    alt={partner.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
-                  <Image
-                    src={user.photo}
-                    alt={user.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </motion.div>
-              
               <motion.p
-                className="opacity-80 text-sm"
+                className="opacity-80 text-sm mb-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.8 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: 0.4 }}
               >
-                saving match…
+                {partner.name}'s contact details
+              </motion.p>
+
+              {partnerContactDetails && (
+                <motion.div
+                  className="space-y-3 mb-6 text-left"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  {partnerContactDetails.email && (
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-teal-300" />
+                      <span className="text-sm">{partnerContactDetails.email}</span>
+                    </div>
+                  )}
+                  {partnerContactDetails.phone && (
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+                      <Phone className="w-5 h-5 text-teal-300" />
+                      <span className="text-sm">{partnerContactDetails.phone}</span>
+                    </div>
+                  )}
+                  {partnerContactDetails.facebook && (
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+                      <Facebook className="w-5 h-5 text-teal-300" />
+                      <span className="text-sm">{partnerContactDetails.facebook}</span>
+                    </div>
+                  )}
+                  {partnerContactDetails.instagram && (
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+                      <Instagram className="w-5 h-5 text-teal-300" />
+                      <span className="text-sm">{partnerContactDetails.instagram}</span>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+              
+              <motion.p
+                className="opacity-60 text-xs"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.6 }}
+                transition={{ delay: 0.6 }}
+              >
+                redirecting to spin page…
               </motion.p>
             </motion.div>
           </motion.div>
