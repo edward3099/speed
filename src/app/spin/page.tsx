@@ -130,7 +130,7 @@ export default function spin() {
 
       {/* Filter button top left */}
       <motion.div
-        className="absolute top-20 left-6 z-10"
+        className="absolute top-20 left-6 z-20"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
