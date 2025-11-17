@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -188,7 +188,7 @@ export default function spin() {
                       ease: "linear",
                     }}
                   >
-                    <Sparkles className="w-5 h-5" />
+                    <SparklesIcon className="w-5 h-5" />
                   </motion.div>
                   <span>start spin</span>
                 </div>
