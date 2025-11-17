@@ -1,56 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 export default function landing() {
   const [showModal, setShowModal] = useState(false)
   const [mode, setMode] = useState("signin")
-  const [scrollY, setScrollY] = useState(0)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
 
   return (
     <div className="min-h-screen w-full relative bg-[#0a0f1f] text-white overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#0f172a,_#0a0f1f)]" />
+      {/* Base deep navy background */}
+      <div className="absolute inset-0 bg-[#0a0f1f]" />
 
-      <div className="absolute inset-0 pointer-events-none soft-pulse" />
-
-      {/* Glass panels background */}
+      {/* Soft layered gradients with slow drift */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div 
-          className="glass-panel glass-panel-1"
-          style={{
-            opacity: Math.min(0.03 + (scrollY * 0.0001), 0.08),
-            transform: `rotate(5deg) translateY(${scrollY * 0.2}px)`
-          }}
-        />
-        <div 
-          className="glass-panel glass-panel-2"
-          style={{
-            opacity: Math.min(0.04 + (scrollY * 0.00008), 0.09),
-            transform: `rotate(-8deg) translateY(${-scrollY * 0.15}px)`
-          }}
-        />
-        <div 
-          className="glass-panel glass-panel-3"
-          style={{
-            opacity: Math.min(0.025 + (scrollY * 0.00012), 0.08),
-            transform: `rotate(45deg) translateY(${scrollY * 0.25}px)`
-          }}
-        />
-        <div 
-          className="glass-panel glass-panel-4"
-          style={{
-            opacity: Math.min(0.035 + (scrollY * 0.0001), 0.09),
-            transform: `rotate(-35deg) translateY(${-scrollY * 0.18}px)`
-          }}
-        />
+        <div className="gradient-orb gradient-orb-1" />
+        <div className="gradient-orb gradient-orb-2" />
+        <div className="gradient-orb gradient-orb-3" />
       </div>
 
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between px-8 md:px-12 lg:px-16 max-w-7xl mx-auto pt-20 gap-12 md:gap-16">

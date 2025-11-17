@@ -179,67 +179,78 @@
   box-shadow: 0 0 20px rgba(94, 234, 212, 0.3);
 }
 
-/* Glass panels */
+/* Soft layered gradient orbs */
 
-.glass-panel {
+.gradient-orb {
   position: absolute;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: gradientDrift 20s ease-in-out infinite;
 }
 
-.glass-panel-1 {
-  width: 2px;
-  height: 60%;
-  top: 15%;
-  left: 20%;
+.gradient-orb-1 {
+  width: 600px;
+  height: 600px;
+  top: -10%;
+  left: -10%;
+  background: radial-gradient(circle, rgba(94, 234, 212, 0.3) 0%, rgba(94, 234, 212, 0) 70%);
+  animation-duration: 25s;
+  animation-delay: 0s;
 }
 
-.glass-panel-2 {
-  width: 2px;
-  height: 50%;
-  top: 25%;
-  right: 25%;
+.gradient-orb-2 {
+  width: 700px;
+  height: 700px;
+  bottom: -15%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0) 70%);
+  animation-duration: 30s;
+  animation-delay: 5s;
 }
 
-.glass-panel-3 {
-  width: 80px;
-  height: 2px;
-  top: 40%;
-  left: 10%;
+.gradient-orb-3 {
+  width: 500px;
+  height: 500px;
+  top: 50%;
+  right: 20%;
+  background: radial-gradient(circle, rgba(94, 234, 212, 0.2) 0%, rgba(94, 234, 212, 0) 70%);
+  animation-duration: 22s;
+  animation-delay: 10s;
 }
 
-.glass-panel-4 {
-  width: 100px;
-  height: 2px;
-  bottom: 30%;
-  right: 15%;
+@keyframes gradientDrift {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+  33% {
+    transform: translate(30px, -40px) scale(1.05);
+    opacity: 0.45;
+  }
+  66% {
+    transform: translate(-20px, 30px) scale(0.95);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
 }
 
 @media (min-width: 768px) {
-  .glass-panel-1 {
-    width: 3px;
-    height: 70%;
-    left: 15%;
+  .gradient-orb-1 {
+    width: 800px;
+    height: 800px;
   }
   
-  .glass-panel-2 {
-    width: 3px;
-    height: 65%;
-    right: 20%;
+  .gradient-orb-2 {
+    width: 900px;
+    height: 900px;
   }
   
-  .glass-panel-3 {
-    width: 120px;
-    height: 3px;
-    left: 8%;
-  }
-  
-  .glass-panel-4 {
-    width: 150px;
-    height: 3px;
-    right: 12%;
+  .gradient-orb-3 {
+    width: 700px;
+    height: 700px;
   }
 }
