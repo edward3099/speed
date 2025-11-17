@@ -111,7 +111,7 @@ export default function spin() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#050810] text-white px-4 sm:px-5 md:px-6 flex items-center justify-center relative overflow-hidden safe-area-inset">
+    <div className="h-screen w-full bg-[#050810] text-white px-4 sm:px-5 md:px-6 flex items-center justify-center relative overflow-hidden safe-area-inset">
       {/* Background layers */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <AnimatedGradientBackground />
@@ -156,7 +156,7 @@ export default function spin() {
       />
 
       {/* Top bar buttons - Mobile optimized */}
-      <div className="absolute top-safe sm:top-4 md:top-6 left-4 sm:left-5 md:left-6 right-4 sm:right-5 md:right-6 z-20 flex items-center justify-between gap-2.5">
+      <div className="absolute top-2 sm:top-4 md:top-6 left-4 sm:left-5 md:left-6 right-4 sm:right-5 md:right-6 z-20 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           {/* Profile button */}
           <motion.div
@@ -167,13 +167,13 @@ export default function spin() {
           >
             <ShimmerButton
               onClick={() => setShowProfile(true)}
-              className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
+              className="h-9 sm:h-12 md:h-14 px-3 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
               shimmerColor="#ffffff"
               background="rgba(94, 234, 212, 1)"
             >
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-sm sm:text-base font-medium">profile</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <User className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                <span className="text-xs sm:text-base font-medium">profile</span>
               </div>
             </ShimmerButton>
           </motion.div>
@@ -188,13 +188,13 @@ export default function spin() {
         >
           <ShimmerButton
             onClick={() => setShowFilters(true)}
-            className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
+            className="h-9 sm:h-12 md:h-14 px-3 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
             shimmerColor="#ffffff"
             background="rgba(94, 234, 212, 1)"
           >
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base font-medium">filters</span>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Filter className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              <span className="text-xs sm:text-base font-medium">filters</span>
             </div>
           </ShimmerButton>
         </motion.div>
@@ -204,7 +204,7 @@ export default function spin() {
       <AnimatePresence>
         {!started && (
           <motion.div
-            className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-8"
+            className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-4 sm:gap-8"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
@@ -261,7 +261,7 @@ export default function spin() {
 
             {/* Subtitle */}
             <motion.p
-              className="text-lg opacity-60 text-center max-w-md"
+              className="text-sm sm:text-lg opacity-60 text-center max-w-md px-4"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 0.6, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -275,135 +275,179 @@ export default function spin() {
       {/* Main content */}
       <AnimatePresence mode="wait">
         {started && (
-          <motion.div
-            key="started"
-            className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-12 md:gap-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            {/* Left side - User profile */}
+          <>
             <motion.div
-              className="w-full md:w-1/2 flex flex-col items-center text-center gap-6 relative"
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              key="started"
+              className="w-full max-w-6xl h-full flex flex-col gap-2 sm:gap-4 md:gap-6 py-2 sm:py-4 md:py-8 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              {/* Glow effect behind user card */}
+            {/* Vote header - Center Top, Prominent (S.P.A.R.K. - Refined Clarity + Action Feedback) */}
+            {revealed && (
               <motion.div
-                className="absolute inset-0 -z-10"
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.3, 0.5, 0.3],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+                className="absolute top-2 sm:top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-[90%] sm:max-w-md flex items-center justify-center"
+                initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
               >
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-teal-300/20 rounded-full blur-3xl" />
-              </motion.div>
-
-              {userVote === "yes" && (
                 <motion.div
-                  className="absolute -top-12 left-1/2 -translate-x-1/2 z-20"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ 
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 10, -10, 0],
+                  className="flex items-center gap-2 sm:gap-4 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-teal-300/20 via-teal-300/15 to-blue-500/20 backdrop-blur-md border-2 border-teal-300/40 shadow-[0_0_30px_rgba(94,234,212,0.4)]"
+                  animate={{
+                    boxShadow: [
+                      "0 0 30px rgba(94,234,212,0.4)",
+                      "0 0 50px rgba(94,234,212,0.6)",
+                      "0 0 30px rgba(94,234,212,0.4)",
+                    ],
                   }}
-                  transition={{ 
-                    type: "spring", 
-                    stiffness: 200, 
-                    damping: 15,
-                    rotate: {
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <motion.span
+                    className="text-lg sm:text-2xl md:text-3xl font-bold text-teal-300"
+                    animate={{
+                      textShadow: [
+                        "0 0 10px rgba(94,234,212,0.5)",
+                        "0 0 20px rgba(94,234,212,0.8)",
+                        "0 0 10px rgba(94,234,212,0.5)",
+                      ],
+                    }}
+                    transition={{
                       duration: 2,
                       repeat: Infinity,
                       ease: "easeInOut",
-                    },
-                    scale: {
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    },
-                  }}
-                >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
-                    <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">✓</span>
-                  </div>
+                    }}
+                  >
+                    vote
+                  </motion.span>
+                  <span className="text-lg sm:text-2xl md:text-3xl opacity-60">•</span>
+                  <CountdownTimer
+                    resetKey={revealed ? "revealed" : "hidden"}
+                    initialSeconds={10}
+                    onComplete={handleCountdownComplete}
+                  />
                 </motion.div>
-              )}
-              
+              </motion.div>
+            )}
+
+            {/* Main content row - User left, Animation right */}
+            <div className="w-full flex flex-row items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 flex-1">
+              {/* Left side - User profile (S.P.A.R.K. - Refined Clarity) */}
               <motion.div
-                className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
-                whileHover={{ scale: 1.05 }}
-                animate={{
-                  boxShadow: [
-                    "0 0 30px rgba(94,234,212,0.3)",
-                    "0 0 50px rgba(94,234,212,0.5)",
-                    "0 0 30px rgba(94,234,212,0.3)",
-                  ],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+                className="w-1/2 flex flex-col items-center text-center gap-1.5 sm:gap-3 md:gap-4 relative"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
-                <Image
-                  src={user.photo}
-                  alt={user.name}
-                  fill
-                  className="object-cover"
-                />
-                {/* Shimmer overlay */}
+                {/* Glow effect behind user card */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  className="absolute inset-0 -z-10"
                   animate={{
-                    x: ["-100%", "100%"],
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.5, 0.3],
                   }}
                   transition={{
                     duration: 3,
                     repeat: Infinity,
-                    repeatDelay: 2,
                     ease: "easeInOut",
                   }}
-                />
+                >
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 bg-teal-300/20 rounded-full blur-3xl" />
+                </motion.div>
+
+                {userVote === "yes" && (
+                  <motion.div
+                    className="absolute -top-6 sm:-top-8 left-1/2 -translate-x-1/2 z-20"
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ 
+                      scale: [1, 1.2, 1],
+                      rotate: [0, 10, -10, 0],
+                    }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 200, 
+                      damping: 15,
+                      rotate: {
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      },
+                      scale: {
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      },
+                    }}
+                  >
+                    <div className="w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
+                      <span className="text-sm sm:text-xl md:text-2xl font-bold text-black">✓</span>
+                    </div>
+                  </motion.div>
+                )}
+                
+                <motion.div
+                  className="relative w-24 h-24 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+                  whileHover={{ scale: 1.05 }}
+                  animate={{
+                    boxShadow: [
+                      "0 0 30px rgba(94,234,212,0.3)",
+                      "0 0 50px rgba(94,234,212,0.5)",
+                      "0 0 30px rgba(94,234,212,0.3)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Image
+                    src={user.photo}
+                    alt={user.name}
+                    fill
+                    className="object-cover"
+                  />
+                  {/* Shimmer overlay */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    animate={{
+                      x: ["-100%", "100%"],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      repeatDelay: 2,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </motion.div>
+                <motion.h2
+                  className="text-sm sm:text-xl md:text-2xl font-bold text-teal-300"
+                  animate={{
+                    textShadow: [
+                      "0 0 10px rgba(94,234,212,0.5)",
+                      "0 0 20px rgba(94,234,212,0.8)",
+                      "0 0 10px rgba(94,234,212,0.5)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  {user.name}
+                </motion.h2>
+                <p className="text-[10px] sm:text-xs md:text-sm opacity-80 max-w-[100px] sm:max-w-xs leading-tight sm:leading-relaxed text-center line-clamp-2">{user.bio}</p>
               </motion.div>
-              <motion.h2
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-teal-300"
-                animate={{
-                  textShadow: [
-                    "0 0 10px rgba(94,234,212,0.5)",
-                    "0 0 20px rgba(94,234,212,0.8)",
-                    "0 0 10px rgba(94,234,212,0.5)",
-                  ],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                {user.name}
-              </motion.h2>
-              <p className="text-sm sm:text-base md:text-lg opacity-80 max-w-xs leading-relaxed text-center">{user.bio}</p>
-            </motion.div>
 
-            {/* Connecting line */}
-            {started && !spinning && (
-              <motion.div
-                className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-32 bg-gradient-to-b from-teal-300/50 via-teal-300/30 to-transparent z-0"
-                initial={{ scaleY: 0, opacity: 0 }}
-                animate={{ scaleY: 1, opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-              />
-            )}
-
-            {/* Right side - Match profile */}
-            <div className="w-full md:w-1/2 flex flex-col items-center relative">
+            {/* Right side - Animation/Profile (S.P.A.R.K. - Structured Motion + Playful Energy) */}
+            <div className="w-1/2 flex flex-col items-center justify-center relative">
               {/* Glow effect behind match area */}
               {revealed && (
                 <motion.div
@@ -427,20 +471,20 @@ export default function spin() {
                 {spinning && (
                   <motion.div
                     key="spinning"
-                    className="relative"
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    className="relative w-full flex items-center justify-center"
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                   >
-                    {/* Pulsing glow around shuffle */}
+                    {/* Pulsing glow around shuffle - sized to match animation */}
                     <motion.div
-                      className="absolute inset-0 -z-10 rounded-2xl"
+                      className="absolute w-[280px] sm:w-full max-w-md h-[200px] sm:h-80 -z-10 rounded-xl sm:rounded-2xl"
                       animate={{
                         boxShadow: [
-                          "0 0 40px rgba(94,234,212,0.3)",
-                          "0 0 60px rgba(94,234,212,0.6)",
-                          "0 0 40px rgba(94,234,212,0.3)",
+                          "0 0 20px rgba(94,234,212,0.3)",
+                          "0 0 40px rgba(94,234,212,0.6)",
+                          "0 0 20px rgba(94,234,212,0.3)",
                         ],
                       }}
                       transition={{
@@ -459,45 +503,13 @@ export default function spin() {
                 {revealed && (
                   <motion.div
                     key="revealed"
-                    className="w-full flex flex-col items-center gap-6 relative"
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="w-full flex flex-col items-center gap-1.5 sm:gap-3 md:gap-4 relative"
+                    initial={{ opacity: 0, scale: 0.9, x: 30 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    {/* Vote header with countdown */}
-                    <motion.div
-                      className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <motion.span
-                        className="text-sm sm:text-base md:text-lg font-semibold text-teal-300"
-                        animate={{
-                          textShadow: [
-                            "0 0 10px rgba(94,234,212,0.5)",
-                            "0 0 15px rgba(94,234,212,0.8)",
-                            "0 0 10px rgba(94,234,212,0.5)",
-                          ],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        vote
-                      </motion.span>
-                      <span className="text-sm sm:text-base md:text-lg opacity-60">•</span>
-                      <CountdownTimer
-                        resetKey={revealed ? "revealed" : "hidden"}
-                        initialSeconds={10}
-                        onComplete={handleCountdownComplete}
-                      />
-                    </motion.div>
-
-                    {/* Profile card with enhanced effects */}
+                    {/* Profile card with enhanced effects (S.P.A.R.K. - Playful Energy) */}
                     <motion.div
                       animate={{
                         scale: [1, 1.02, 1],
@@ -517,39 +529,47 @@ export default function spin() {
                       />
                     </motion.div>
 
-                    {/* Action buttons with enhanced styling - Mobile optimized */}
-                    <motion.div
-                      className="flex gap-3 sm:gap-4 w-full max-w-sm px-2 sm:px-0 pb-safe sm:pb-0"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-                    >
-                      <SpinButton
-                        variant="pass"
-                        onClick={() => {
-                          setUserVote("pass")
-                          setRevealed(false)
-                          startSpin()
-                        }}
-                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
-                      >
-                        pass
-                      </SpinButton>
-                      <SpinButton
-                        variant="yes"
-                        onClick={() => {
-                          setUserVote("yes")
-                        }}
-                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
-                      >
-                        yes
-                      </SpinButton>
-                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-          </motion.div>
+            </div>
+            </motion.div>
+
+            {/* Action buttons - Bottom center, full width (S.P.A.R.K. - Action Feedback) */}
+            {revealed && (
+              <motion.div
+                className="w-full flex items-center justify-center px-4 pb-2 sm:pb-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
+              >
+                <div className="flex gap-2 sm:gap-3 w-full max-w-[280px] sm:max-w-sm justify-center">
+                  <SpinButton
+                    variant="pass"
+                    onClick={() => {
+                      setUserVote("pass")
+                      setRevealed(false)
+                      startSpin()
+                    }}
+                    className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
+                  >
+                    pass
+                  </SpinButton>
+                  <SpinButton
+                    variant="yes"
+                    onClick={() => {
+                      setUserVote("yes")
+                    }}
+                    className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
+                  >
+                    yes
+                  </SpinButton>
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </AnimatePresence>
 
@@ -560,7 +580,7 @@ export default function spin() {
         title="filters"
         className="max-w-md"
       >
-        <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
+        <div className="flex flex-col gap-3 sm:gap-5 md:gap-6">
           {/* Age Range */}
           <FilterInput
             label="age range"
@@ -615,9 +635,9 @@ export default function spin() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
+              className="w-full p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-sm sm:text-base touch-manipulation"
               placeholder="enter city or zip code"
-              style={{ minHeight: '48px' }}
+              style={{ minHeight: '44px' }}
             />
           </FilterInput>
 
@@ -636,7 +656,7 @@ export default function spin() {
           </FilterInput>
 
           {/* Action Buttons - Mobile optimized */}
-          <div className="flex gap-3 mt-4 pb-safe sm:pb-0">
+          <div className="flex gap-2.5 sm:gap-3 mt-3 sm:mt-4 pb-safe sm:pb-0">
             <motion.button
               onClick={() => {
                 setMinAge(18)
@@ -644,10 +664,10 @@ export default function spin() {
                 setLocation("")
                 setMaxDistance(50)
               }}
-              className="flex-1 px-4 py-3.5 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm sm:text-base font-semibold touch-manipulation"
+              className="flex-1 px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm sm:text-base font-semibold touch-manipulation"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
-              style={{ minHeight: '48px' }}
+              style={{ minHeight: '44px' }}
             >
               reset
             </motion.button>
@@ -655,7 +675,7 @@ export default function spin() {
               onClick={() => setShowFilters(false)}
               size="sm"
               variant="primary"
-              className="flex-1 h-12 sm:h-auto min-h-[48px] font-semibold text-base touch-manipulation"
+              className="flex-1 h-11 sm:h-auto min-h-[44px] font-semibold text-sm sm:text-base touch-manipulation"
             >
               apply filters
             </PrimaryButton>
@@ -672,60 +692,62 @@ export default function spin() {
         className="max-w-lg"
       >
         <motion.div
-          className="flex flex-col gap-4 sm:gap-5 md:gap-6"
+          className="flex flex-col gap-3 sm:gap-5 md:gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
         >
           {/* Profile picture */}
           <motion.div
-            className="flex flex-col items-center gap-4"
+            className="flex flex-col items-center gap-3 sm:gap-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <EditableProfilePicture
-              src={user.photo}
-              alt={`${user.name}'s profile`}
-              size="lg"
-              onImageChange={(file) => {
-                const reader = new FileReader()
-                reader.onloadend = () => {
-                  setUser(prev => ({ ...prev, photo: reader.result as string }))
-                  // In a real app, upload to backend
-                }
-                reader.readAsDataURL(file)
-              }}
-            />
-            <h2 className="text-2xl font-bold text-teal-300">{user.name}</h2>
+            <div className="scale-75 sm:scale-100">
+              <EditableProfilePicture
+                src={user.photo}
+                alt={`${user.name}'s profile`}
+                size="lg"
+                onImageChange={(file) => {
+                  const reader = new FileReader()
+                  reader.onloadend = () => {
+                    setUser(prev => ({ ...prev, photo: reader.result as string }))
+                    // In a real app, upload to backend
+                  }
+                  reader.readAsDataURL(file)
+                }}
+              />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-teal-300">{user.name}</h2>
           </motion.div>
 
           {/* Age - Uneditable */}
           <motion.div
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1.5 sm:gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
+            <label className="text-xs sm:text-base font-medium opacity-80 flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-teal-300" />
               age
             </label>
-            <div className="p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10">
-              <p className="text-base sm:text-lg opacity-80">{user.age}</p>
+            <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-sm sm:text-lg opacity-80">{user.age}</p>
             </div>
-            <p className="text-xs sm:text-sm opacity-60">age cannot be changed</p>
+            <p className="text-xs opacity-60">age cannot be changed</p>
           </motion.div>
 
           {/* Location - Editable */}
           <motion.div
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1.5 sm:gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-teal-300" />
+            <label className="text-xs sm:text-sm font-medium opacity-80 flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300" />
               location
             </label>
             <EditableBio
@@ -744,8 +766,8 @@ export default function spin() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <label className="text-sm font-medium opacity-80 mb-2 block flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-teal-300" />
+            <label className="text-xs sm:text-sm font-medium opacity-80 mb-1.5 sm:mb-2 block flex items-center gap-2">
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300" />
               bio
             </label>
             <EditableBio
@@ -759,16 +781,16 @@ export default function spin() {
 
           {/* Info message */}
           <motion.div
-            className="p-4 rounded-xl bg-teal-300/10 border border-teal-300/20"
+            className="p-3 sm:p-4 rounded-xl bg-teal-300/10 border border-teal-300/20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
           >
-            <div className="flex items-start gap-3">
-              <MessageCircle className="w-5 h-5 text-teal-300 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 sm:gap-3">
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-teal-300 mb-1">profile tips</p>
-                <p className="text-xs opacity-70">
+                <p className="text-xs sm:text-sm font-medium text-teal-300 mb-0.5 sm:mb-1">profile tips</p>
+                <p className="text-xs opacity-70 leading-relaxed">
                   keep your bio and location updated. this helps others find you and get to know the real you!
                 </p>
               </div>

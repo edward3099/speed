@@ -19,7 +19,7 @@ export function FilterInput({ label, icon, children, className }: FilterInputPro
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <label className="flex items-center gap-2 text-sm font-medium opacity-80">
+      <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium opacity-80">
         {icon && <span className="text-teal-300">{icon}</span>}
         {label}
       </label>

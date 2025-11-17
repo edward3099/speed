@@ -36,11 +36,11 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
                 "relative bg-gradient-to-b from-white/15 via-white/10 to-white/10 backdrop-blur-2xl",
                 "rounded-t-3xl sm:rounded-2xl md:rounded-3xl",
                 "w-full sm:w-auto sm:max-w-md md:max-w-lg",
-                "p-4 sm:p-5 md:p-6 lg:p-8",
+                "p-3 sm:p-5 md:p-6 lg:p-8",
                 "border-t sm:border border-white/20 shadow-2xl",
                 "pointer-events-auto",
-                // Mobile: Max height with safe area
-                "max-h-[90vh] sm:max-h-[85vh] overflow-y-auto",
+                // Mobile: Max height with safe area - reduced for mobile
+                "max-h-[85vh] sm:max-h-[85vh] overflow-y-auto",
                 // Mobile: Slide up animation
                 className
               )}
@@ -68,16 +68,16 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 transition-all duration-200 group z-10 touch-manipulation"
-                style={{ minWidth: '44px', minHeight: '44px' }}
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 transition-all duration-200 group z-10 touch-manipulation"
+                style={{ minWidth: '40px', minHeight: '40px' }}
               >
-                <X className="w-5 h-5 text-white group-active:scale-90 transition-transform" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-white group-active:scale-90 transition-transform" />
               </button>
 
               {/* Title */}
               {title && (
                 <motion.h2
-                  className="text-lg sm:text-xl md:text-2xl font-bold text-teal-300 text-center mb-4 sm:mb-5 md:mb-6 pr-10 sm:pr-12"
+                  className="text-base sm:text-xl md:text-2xl font-bold text-teal-300 text-center mb-3 sm:mb-5 md:mb-6 pr-8 sm:pr-12"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
@@ -91,7 +91,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-                className="space-y-4 sm:space-y-5 md:space-y-6"
+                className="space-y-3 sm:space-y-5 md:space-y-6"
               >
                 {children}
               </motion.div>
