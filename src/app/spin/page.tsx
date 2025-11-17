@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -12,6 +12,8 @@ import { Modal } from "@/components/ui/modal"
 import { ShimmerButton } from "@/components/magicui/shimmer-button"
 import { Sparkles } from "@/components/magicui/sparkles"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
+import { FilterInput } from "@/components/ui/filter-input"
+import { RangeInput } from "@/components/ui/range-input"
 import Image from "next/image"
 
 export default function spin() {
@@ -34,9 +36,10 @@ export default function spin() {
   const [revealed, setRevealed] = useState(false)
   const [selected, setSelected] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
-  const [minAge, setMinAge] = useState("18")
-  const [maxAge, setMaxAge] = useState("30")
+  const [minAge, setMinAge] = useState(18)
+  const [maxAge, setMaxAge] = useState(30)
   const [location, setLocation] = useState("")
+  const [maxDistance, setMaxDistance] = useState(50)
   const [countdown, setCountdown] = useState(10)
   const [userVote, setUserVote] = useState<"yes" | "pass" | null>(null)
 
@@ -501,47 +504,106 @@ export default function spin() {
         isOpen={showFilters}
         onClose={() => setShowFilters(false)}
         title="filters"
+        className="max-w-md"
       >
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3">
-            <label className="text-sm font-medium opacity-80">age range</label>
-            <div className="flex gap-3">
-              <input
-                type="number"
-                value={minAge}
-                onChange={(e) => setMinAge(e.target.value)}
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white"
-                placeholder="min"
-              />
-              <input
-                type="number"
-                value={maxAge}
-                onChange={(e) => setMaxAge(e.target.value)}
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white"
-                placeholder="max"
-              />
+          {/* Age Range */}
+          <FilterInput
+            label="age range"
+            icon={<Users className="w-4 h-4" />}
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <RangeInput
+                  min={18}
+                  max={100}
+                  value={minAge}
+                  onChange={setMinAge}
+                  label="minimum age"
+                />
+              </div>
+              <div className="text-lg opacity-60">-</div>
+              <div className="flex-1">
+                <RangeInput
+                  min={18}
+                  max={100}
+                  value={maxAge}
+                  onChange={setMaxAge}
+                  label="maximum age"
+                />
+              </div>
             </div>
-          </div>
+            <div className="flex items-center justify-between px-2 mt-2">
+              <motion.div
+                className="px-3 py-1.5 rounded-lg bg-teal-300/10 border border-teal-300/30 text-teal-300 text-sm font-semibold"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                {minAge}
+              </motion.div>
+              <span className="text-sm opacity-60">to</span>
+              <motion.div
+                className="px-3 py-1.5 rounded-lg bg-teal-300/10 border border-teal-300/30 text-teal-300 text-sm font-semibold"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+              >
+                {maxAge}
+              </motion.div>
+            </div>
+          </FilterInput>
 
-          <div className="flex flex-col gap-3">
-            <label className="text-sm font-medium opacity-80">location</label>
+          {/* Location */}
+          <FilterInput
+            label="location"
+            icon={<MapPin className="w-4 h-4" />}
+          >
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white"
-              placeholder="enter location"
+              className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              placeholder="enter city or zip code"
             />
-          </div>
+          </FilterInput>
 
-          <PrimaryButton
-            onClick={() => setShowFilters(false)}
-            size="sm"
-            variant="primary"
-            className="w-full mt-4"
+          {/* Max Distance */}
+          <FilterInput
+            label="maximum distance"
+            icon={<MapPin className="w-4 h-4" />}
           >
-            apply filters
-          </PrimaryButton>
+            <RangeInput
+              min={1}
+              max={100}
+              value={maxDistance}
+              onChange={setMaxDistance}
+              label={`${maxDistance} miles`}
+            />
+          </FilterInput>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-4">
+            <motion.button
+              onClick={() => {
+                setMinAge(18)
+                setMaxAge(30)
+                setLocation("")
+                setMaxDistance(50)
+              }}
+              className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              reset
+            </motion.button>
+            <PrimaryButton
+              onClick={() => setShowFilters(false)}
+              size="sm"
+              variant="primary"
+              className="flex-1"
+            >
+              apply filters
+            </PrimaryButton>
+          </div>
         </div>
       </Modal>
 
