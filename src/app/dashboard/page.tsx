@@ -9,11 +9,14 @@ import { PrimaryButton } from "@/components/ui/primary-button"
 import { Modal } from "@/components/ui/modal"
 import { StatsCard } from "@/components/ui/stats-card"
 import { TextReveal } from "@/components/magicui/text-reveal"
+import { EditableProfilePicture } from "@/components/ui/editable-profile-picture"
+import { EditableBio } from "@/components/ui/editable-bio"
 
 export default function dashboard() {
   const router = useRouter()
   const name = "jason"
-  const bio = "i like good conversations and new experiences"
+  const [bio, setBio] = useState("i like good conversations and new experiences")
+  const [profileImage, setProfileImage] = useState("https://i.pravatar.cc/150?img=15")
 
   const [showMatches, setShowMatches] = useState(false)
   const [showEvents, setShowEvents] = useState(false)
@@ -39,12 +42,38 @@ export default function dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h2 className="text-4xl md:text-5xl font-extrabold text-teal-300 mb-3">
-            <TextReveal text={`welcome back ${name}`} />
-          </h2>
-          <p className="text-lg opacity-80 leading-relaxed max-w-2xl">
-            {bio}
-          </p>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-6">
+            {/* Profile Picture */}
+            <EditableProfilePicture
+              src={profileImage}
+              alt={`${name}'s profile`}
+              size="lg"
+              onImageChange={(file) => {
+                // Handle image upload - convert to data URL for preview
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                  setProfileImage(reader.result as string)
+                  // Here you would typically upload to your backend/storage
+                  // Example: await uploadImage(file)
+                }
+                reader.readAsDataURL(file)
+              }}
+            />
+
+            {/* Name and Bio */}
+            <div className="flex-1">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-teal-300 mb-4">
+                <TextReveal text={`welcome back ${name}`} />
+              </h2>
+              <EditableBio
+                initialBio={bio}
+                onBioChange={(newBio) => {
+                  setBio(newBio)
+                  // Here you would typically save to backend
+                }}
+              />
+            </div>
+          </div>
         </motion.div>
 
         {/* Stats Grid */}
