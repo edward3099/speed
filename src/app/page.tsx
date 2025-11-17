@@ -11,9 +11,9 @@ export default function landing() {
   const [mode, setMode] = useState("signin")
 
   return (
-    <div className="min-h-screen w-full relative bg-[#0a0f1f] text-white overflow-hidden">
+    <div className="min-h-screen w-full relative bg-[#050810] text-white overflow-hidden">
       {/* Base deep navy background */}
-      <div className="absolute inset-0 bg-[#0a0f1f]" />
+      <div className="absolute inset-0 bg-[#050810]" />
 
       {/* Magic UI Animated Gradient Background */}
       <AnimatedGradientBackground />
