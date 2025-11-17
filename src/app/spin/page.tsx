@@ -83,6 +83,26 @@ export default function spin() {
     }
   }
 
+  const handleMinAgeChange = (newMinAge: number) => {
+    // Ensure min age doesn't exceed max age
+    if (newMinAge > maxAge) {
+      setMinAge(maxAge)
+      setMaxAge(newMinAge)
+    } else {
+      setMinAge(newMinAge)
+    }
+  }
+
+  const handleMaxAgeChange = (newMaxAge: number) => {
+    // Ensure max age doesn't go below min age
+    if (newMaxAge < minAge) {
+      setMaxAge(minAge)
+      setMinAge(newMaxAge)
+    } else {
+      setMaxAge(newMaxAge)
+    }
+  }
+
   return (
     <div className="min-h-screen w-full bg-[#050810] text-white px-6 flex items-center justify-center relative overflow-hidden">
       {/* Background layers */}
@@ -516,19 +536,19 @@ export default function spin() {
               <div className="flex-1">
                 <RangeInput
                   min={18}
-                  max={100}
+                  max={maxAge}
                   value={minAge}
-                  onChange={setMinAge}
+                  onChange={handleMinAgeChange}
                   label="minimum age"
                 />
               </div>
               <div className="text-lg opacity-60">-</div>
               <div className="flex-1">
                 <RangeInput
-                  min={18}
+                  min={minAge}
                   max={100}
                   value={maxAge}
-                  onChange={setMaxAge}
+                  onChange={handleMaxAgeChange}
                   label="maximum age"
                 />
               </div>
