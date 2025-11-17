@@ -427,20 +427,20 @@ export default function spin() {
                 {spinning && (
                   <motion.div
                     key="spinning"
-                    className="relative"
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    className="relative w-full flex items-center justify-center"
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                   >
-                    {/* Pulsing glow around shuffle */}
+                    {/* Pulsing glow around shuffle - sized to match animation */}
                     <motion.div
-                      className="absolute inset-0 -z-10 rounded-2xl"
+                      className="absolute w-[280px] sm:w-full max-w-md h-[200px] sm:h-80 -z-10 rounded-xl sm:rounded-2xl"
                       animate={{
                         boxShadow: [
-                          "0 0 40px rgba(94,234,212,0.3)",
-                          "0 0 60px rgba(94,234,212,0.6)",
-                          "0 0 40px rgba(94,234,212,0.3)",
+                          "0 0 20px rgba(94,234,212,0.3)",
+                          "0 0 40px rgba(94,234,212,0.6)",
+                          "0 0 20px rgba(94,234,212,0.3)",
                         ],
                       }}
                       transition={{
