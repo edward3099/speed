@@ -5,6 +5,7 @@ import { AnimatedGradientBackground } from "@/components/magicui/animated-gradie
 import { Sparkles } from "@/components/magicui/sparkles"
 import { TextReveal } from "@/components/magicui/text-reveal"
 import { ShimmerButton } from "@/components/magicui/shimmer-button"
+import { PhotoGrid } from "@/components/ui/photo-grid"
 
 export default function landing() {
   const [showModal, setShowModal] = useState(false)
@@ -69,22 +70,17 @@ export default function landing() {
           </div>
         </div>
 
-        {/* Right animated visual */}
+        {/* Right animated visual with SPARK-aligned photo effects */}
         <div className="relative flex items-center justify-center w-full md:w-1/2 h-96 animate-floatSlow">
-          <div className="grid grid-cols-2 gap-5">
-            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all">
-              <img src="https://i.pravatar.cc/200?img=12" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 1" />
-            </div>
-            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all mt-8">
-              <img src="https://i.pravatar.cc/200?img=20" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 2" />
-            </div>
-            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all">
-              <img src="https://i.pravatar.cc/200?img=33" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 3" />
-            </div>
-            <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all mt-8">
-              <img src="https://i.pravatar.cc/200?img=5" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 4" />
-            </div>
-          </div>
+          <PhotoGrid
+            photos={[
+              { src: "https://i.pravatar.cc/200?img=12", alt: "Profile 1" },
+              { src: "https://i.pravatar.cc/200?img=20", alt: "Profile 2" },
+              { src: "https://i.pravatar.cc/200?img=33", alt: "Profile 3" },
+              { src: "https://i.pravatar.cc/200?img=5", alt: "Profile 4" },
+            ]}
+            className="w-full"
+          />
         </div>
       </div>
 
