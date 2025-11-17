@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2 } from "lucide-react"
+import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2, Star, Flag, MessageSquare } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { Modal } from "@/components/ui/modal"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
@@ -20,6 +20,10 @@ export default function VideoDate() {
   const [showPassModal, setShowPassModal] = useState(false)
   const [showMatchModal, setShowMatchModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [rating, setRating] = useState<number | null>(null)
+  const [feedback, setFeedback] = useState("")
+  const [reportReason, setReportReason] = useState("")
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
   const [isPartnerMuted, setIsPartnerMuted] = useState(true) // Partner starts muted
@@ -88,6 +92,12 @@ export default function VideoDate() {
   }
 
   const handleYes = () => {
+    // Submit feedback if provided
+    if (rating !== null || feedback.trim()) {
+      // In a real app, this would send feedback to backend
+      console.log("Feedback submitted:", { rating, feedback })
+    }
+    
     setShowPostModal(false)
     const otherYes = Math.random() < 0.5
     if (otherYes) {
@@ -104,7 +114,28 @@ export default function VideoDate() {
   }
 
   const handlePass = () => {
+    // Submit feedback if provided
+    if (rating !== null || feedback.trim()) {
+      // In a real app, this would send feedback to backend
+      console.log("Feedback submitted:", { rating, feedback })
+    }
+    
     setShowPostModal(false)
+    setShowPassModal(true)
+    setTimeout(() => {
+      router.push("/spin")
+    }, 2000)
+  }
+
+  const handleReport = () => {
+    setShowPostModal(false)
+    setShowReportModal(true)
+  }
+
+  const handleSubmitReport = () => {
+    // In a real app, this would send report to backend
+    console.log("Report submitted:", { reportReason })
+    setShowReportModal(false)
     setShowPassModal(true)
     setTimeout(() => {
       router.push("/spin")
@@ -633,27 +664,27 @@ export default function VideoDate() {
         </div>
       </div>
 
-      {/* Post-date modal */}
+      {/* Post-date feedback modal */}
       <Modal
         isOpen={showPostModal}
         onClose={() => {}}
         title="how was your date?"
-        className="max-w-md"
+        className="max-w-lg"
       >
         <motion.div
-          className="flex flex-col items-center gap-6"
+          className="flex flex-col gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
           {/* Partner profile */}
           <motion.div
-            className="relative"
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className="flex flex-col items-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
           >
-            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.5)]">
+            <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50 shadow-[0_0_20px_rgba(94,234,212,0.3)] mb-3">
               <Image
                 src={partner.photo}
                 alt={partner.name}
@@ -661,30 +692,90 @@ export default function VideoDate() {
                 className="object-cover"
               />
             </div>
-            {/* Glow effect */}
-            <motion.div
-              className="absolute inset-0 rounded-2xl"
-              animate={{
-                boxShadow: [
-                  "0 0 20px rgba(94,234,212,0.5)",
-                  "0 0 40px rgba(94,234,212,0.8)",
-                  "0 0 20px rgba(94,234,212,0.5)",
-                ],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-              }}
+            <h3 className="text-lg font-semibold mb-1">{partner.name}</h3>
+            <p className="opacity-70 text-xs text-center max-w-xs">{partner.bio}</p>
+          </motion.div>
+
+          {/* Rating section */}
+          <motion.div
+            className="flex flex-col gap-3"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+              <Star className="w-4 h-4 text-teal-300" />
+              rate your experience
+            </label>
+            <div className="flex gap-2 justify-center">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <motion.button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className={`p-2 rounded-lg transition-all duration-300 ${
+                    rating && star <= rating
+                      ? "bg-teal-300/20 border-2 border-teal-300/50"
+                      : "bg-white/5 border-2 border-white/10 hover:border-teal-300/30"
+                  }`}
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Star
+                    className={`w-6 h-6 ${
+                      rating && star <= rating
+                        ? "fill-teal-300 text-teal-300"
+                        : "text-white/40"
+                    }`}
+                  />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Feedback text area */}
+          <motion.div
+            className="flex flex-col gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-teal-300" />
+              optional feedback
+            </label>
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="share your thoughts about the date..."
+              className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 resize-none min-h-[80px]"
+              rows={3}
             />
           </motion.div>
 
-          <div className="text-center">
-            <h3 className="text-xl font-semibold mb-2">{partner.name}</h3>
-            <p className="opacity-80 text-sm leading-relaxed">{partner.bio}</p>
-          </div>
+          {/* Report button */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <motion.button
+              onClick={handleReport}
+              className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 hover:bg-red-500/10 transition-all duration-300 text-sm text-red-300/80 hover:text-red-300 flex items-center justify-center gap-2"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Flag className="w-4 h-4" />
+              <span>report inappropriate behavior</span>
+            </motion.button>
+          </motion.div>
 
           {/* Action buttons */}
-          <div className="flex gap-4 w-full mt-4">
+          <motion.div
+            className="flex gap-3 w-full pt-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
             <motion.button
               onClick={handlePass}
               className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 font-semibold"
@@ -704,7 +795,72 @@ export default function VideoDate() {
                 <span>yes</span>
               </div>
             </motion.button>
+          </motion.div>
+        </motion.div>
+      </Modal>
+
+      {/* Report modal */}
+      <Modal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="report inappropriate behavior"
+        className="max-w-md"
+      >
+        <motion.div
+          className="flex flex-col gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Flag className="w-8 h-8 text-red-400" />
+            </div>
+            <p className="text-sm opacity-80 mb-6">
+              help us keep the community safe. please describe what happened.
+            </p>
           </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-medium opacity-80">
+              what happened?
+            </label>
+            <textarea
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              placeholder="describe the inappropriate behavior..."
+              className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 resize-none min-h-[120px]"
+              rows={5}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <motion.button
+              onClick={() => setShowReportModal(false)}
+              className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 font-semibold"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              cancel
+            </motion.button>
+            <motion.button
+              onClick={handleSubmitReport}
+              disabled={!reportReason.trim()}
+              className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                reportReason.trim()
+                  ? "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/30"
+                  : "bg-white/5 border border-white/10 text-white/40 cursor-not-allowed"
+              }`}
+              whileHover={reportReason.trim() ? { scale: 1.05 } : {}}
+              whileTap={reportReason.trim() ? { scale: 0.95 } : {}}
+            >
+              submit report
+            </motion.button>
+          </div>
+
+          <p className="text-xs opacity-60 text-center">
+            reports are reviewed by our team. we take all reports seriously.
+          </p>
         </motion.div>
       </Modal>
 
