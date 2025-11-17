@@ -284,37 +284,24 @@ export default function spin() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
             >
-            {/* Vote header - Center Top, Prominent (S.P.A.R.K. - Refined Clarity + Action Feedback) */}
-            {revealed && (
-              <motion.div
-                className="absolute top-2 sm:top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-[90%] sm:max-w-md flex items-center justify-center"
-                initial={{ opacity: 0, y: -20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
-              >
+            {/* Main content row - User left, Animation right */}
+            <div className="w-full flex flex-row items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 flex-1 relative">
+              {/* Vote header - Perfectly centered between the two profile icons (S.P.A.R.K. - Refined Clarity + Action Feedback) */}
+              {revealed && (
                 <motion.div
-                  className="flex items-center gap-2 sm:gap-4 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-teal-300/20 via-teal-300/15 to-blue-500/20 backdrop-blur-md border-2 border-teal-300/40 shadow-[0_0_30px_rgba(94,234,212,0.4)]"
-                  animate={{
-                    boxShadow: [
-                      "0 0 30px rgba(94,234,212,0.4)",
-                      "0 0 50px rgba(94,234,212,0.6)",
-                      "0 0 30px rgba(94,234,212,0.4)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
+                  className="absolute top-4 sm:top-6 md:top-8 left-[calc(50%-60px)] sm:left-[calc(50%-80px)] md:left-[calc(50%-100px)] z-30"
+                  initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
                 >
-                  <motion.span
-                    className="text-lg sm:text-2xl md:text-3xl font-bold text-teal-300"
+                  <motion.div
+                    className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-teal-300/20 via-teal-300/15 to-blue-500/20 backdrop-blur-md border-2 border-teal-300/40 shadow-[0_0_30px_rgba(94,234,212,0.4)]"
                     animate={{
-                      textShadow: [
-                        "0 0 10px rgba(94,234,212,0.5)",
-                        "0 0 20px rgba(94,234,212,0.8)",
-                        "0 0 10px rgba(94,234,212,0.5)",
+                      boxShadow: [
+                        "0 0 30px rgba(94,234,212,0.4)",
+                        "0 0 50px rgba(94,234,212,0.6)",
+                        "0 0 30px rgba(94,234,212,0.4)",
                       ],
                     }}
                     transition={{
@@ -323,20 +310,32 @@ export default function spin() {
                       ease: "easeInOut",
                     }}
                   >
-                    vote
-                  </motion.span>
-                  <span className="text-lg sm:text-2xl md:text-3xl opacity-60">•</span>
-                  <CountdownTimer
-                    resetKey={revealed ? "revealed" : "hidden"}
-                    initialSeconds={10}
-                    onComplete={handleCountdownComplete}
-                  />
+                    <motion.span
+                      className="text-lg sm:text-2xl md:text-3xl font-bold text-teal-300 whitespace-nowrap"
+                      animate={{
+                        textShadow: [
+                          "0 0 10px rgba(94,234,212,0.5)",
+                          "0 0 20px rgba(94,234,212,0.8)",
+                          "0 0 10px rgba(94,234,212,0.5)",
+                        ],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      vote
+                    </motion.span>
+                    <span className="text-lg sm:text-2xl md:text-3xl opacity-60 mx-0.5 sm:mx-1">•</span>
+                    <CountdownTimer
+                      resetKey={revealed ? "revealed" : "hidden"}
+                      initialSeconds={10}
+                      onComplete={handleCountdownComplete}
+                    />
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            )}
-
-            {/* Main content row - User left, Animation right */}
-            <div className="w-full flex flex-row items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 flex-1">
+              )}
               {/* Left side - User profile (S.P.A.R.K. - Refined Clarity) */}
               <motion.div
                 className="w-1/2 flex flex-col items-center text-center gap-1.5 sm:gap-3 md:gap-4 relative"
@@ -529,46 +528,42 @@ export default function spin() {
                       />
                     </motion.div>
 
+                    {/* Action buttons - Under the revealed profile (S.P.A.R.K. - Action Feedback + Refined Clarity) */}
+                    <motion.div
+                      className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 mt-2 sm:mt-3 md:mt-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 25 }}
+                    >
+                      <SpinButton
+                        variant="pass"
+                        onClick={() => {
+                          setUserVote("pass")
+                          setRevealed(false)
+                          startSpin()
+                        }}
+                        className="w-[130px] sm:w-[150px] md:w-[170px] h-11 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation transition-all duration-200 hover:scale-105 active:scale-95"
+                      >
+                        pass
+                      </SpinButton>
+                      <SpinButton
+                        variant="yes"
+                        onClick={() => {
+                          setUserVote("yes")
+                        }}
+                        className="w-[130px] sm:w-[150px] md:w-[170px] h-11 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation transition-all duration-200 hover:scale-105 active:scale-95"
+                      >
+                        yes
+                      </SpinButton>
+                    </motion.div>
+
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
             </div>
             </motion.div>
-
-            {/* Action buttons - Bottom center, full width (S.P.A.R.K. - Action Feedback) */}
-            {revealed && (
-              <motion.div
-                className="w-full flex items-center justify-center px-4 pb-2 sm:pb-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-              >
-                <div className="flex gap-2 sm:gap-3 w-full max-w-[280px] sm:max-w-sm justify-center">
-                  <SpinButton
-                    variant="pass"
-                    onClick={() => {
-                      setUserVote("pass")
-                      setRevealed(false)
-                      startSpin()
-                    }}
-                    className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
-                  >
-                    pass
-                  </SpinButton>
-                  <SpinButton
-                    variant="yes"
-                    onClick={() => {
-                      setUserVote("yes")
-                    }}
-                    className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
-                  >
-                    yes
-                  </SpinButton>
-                </div>
-              </motion.div>
-            )}
           </>
         )}
       </AnimatePresence>
