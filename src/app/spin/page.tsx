@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart, User, MessageCircle } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -14,6 +14,8 @@ import { Sparkles } from "@/components/magicui/sparkles"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
 import { FilterInput } from "@/components/ui/filter-input"
 import { RangeInput } from "@/components/ui/range-input"
+import { EditableProfilePicture } from "@/components/ui/editable-profile-picture"
+import { EditableBio } from "@/components/ui/editable-bio"
 import Image from "next/image"
 
 export default function spin() {
@@ -25,17 +27,25 @@ export default function spin() {
     { photo: "https://i.pravatar.cc/200?img=45", name: "riley", age: 27, bio: "bookworm and movie buff" },
   ]
 
-  const user = {
+  const [user, setUser] = useState({
     name: "jason",
     bio: "i like good conversations and new experiences",
     photo: "https://i.pravatar.cc/200?img=15"
-  }
+  })
+
+  // Mock matches data (users who both said yes after a date)
+  const [matches, setMatches] = useState([
+    { id: 1, name: "alex", photo: "https://i.pravatar.cc/200?img=20", bio: "enjoys deep chats music and new experiences", matchedDate: "2025-11-15" },
+    { id: 2, name: "sam", photo: "https://i.pravatar.cc/200?img=12", bio: "loves traveling and trying new foods", matchedDate: "2025-11-10" },
+  ])
 
   const [started, setStarted] = useState(false)
   const [spinning, setSpinning] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [selected, setSelected] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
+  const [showMatches, setShowMatches] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [minAge, setMinAge] = useState(18)
   const [maxAge, setMaxAge] = useState(30)
   const [location, setLocation] = useState("")
@@ -149,25 +159,72 @@ export default function spin() {
         }}
       />
 
-      {/* Filter button top left */}
-      <motion.div
-        className="absolute top-20 left-6 z-20"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <ShimmerButton
-          onClick={() => setShowFilters(true)}
-          className="h-14 px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
-          shimmerColor="#ffffff"
-          background="rgba(94, 234, 212, 1)"
+      {/* Top bar buttons */}
+      <div className="absolute top-6 left-6 right-6 z-20 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Matches button */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <ShimmerButton
+              onClick={() => setShowMatches(true)}
+              className="h-12 px-5 bg-blue-400 text-black hover:bg-blue-400 hover:text-black"
+              shimmerColor="#ffffff"
+              background="rgba(96, 165, 250, 1)"
+            >
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                <span className="text-sm font-semibold">matches</span>
+                {matches.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-black/20 text-xs font-bold">
+                    {matches.length}
+                  </span>
+                )}
+              </div>
+            </ShimmerButton>
+          </motion.div>
+
+          {/* Profile button */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <ShimmerButton
+              onClick={() => setShowProfile(true)}
+              className="h-12 px-5 bg-white/10 text-white hover:bg-white/15 hover:text-white border border-white/20"
+              shimmerColor="#ffffff"
+              background="rgba(255, 255, 255, 0.1)"
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span className="text-sm font-semibold">profile</span>
+              </div>
+            </ShimmerButton>
+          </motion.div>
+        </div>
+
+        {/* Filter button */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            <span>filters</span>
-          </div>
-        </ShimmerButton>
-      </motion.div>
+          <ShimmerButton
+            onClick={() => setShowFilters(true)}
+            className="h-12 px-5 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
+            shimmerColor="#ffffff"
+            background="rgba(94, 234, 212, 1)"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-semibold">filters</span>
+            </div>
+          </ShimmerButton>
+        </motion.div>
+      </div>
 
       {/* Start spin button */}
       <AnimatePresence>
@@ -626,6 +683,150 @@ export default function spin() {
             </PrimaryButton>
           </div>
         </div>
+      </Modal>
+
+      {/* Matches modal */}
+      <Modal
+        isOpen={showMatches}
+        onClose={() => setShowMatches(false)}
+        title="your matches"
+        className="max-w-2xl"
+      >
+        <motion.div
+          className="flex flex-col gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {matches.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <motion.div
+                className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+              >
+                <Heart className="w-10 h-10 text-teal-300" />
+              </motion.div>
+              <p className="opacity-80 text-center text-lg mb-2">
+                no matches yet
+              </p>
+              <p className="opacity-60 text-center text-sm">
+                start spinning and say yes to find your matches!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
+              {matches.map((match, index) => (
+                <motion.div
+                  key={match.id}
+                  className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300 cursor-pointer"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index }}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  onClick={() => {
+                    // Navigate to video date with this match
+                    window.location.href = "/video-date"
+                  }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-teal-300/50 flex-shrink-0">
+                      <Image
+                        src={match.photo}
+                        alt={match.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold mb-1">{match.name}</h3>
+                      <p className="text-sm opacity-70 line-clamp-2 mb-2">{match.bio}</p>
+                      <div className="flex items-center gap-2 text-xs opacity-60">
+                        <Heart className="w-3 h-3 text-teal-300" />
+                        <span>matched {new Date(match.matchedDate).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      </Modal>
+
+      {/* Profile modal */}
+      <Modal
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+        title="your profile"
+        className="max-w-lg"
+      >
+        <motion.div
+          className="flex flex-col gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {/* Profile picture */}
+          <motion.div
+            className="flex flex-col items-center gap-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <EditableProfilePicture
+              src={user.photo}
+              alt={`${user.name}'s profile`}
+              size="lg"
+              onImageChange={(file) => {
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                  setUser(prev => ({ ...prev, photo: reader.result as string }))
+                  // In a real app, upload to backend
+                }
+                reader.readAsDataURL(file)
+              }}
+            />
+            <h2 className="text-2xl font-bold text-teal-300">{user.name}</h2>
+          </motion.div>
+
+          {/* Bio */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <label className="text-sm font-medium opacity-80 mb-2 block">
+              bio
+            </label>
+            <EditableBio
+              initialBio={user.bio}
+              onBioChange={(newBio) => {
+                setUser(prev => ({ ...prev, bio: newBio }))
+                // In a real app, save to backend
+              }}
+            />
+          </motion.div>
+
+          {/* Info message */}
+          <motion.div
+            className="p-4 rounded-xl bg-teal-300/10 border border-teal-300/20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="flex items-start gap-3">
+              <MessageCircle className="w-5 h-5 text-teal-300 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-teal-300 mb-1">profile tips</p>
+                <p className="text-xs opacity-70">
+                  keep your bio fresh and authentic. this helps others get to know the real you!
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
       </Modal>
 
     </div>
