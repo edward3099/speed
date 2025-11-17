@@ -391,7 +391,7 @@ export default function spin() {
                 )}
                 
                 <motion.div
-                  className="relative w-24 h-24 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+                  className="relative w-24 h-24 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
                   whileHover={{ scale: 1.05 }}
                   animate={{
                     boxShadow: [
