@@ -30,6 +30,8 @@ export default function VideoDate() {
   const [isPartnerVideoOff, setIsPartnerVideoOff] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
   const [isTimerVisible, setIsTimerVisible] = useState(true)
+  const [countdownMuted, setCountdownMuted] = useState(false)
+  const [countdownVideoOff, setCountdownVideoOff] = useState(false)
 
   const partner = {
     name: "alex",
@@ -200,15 +202,158 @@ export default function VideoDate() {
             />
 
             {/* Countdown content */}
-            <div className="relative z-10 flex flex-col items-center gap-8">
-              {/* Partner preview */}
+            <div className="relative z-10 flex flex-col items-center gap-6 w-full max-w-4xl px-6">
+              {/* Video preview section */}
               <motion.div
-                className="flex items-center gap-6 mb-4"
+                className="w-full max-w-2xl"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-teal-300/50 shadow-2xl">
+                  {/* User video preview */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {countdownVideoOff ? (
+                      <div className="text-center">
+                        <VideoOff className="w-16 h-16 text-white/30 mx-auto mb-2" />
+                        <p className="text-sm opacity-60">video off</p>
+                      </div>
+                    ) : (
+                      <div className="relative w-full h-full">
+                        {/* Video placeholder - in real app, this would be getUserMedia stream */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-teal-500/20 to-blue-500/20">
+                          <div className="text-center">
+                            <motion.div
+                              animate={{
+                                scale: [1, 1.1, 1],
+                                opacity: [0.5, 0.8, 0.5],
+                              }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                              }}
+                            >
+                              <Video className="w-16 h-16 text-white/40 mx-auto mb-2" />
+                            </motion.div>
+                            <p className="text-sm opacity-60">your video preview</p>
+                          </div>
+                        </div>
+                        {/* Profile overlay */}
+                        <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-teal-300/50 bg-white/10">
+                            <Image
+                              src={user.photo}
+                              alt={user.name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">{user.name}</p>
+                            <p className="text-xs opacity-60">you</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status indicators */}
+                  {countdownMuted && (
+                    <motion.div
+                      className="absolute top-4 right-4 p-2 rounded-full bg-red-500/80 backdrop-blur-sm z-10"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                    >
+                      <MicOff className="w-4 h-4" />
+                    </motion.div>
+                  )}
+                  {countdownVideoOff && (
+                    <motion.div
+                      className="absolute top-4 right-4 p-2 rounded-full bg-red-500/80 backdrop-blur-sm z-10"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                    >
+                      <VideoOff className="w-4 h-4" />
+                    </motion.div>
+                  )}
+
+                  {/* Mic test indicator */}
+                  {!countdownMuted && (
+                    <motion.div
+                      className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-green-500/80 backdrop-blur-sm flex items-center gap-2 text-xs font-medium"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <motion.div
+                        className="w-2 h-2 bg-white rounded-full"
+                        animate={{
+                          scale: [1, 1.3, 1],
+                          opacity: [1, 0.7, 1],
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                        }}
+                      />
+                      <span>mic active</span>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Controls during countdown */}
+                <motion.div
+                  className="flex items-center justify-center gap-4 mt-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  {/* Mute button */}
+                  <motion.button
+                    onClick={() => {
+                      setCountdownMuted(!countdownMuted)
+                      setIsMuted(!countdownMuted) // Sync with main state
+                    }}
+                    className={`p-3 rounded-full backdrop-blur-sm border-2 transition-all duration-300 ${
+                      countdownMuted
+                        ? "bg-red-500/20 border-red-500/50 text-red-300"
+                        : "bg-white/5 border-white/10 hover:border-teal-300/50 text-white"
+                    }`}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    title={countdownMuted ? "Unmute" : "Mute"}
+                  >
+                    {countdownMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  </motion.button>
+
+                  {/* Video toggle */}
+                  <motion.button
+                    onClick={() => {
+                      setCountdownVideoOff(!countdownVideoOff)
+                      setIsVideoOff(!countdownVideoOff) // Sync with main state
+                    }}
+                    className={`p-3 rounded-full backdrop-blur-sm border-2 transition-all duration-300 ${
+                      countdownVideoOff
+                        ? "bg-red-500/20 border-red-500/50 text-red-300"
+                        : "bg-white/5 border-white/10 hover:border-teal-300/50 text-white"
+                    }`}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    title={countdownVideoOff ? "Turn on video" : "Turn off video"}
+                  >
+                    {countdownVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                  </motion.button>
+                </motion.div>
+              </motion.div>
+
+              {/* Partner preview */}
+              <motion.div
+                className="flex items-center gap-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-teal-300/50">
                   <Image
                     src={user.photo}
                     alt={user.name}
@@ -225,9 +370,9 @@ export default function VideoDate() {
                     repeat: Infinity,
                   }}
                 >
-                  <Heart className="w-8 h-8 text-teal-300" />
+                  <Heart className="w-6 h-6 text-teal-300" />
                 </motion.div>
-                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-400/50">
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-blue-400/50">
                   <Image
                     src={partner.photo}
                     alt={partner.name}
