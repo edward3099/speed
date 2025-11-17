@@ -133,9 +133,16 @@ export default function VideoDate() {
     
     setShowContactModal(false)
     setShowMatchModal(true)
+    // Increased timeout to give users time to view contact details
     setTimeout(() => {
+      setShowMatchModal(false)
       router.push("/spin")
-    }, 5000)
+    }, 20000) // 20 seconds instead of 5
+  }
+
+  const handleContinueFromMatch = () => {
+    setShowMatchModal(false)
+    router.push("/spin")
   }
 
   const handlePass = () => {
@@ -1315,14 +1322,21 @@ export default function VideoDate() {
                 </motion.div>
               )}
               
-              <motion.p
-                className="opacity-60 text-xs"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.6 }}
-                transition={{ delay: 0.6 }}
+              <motion.div
+                className="flex justify-center pt-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
               >
-                redirecting to spin page…
-              </motion.p>
+                <motion.button
+                  onClick={handleContinueFromMatch}
+                  className="px-8 py-3 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 transition-all duration-300 shadow-lg shadow-teal-300/30"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  continue
+                </motion.button>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
