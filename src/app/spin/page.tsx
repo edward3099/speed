@@ -533,6 +533,7 @@ export default function spin() {
                 )}
               </AnimatePresence>
             </div>
+            </div>
             </motion.div>
 
             {/* Action buttons - Bottom center, full width (S.P.A.R.K. - Action Feedback) */}
