@@ -25,7 +25,7 @@ export function ProfileCardSpin({
   return (
     <motion.div
       className={cn(
-        "w-full max-w-[200px] sm:max-w-xs md:max-w-sm p-2 sm:p-5 md:p-6 rounded-lg sm:rounded-xl md:rounded-2xl bg-white/5 backdrop-blur-sm",
+        "w-full max-w-[160px] sm:max-w-xs md:max-w-sm p-2 sm:p-5 md:p-6 rounded-lg sm:rounded-xl md:rounded-2xl bg-white/5 backdrop-blur-sm",
         "border border-white/10 relative overflow-hidden",
         isSelected && "border-teal-300/50",
         className
@@ -102,7 +102,7 @@ export function ProfileCardSpin({
         </motion.div>
       )}
 
-      <div className="relative w-full h-32 sm:h-56 md:h-64 rounded-lg sm:rounded-xl overflow-hidden mb-2 sm:mb-3 md:mb-4 border-2 border-white/10">
+      <div className="relative w-full h-40 sm:h-56 md:h-64 rounded-lg sm:rounded-xl overflow-hidden mb-2 sm:mb-3 md:mb-4 border-2 border-white/10">
         <Image
           src={photo}
           alt={name}

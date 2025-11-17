@@ -287,7 +287,7 @@ export default function spin() {
             {/* Vote header - Center Top, Prominent (S.P.A.R.K. - Refined Clarity + Action Feedback) */}
             {revealed && (
               <motion.div
-                className="w-full flex items-center justify-center mb-1 sm:mb-2 md:mb-4"
+                className="absolute top-2 sm:top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-[90%] sm:max-w-md flex items-center justify-center"
                 initial={{ opacity: 0, y: -20, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -391,7 +391,7 @@ export default function spin() {
                 )}
                 
                 <motion.div
-                  className="relative w-16 h-16 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+                  className="relative w-24 h-24 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
                   whileHover={{ scale: 1.05 }}
                   animate={{
                     boxShadow: [
