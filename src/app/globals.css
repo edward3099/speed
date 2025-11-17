@@ -178,3 +178,68 @@
 .shadow-teal-soft {
   box-shadow: 0 0 20px rgba(94, 234, 212, 0.3);
 }
+
+/* Glass panels */
+
+.glass-panel {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.glass-panel-1 {
+  width: 2px;
+  height: 60%;
+  top: 15%;
+  left: 20%;
+}
+
+.glass-panel-2 {
+  width: 2px;
+  height: 50%;
+  top: 25%;
+  right: 25%;
+}
+
+.glass-panel-3 {
+  width: 80px;
+  height: 2px;
+  top: 40%;
+  left: 10%;
+}
+
+.glass-panel-4 {
+  width: 100px;
+  height: 2px;
+  bottom: 30%;
+  right: 15%;
+}
+
+@media (min-width: 768px) {
+  .glass-panel-1 {
+    width: 3px;
+    height: 70%;
+    left: 15%;
+  }
+  
+  .glass-panel-2 {
+    width: 3px;
+    height: 65%;
+    right: 20%;
+  }
+  
+  .glass-panel-3 {
+    width: 120px;
+    height: 3px;
+    left: 8%;
+  }
+  
+  .glass-panel-4 {
+    width: 150px;
+    height: 3px;
+    right: 12%;
+  }
+}
