@@ -115,16 +115,8 @@ export default function VideoDate() {
     }
     
     setShowPostModal(false)
-    const otherYes = Math.random() < 0.5
-    if (otherYes) {
-      // Both said yes - show contact details form
-      setShowContactModal(true)
-    } else {
-      setShowRejectModal(true)
-      setTimeout(() => {
-        router.push("/spin")
-      }, 3000)
-    }
+    // Always show contact details form (both said yes)
+    setShowContactModal(true)
   }
 
   const handleSubmitContactDetails = () => {
