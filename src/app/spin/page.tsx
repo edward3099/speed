@@ -170,17 +170,22 @@ export default function spin() {
           >
             <ShimmerButton
               onClick={() => setShowMatches(true)}
-              className="h-12 px-5 bg-blue-400 text-black hover:bg-blue-400 hover:text-black"
+              className="h-14 px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black relative"
               shimmerColor="#ffffff"
-              background="rgba(96, 165, 250, 1)"
+              background="rgba(94, 234, 212, 1)"
             >
               <div className="flex items-center gap-2">
-                <Heart className="w-4 h-4" />
-                <span className="text-sm font-semibold">matches</span>
+                <Heart className="w-5 h-5" />
+                <span>matches</span>
                 {matches.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-black/20 text-xs font-bold">
+                  <motion.span
+                    className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-blue-400 text-white text-xs font-bold shadow-lg"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300, delay: 0.4 }}
+                  >
                     {matches.length}
-                  </span>
+                  </motion.span>
                 )}
               </div>
             </ShimmerButton>
@@ -194,13 +199,13 @@ export default function spin() {
           >
             <ShimmerButton
               onClick={() => setShowProfile(true)}
-              className="h-12 px-5 bg-white/10 text-white hover:bg-white/15 hover:text-white border border-white/20"
+              className="h-14 px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
               shimmerColor="#ffffff"
-              background="rgba(255, 255, 255, 0.1)"
+              background="rgba(94, 234, 212, 1)"
             >
               <div className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                <span className="text-sm font-semibold">profile</span>
+                <User className="w-5 h-5" />
+                <span>profile</span>
               </div>
             </ShimmerButton>
           </motion.div>
@@ -214,13 +219,13 @@ export default function spin() {
         >
           <ShimmerButton
             onClick={() => setShowFilters(true)}
-            className="h-12 px-5 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
+            className="h-14 px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
             shimmerColor="#ffffff"
             background="rgba(94, 234, 212, 1)"
           >
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-semibold">filters</span>
+              <Filter className="w-5 h-5" />
+              <span>filters</span>
             </div>
           </ShimmerButton>
         </motion.div>
@@ -690,67 +695,158 @@ export default function spin() {
         isOpen={showMatches}
         onClose={() => setShowMatches(false)}
         title="your matches"
-        className="max-w-2xl"
+        className="max-w-4xl"
       >
         <motion.div
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
           {matches.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-8">
+            <motion.div
+              className="flex flex-col items-center gap-6 py-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
               <motion.div
-                className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+                className="relative w-32 h-32 rounded-full bg-gradient-to-br from-teal-300/20 to-blue-400/20 flex items-center justify-center mb-4"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.4 }}
               >
-                <Heart className="w-10 h-10 text-teal-300" />
-              </motion.div>
-              <p className="opacity-80 text-center text-lg mb-2">
-                no matches yet
-              </p>
-              <p className="opacity-60 text-center text-sm">
-                start spinning and say yes to find your matches!
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-              {matches.map((match, index) => (
+                <Heart className="w-16 h-16 text-teal-300" />
                 <motion.div
-                  key={match.id}
-                  className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300 cursor-pointer"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * index }}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  onClick={() => {
-                    // Navigate to video date with this match
-                    window.location.href = "/video-date"
+                  className="absolute inset-0 rounded-full"
+                  animate={{
+                    boxShadow: [
+                      "0 0 20px rgba(94,234,212,0.3)",
+                      "0 0 40px rgba(94,234,212,0.6)",
+                      "0 0 20px rgba(94,234,212,0.3)",
+                    ],
                   }}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-teal-300/50 flex-shrink-0">
-                      <Image
-                        src={match.photo}
-                        alt={match.name}
-                        fill
-                        className="object-cover"
-                      />
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                  }}
+                />
+              </motion.div>
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-teal-300 mb-2">no matches yet</h3>
+                <p className="opacity-70 text-lg mb-1">start spinning to find connections</p>
+                <p className="opacity-60 text-sm">when you both say yes after a date, you'll match!</p>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {/* Header with count */}
+              <motion.div
+                className="flex items-center justify-between pb-4 border-b border-white/10"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                    }}
+                  >
+                    <Heart className="w-6 h-6 text-teal-300" />
+                  </motion.div>
+                  <div>
+                    <h3 className="text-xl font-bold">{matches.length} {matches.length === 1 ? 'match' : 'matches'}</h3>
+                    <p className="text-sm opacity-60">people who want to see you again</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Matches grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                {matches.map((match, index) => (
+                  <motion.div
+                    key={match.id}
+                    className="group relative p-5 rounded-2xl bg-white/5 border-2 border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden"
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index, type: "spring", stiffness: 200 }}
+                    whileHover={{ scale: 1.03, y: -4 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      window.location.href = "/video-date"
+                    }}
+                  >
+                    {/* Glow effect on hover */}
+                    <motion.div
+                      className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                      animate={{
+                        background: [
+                          "radial-gradient(circle at center, rgba(94,234,212,0.1) 0%, transparent 70%)",
+                          "radial-gradient(circle at center, rgba(94,234,212,0.2) 0%, transparent 70%)",
+                          "radial-gradient(circle at center, rgba(94,234,212,0.1) 0%, transparent 70%)",
+                        ],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                      }}
+                    />
+
+                    {/* Profile picture */}
+                    <div className="relative mb-4">
+                      <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-teal-300/50 mx-auto shadow-lg shadow-teal-300/20">
+                        <Image
+                          src={match.photo}
+                          alt={match.name}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                      </div>
+                      {/* Match badge */}
+                      <motion.div
+                        className="absolute -top-2 -right-2 w-8 h-8 bg-teal-300 rounded-full flex items-center justify-center border-2 border-[#050810] shadow-lg"
+                        animate={{
+                          scale: [1, 1.1, 1],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                        }}
+                      >
+                        <Heart className="w-4 h-4 text-black fill-black" />
+                      </motion.div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold mb-1">{match.name}</h3>
-                      <p className="text-sm opacity-70 line-clamp-2 mb-2">{match.bio}</p>
-                      <div className="flex items-center gap-2 text-xs opacity-60">
+
+                    {/* Content */}
+                    <div className="text-center space-y-2 relative z-10">
+                      <h3 className="text-lg font-bold text-teal-300">{match.name}</h3>
+                      <p className="text-sm opacity-70 line-clamp-2 min-h-[2.5rem]">{match.bio}</p>
+                      <div className="flex items-center justify-center gap-2 text-xs opacity-60 pt-2 border-t border-white/10">
                         <Heart className="w-3 h-3 text-teal-300" />
-                        <span>matched {new Date(match.matchedDate).toLocaleDateString()}</span>
+                        <span>matched {new Date(match.matchedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+
+                    {/* Hover indicator */}
+                    <motion.div
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      initial={{ y: 10 }}
+                      whileHover={{ y: 0 }}
+                    >
+                      <div className="px-4 py-1.5 rounded-full bg-teal-300/20 border border-teal-300/50 text-xs font-semibold text-teal-300">
+                        start date
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                ))}
+              </div>
+            </>
           )}
         </motion.div>
       </Modal>
