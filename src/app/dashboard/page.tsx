@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Heart, Calendar, Users } from "lucide-react"
+import { Heart, Calendar, Settings, Sparkles, TrendingUp } from "lucide-react"
 import { motion } from "framer-motion"
 import { DashboardCard } from "@/components/ui/dashboard-card"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { Modal } from "@/components/ui/modal"
-import { StatsCard } from "@/components/ui/stats-card"
+import { QuickActionCard } from "@/components/ui/quick-action-card"
 import { TextReveal } from "@/components/magicui/text-reveal"
 import { EditableProfilePicture } from "@/components/ui/editable-profile-picture"
 import { EditableBio } from "@/components/ui/editable-bio"
@@ -21,11 +21,26 @@ export default function dashboard() {
   const [showMatches, setShowMatches] = useState(false)
   const [showEvents, setShowEvents] = useState(false)
 
-  // Mock stats data
-  const stats = [
-    { label: "matches", value: "12", icon: <Heart className="w-5 h-5" /> },
-    { label: "conversations", value: "8", icon: <Users className="w-5 h-5" /> },
-    { label: "events", value: "3", icon: <Calendar className="w-5 h-5" /> },
+  // Quick actions
+  const quickActions = [
+    {
+      icon: <Sparkles className="w-5 h-5 text-teal-300" />,
+      title: "discover matches",
+      description: "find new connections",
+      onClick: () => router.push("/spin"),
+    },
+    {
+      icon: <TrendingUp className="w-5 h-5 text-teal-300" />,
+      title: "view activity",
+      description: "see your recent interactions",
+      onClick: () => setShowMatches(true),
+    },
+    {
+      icon: <Settings className="w-5 h-5 text-teal-300" />,
+      title: "preferences",
+      description: "manage your settings",
+      onClick: () => {},
+    },
   ]
 
   return (
@@ -76,19 +91,20 @@ export default function dashboard() {
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
+        {/* Quick Actions */}
         <motion.div
-          className="grid grid-cols-3 gap-4 mb-10"
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {stats.map((stat, index) => (
-            <StatsCard
-              key={stat.label}
-              label={stat.label}
-              value={stat.value}
-              icon={stat.icon}
+          {quickActions.map((action, index) => (
+            <QuickActionCard
+              key={action.title}
+              icon={action.icon}
+              title={action.title}
+              description={action.description}
+              onClick={action.onClick}
               delay={index * 0.1}
             />
           ))}
