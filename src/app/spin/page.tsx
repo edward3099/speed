@@ -194,7 +194,7 @@ export default function spin() {
                       <span className="text-lg font-semibold text-teal-300">vote</span>
                       <span className="text-lg opacity-60">•</span>
                       <CountdownTimer
-                        key={revealed ? "revealed" : "hidden"}
+                        resetKey={revealed ? "revealed" : "hidden"}
                         initialSeconds={10}
                         onComplete={handleCountdownComplete}
                       />

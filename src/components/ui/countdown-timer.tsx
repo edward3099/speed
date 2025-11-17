@@ -1,38 +1,50 @@
 "use client"
 
-import { motion, AnimatePresence } from "framer-motion"
-import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
+import { useEffect, useState, useRef } from "react"
 
 interface CountdownTimerProps {
   initialSeconds: number
   onComplete?: () => void
   className?: string
-  key?: string | number
+  resetKey?: string | number
 }
 
 export function CountdownTimer({
   initialSeconds,
   onComplete,
   className,
-  key,
+  resetKey,
 }: CountdownTimerProps) {
   const [seconds, setSeconds] = useState(initialSeconds)
+  const onCompleteRef = useRef(onComplete)
 
+  // Update ref when callback changes
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
+
+  // Reset timer when initialSeconds or resetKey changes
   useEffect(() => {
     setSeconds(initialSeconds)
-  }, [initialSeconds, key])
+  }, [initialSeconds, resetKey])
 
   useEffect(() => {
     if (seconds === 0) {
-      onComplete?.()
+      // Use setTimeout to avoid calling during render
+      setTimeout(() => {
+        onCompleteRef.current?.()
+      }, 0)
       return
     }
 
     const timer = setInterval(() => {
       setSeconds((prev) => {
         if (prev <= 1) {
-          clearInterval(timer)
-          onComplete?.()
+          // Use setTimeout to avoid calling during render
+          setTimeout(() => {
+            onCompleteRef.current?.()
+          }, 0)
           return 0
         }
         return prev - 1
@@ -40,7 +52,7 @@ export function CountdownTimer({
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [seconds, onComplete])
+  }, [seconds])
 
   return (
     <div className={className}>
