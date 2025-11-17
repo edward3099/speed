@@ -1,6 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
+import { Sparkles } from "@/components/magicui/sparkles"
+import { TextReveal } from "@/components/magicui/text-reveal"
+import { ShimmerButton } from "@/components/magicui/shimmer-button"
 
 export default function landing() {
   const [showModal, setShowModal] = useState(false)
@@ -11,18 +15,24 @@ export default function landing() {
       {/* Base deep navy background */}
       <div className="absolute inset-0 bg-[#0a0f1f]" />
 
-      {/* Soft layered gradients with slow drift */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="gradient-orb gradient-orb-1" />
-        <div className="gradient-orb gradient-orb-2" />
-        <div className="gradient-orb gradient-orb-3" />
-      </div>
+      {/* Magic UI Animated Gradient Background */}
+      <AnimatedGradientBackground />
+
+      {/* Sparkles effect */}
+      <Sparkles 
+        sparklesCount={15}
+        className="absolute inset-0 pointer-events-none"
+        colors={{
+          first: "#5eead4",
+          second: "#3b82f6"
+        }}
+      />
 
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between px-8 md:px-12 lg:px-16 max-w-7xl mx-auto pt-20 gap-12 md:gap-16">
         {/* Left hero content with fade-up animation */}
         <div className="flex flex-col gap-6 max-w-xl animate-fadeUp text-center md:text-left">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-teal-300 drop-shadow-sm leading-tight">
-            meet someone new
+            <TextReveal text="meet someone new" />
           </h1>
 
           <p className="text-lg opacity-80 leading-relaxed max-w-[640px]">
@@ -32,12 +42,14 @@ export default function landing() {
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
             {/* Main CTA with tooltip */}
             <div className="relative group">
-              <button
+              <ShimmerButton
                 onClick={() => setShowModal(true)}
-                className="px-10 py-4 rounded-2xl text-lg font-semibold bg-teal-300 text-black transition transform hover:scale-105 hover:shadow-[0_0_20px_rgba(94,234,212,0.3)] active:scale-95 relative"
+                className="px-10 py-4 rounded-2xl text-lg font-semibold bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
+                shimmerColor="#ffffff"
+                background="rgba(94, 234, 212, 1)"
               >
                 start now
-              </button>
+              </ShimmerButton>
               <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-white bg-opacity-10 px-3 py-1 text-xs rounded-xl whitespace-nowrap">
                 start your journey
               </div>
