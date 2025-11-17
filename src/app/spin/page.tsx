@@ -139,16 +139,16 @@ export default function spin() {
 
                 {/* buttons */}
                 <div className="flex gap-4 w-full">
-                  {/* pass */}
+                  {/* respin */}
                   <button
-                    className="spin-btn pass-btn"
+                    className="spin-btn respin-btn"
                     onClick={() => {
                       setUserVote("pass")
                       setRevealed(false)
                       startSpin()
                     }}
                   >
-                    pass
+                    respin
                   </button>
 
                   {/* yes */}
