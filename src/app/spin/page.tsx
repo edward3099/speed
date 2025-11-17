@@ -111,7 +111,7 @@ export default function spin() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#050810] text-white px-3 sm:px-4 md:px-6 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#050810] text-white px-4 sm:px-5 md:px-6 flex items-center justify-center relative overflow-hidden safe-area-inset">
       {/* Background layers */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <AnimatedGradientBackground />
@@ -155,25 +155,25 @@ export default function spin() {
         }}
       />
 
-      {/* Top bar buttons */}
-      <div className="absolute top-3 sm:top-4 md:top-6 left-3 sm:left-4 md:left-6 right-3 sm:right-4 md:right-6 z-20 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 sm:gap-3">
+      {/* Top bar buttons - Mobile optimized */}
+      <div className="absolute top-safe sm:top-4 md:top-6 left-4 sm:left-5 md:left-6 right-4 sm:right-5 md:right-6 z-20 flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5">
           {/* Profile button */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
             className="flex-shrink-0"
           >
             <ShimmerButton
               onClick={() => setShowProfile(true)}
-              className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
+              className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
               shimmerColor="#ffffff"
               background="rgba(94, 234, 212, 1)"
             >
-              <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex items-center gap-2">
                 <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-xs sm:text-sm md:text-base">profile</span>
+                <span className="text-sm sm:text-base font-medium">profile</span>
               </div>
             </ShimmerButton>
           </motion.div>
@@ -183,18 +183,18 @@ export default function spin() {
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
           className="flex-shrink-0"
         >
           <ShimmerButton
             onClick={() => setShowFilters(true)}
-            className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
+            className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
             shimmerColor="#ffffff"
             background="rgba(94, 234, 212, 1)"
           >
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-xs sm:text-sm md:text-base">filters</span>
+              <span className="text-sm sm:text-base font-medium">filters</span>
             </div>
           </ShimmerButton>
         </motion.div>
@@ -517,12 +517,12 @@ export default function spin() {
                       />
                     </motion.div>
 
-                    {/* Action buttons with enhanced styling */}
+                    {/* Action buttons with enhanced styling - Mobile optimized */}
                     <motion.div
-                      className="flex gap-3 sm:gap-4 w-full max-w-sm px-4 sm:px-0"
+                      className="flex gap-3 sm:gap-4 w-full max-w-sm px-2 sm:px-0 pb-safe sm:pb-0"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
                     >
                       <SpinButton
                         variant="pass"
@@ -531,6 +531,7 @@ export default function spin() {
                           setRevealed(false)
                           startSpin()
                         }}
+                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
                       >
                         pass
                       </SpinButton>
@@ -539,6 +540,7 @@ export default function spin() {
                         onClick={() => {
                           setUserVote("yes")
                         }}
+                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
                       >
                         yes
                       </SpinButton>
@@ -558,7 +560,7 @@ export default function spin() {
         title="filters"
         className="max-w-md"
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
           {/* Age Range */}
           <FilterInput
             label="age range"
@@ -613,8 +615,9 @@ export default function spin() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
               placeholder="enter city or zip code"
+              style={{ minHeight: '48px' }}
             />
           </FilterInput>
 
@@ -632,8 +635,8 @@ export default function spin() {
             />
           </FilterInput>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 mt-4">
+          {/* Action Buttons - Mobile optimized */}
+          <div className="flex gap-3 mt-4 pb-safe sm:pb-0">
             <motion.button
               onClick={() => {
                 setMinAge(18)
@@ -641,9 +644,10 @@ export default function spin() {
                 setLocation("")
                 setMaxDistance(50)
               }}
-              className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium"
+              className="flex-1 px-4 py-3.5 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm sm:text-base font-semibold touch-manipulation"
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.95 }}
+              style={{ minHeight: '48px' }}
             >
               reset
             </motion.button>
@@ -651,7 +655,7 @@ export default function spin() {
               onClick={() => setShowFilters(false)}
               size="sm"
               variant="primary"
-              className="flex-1"
+              className="flex-1 h-12 sm:h-auto min-h-[48px] font-semibold text-base touch-manipulation"
             >
               apply filters
             </PrimaryButton>
@@ -668,10 +672,10 @@ export default function spin() {
         className="max-w-lg"
       >
         <motion.div
-          className="flex flex-col gap-6"
+          className="flex flex-col gap-4 sm:gap-5 md:gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
         >
           {/* Profile picture */}
           <motion.div
@@ -703,14 +707,14 @@ export default function spin() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-teal-300" />
+            <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
               age
             </label>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-              <p className="text-lg opacity-80">{user.age}</p>
+            <div className="p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-base sm:text-lg opacity-80">{user.age}</p>
             </div>
-            <p className="text-xs opacity-60">age cannot be changed</p>
+            <p className="text-xs sm:text-sm opacity-60">age cannot be changed</p>
           </motion.div>
 
           {/* Location - Editable */}

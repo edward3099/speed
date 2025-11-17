@@ -170,7 +170,7 @@ export default function VideoDate() {
   const progressPercentage = countdownComplete ? ((300 - timeLeft) / 300) * 100 : 0
 
   return (
-    <div className="min-h-screen w-full bg-[#050810] text-white relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#050810] text-white relative overflow-hidden safe-area-inset">
       {/* Pre-date countdown screen */}
       <AnimatePresence>
         {!countdownComplete && (
@@ -548,16 +548,16 @@ export default function VideoDate() {
             }}
           />
 
-          {/* Top bar */}
+          {/* Top bar - Mobile optimized */}
           <motion.div
-            className="relative z-10 px-3 sm:px-4 md:px-6 pt-4 sm:pt-5 md:pt-6 pb-3 sm:pb-4"
+            className="relative z-10 px-4 sm:px-5 md:px-6 pt-safe sm:pt-5 md:pt-6 pb-3 sm:pb-4"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, type: "spring", stiffness: 300 }}
           >
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2.5">
+                <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
                   <AnimatePresence mode="wait">
                     {isTimerVisible && (
                       <motion.div
@@ -648,8 +648,8 @@ export default function VideoDate() {
             </div>
           </motion.div>
 
-          {/* Main video layout */}
-          <div className="relative z-10 px-3 sm:px-4 md:px-6 pb-4 sm:pb-5 md:pb-6">
+          {/* Main video layout - Mobile optimized */}
+          <div className="relative z-10 px-4 sm:px-5 md:px-6 pb-safe sm:pb-5 md:pb-6">
             <div className="max-w-7xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 md:gap-6 mb-4 sm:mb-5 md:mb-6">
                 {/* Your video */}
@@ -780,37 +780,39 @@ export default function VideoDate() {
                 </motion.div>
               </div>
 
-              {/* Control panel */}
+              {/* Control panel - Mobile optimized */}
               <motion.div
-                className="flex items-center justify-center gap-3 sm:gap-4 px-4"
+                className="flex items-center justify-center gap-3 sm:gap-4 px-4 pb-safe sm:pb-0"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
               >
                 <motion.button
                   onClick={() => setIsMuted(!isMuted)}
-                  className={`p-3 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg ${
+                  className={`p-3.5 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg touch-manipulation ${
                     isMuted
-                      ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20"
-                      : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15"
+                      ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20 active:scale-95"
+                      : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15 active:scale-95"
                   }`}
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   title={isMuted ? "Unmute" : "Mute"}
+                  style={{ minWidth: '48px', minHeight: '48px' }}
                 >
                   {isMuted ? <MicOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </motion.button>
 
                 <motion.button
                   onClick={() => setIsVideoOff(!isVideoOff)}
-                  className={`p-3 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg ${
+                  className={`p-3.5 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg touch-manipulation ${
                     isVideoOff
-                      ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20"
-                      : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15"
+                      ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20 active:scale-95"
+                      : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15 active:scale-95"
                   }`}
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   title={isVideoOff ? "Turn on video" : "Turn off video"}
+                  style={{ minWidth: '48px', minHeight: '48px' }}
                 >
                   {isVideoOff ? <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Video className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </motion.button>
@@ -818,14 +820,15 @@ export default function VideoDate() {
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  className="touch-manipulation"
                 >
                   <PrimaryButton
                     onClick={handleEndDate}
                     size="md"
                     variant="secondary"
-                    className="px-4 sm:px-6 md:px-8 text-sm sm:text-base"
+                    className="px-5 sm:px-6 md:px-8 text-sm sm:text-base h-12 sm:h-auto min-h-[48px] font-semibold"
                   >
-                    <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="flex items-center gap-2">
                       <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span>end date</span>
                     </div>
@@ -1097,15 +1100,15 @@ export default function VideoDate() {
             </p>
           </motion.div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <motion.div
               className="flex flex-col gap-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
             >
-              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-teal-300" />
+              <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
+                <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
                 email (optional)
               </label>
               <input
@@ -1113,7 +1116,8 @@ export default function VideoDate() {
                 value={userContactDetails.email}
                 onChange={(e) => setUserContactDetails(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="your@email.com"
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+                className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
+                style={{ minHeight: '48px' }}
               />
             </motion.div>
 
@@ -1132,7 +1136,8 @@ export default function VideoDate() {
                 value={userContactDetails.phone}
                 onChange={(e) => setUserContactDetails(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="+1 (555) 123-4567"
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+                className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
+                style={{ minHeight: '48px' }}
               />
             </motion.div>
 
@@ -1140,10 +1145,10 @@ export default function VideoDate() {
               className="flex flex-col gap-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
             >
-              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
-                <Facebook className="w-4 h-4 text-teal-300" />
+              <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
+                <Facebook className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
                 facebook (optional)
               </label>
               <input
@@ -1151,7 +1156,8 @@ export default function VideoDate() {
                 value={userContactDetails.facebook}
                 onChange={(e) => setUserContactDetails(prev => ({ ...prev, facebook: e.target.value }))}
                 placeholder="your.facebook.username"
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+                className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
+                style={{ minHeight: '48px' }}
               />
             </motion.div>
 
@@ -1159,10 +1165,10 @@ export default function VideoDate() {
               className="flex flex-col gap-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
+              transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
             >
-              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
-                <Instagram className="w-4 h-4 text-teal-300" />
+              <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
+                <Instagram className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
                 instagram (optional)
               </label>
               <input
@@ -1170,7 +1176,8 @@ export default function VideoDate() {
                 value={userContactDetails.instagram}
                 onChange={(e) => setUserContactDetails(prev => ({ ...prev, instagram: e.target.value }))}
                 placeholder="@yourusername"
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+                className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
+                style={{ minHeight: '48px' }}
               />
             </motion.div>
 
@@ -1178,10 +1185,10 @@ export default function VideoDate() {
               className="flex flex-col gap-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+              transition={{ delay: 0.7, type: "spring", stiffness: 300 }}
             >
-              <label className="text-sm font-medium opacity-80 flex items-center gap-2">
-                <LinkIcon className="w-4 h-4 text-teal-300" />
+              <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
                 other (optional)
               </label>
               <input
@@ -1189,37 +1196,40 @@ export default function VideoDate() {
                 value={userContactDetails.other}
                 onChange={(e) => setUserContactDetails(prev => ({ ...prev, other: e.target.value }))}
                 placeholder="snapchat, discord, etc."
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+                className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
+                style={{ minHeight: '48px' }}
               />
             </motion.div>
           </div>
 
           <motion.div
-            className="flex gap-3 pt-2"
+            className="flex gap-3 pt-2 pb-safe sm:pb-0"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
+            transition={{ delay: 0.8, type: "spring", stiffness: 300 }}
           >
             <motion.button
               onClick={() => {
                 setShowContactModal(false)
                 router.push("/spin")
               }}
-              className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 font-semibold"
-              whileHover={{ scale: 1.05 }}
+              className="flex-1 px-5 py-3.5 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 active:scale-95 transition-all duration-300 font-semibold text-base touch-manipulation"
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
+              style={{ minHeight: '48px' }}
             >
               skip
             </motion.button>
             <motion.button
               onClick={handleSubmitContactDetails}
-              className="flex-1 px-6 py-3 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 transition-all duration-300 shadow-lg shadow-teal-300/30"
-              whileHover={{ scale: 1.05 }}
+              className="flex-1 px-5 py-3.5 sm:py-4 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 active:scale-95 transition-all duration-300 shadow-lg shadow-teal-300/30 touch-manipulation"
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
+              style={{ minHeight: '48px' }}
             >
               <div className="flex items-center justify-center gap-2">
                 <Heart className="w-5 h-5" />
-                <span>share details</span>
+                <span className="text-base">share details</span>
               </div>
             </motion.button>
           </motion.div>

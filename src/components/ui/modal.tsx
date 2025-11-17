@@ -20,48 +20,67 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            transition={{ duration: 0.2 }}
           />
 
-          {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-3 md:p-4 pointer-events-none overflow-y-auto">
+          {/* Modal - Mobile: Bottom sheet style, Desktop: Centered */}
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none overflow-y-auto">
             <motion.div
               className={cn(
-                "relative bg-white/10 backdrop-blur-xl rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-6 lg:p-8 max-w-[calc(100vw-1rem)] sm:max-w-md w-full mt-4 sm:mt-0",
-                "border border-white/10 shadow-2xl",
+                // Mobile: Full width bottom sheet with rounded top corners
+                "relative bg-gradient-to-b from-white/15 via-white/10 to-white/10 backdrop-blur-2xl",
+                "rounded-t-3xl sm:rounded-2xl md:rounded-3xl",
+                "w-full sm:w-auto sm:max-w-md md:max-w-lg",
+                "p-4 sm:p-5 md:p-6 lg:p-8",
+                "border-t sm:border border-white/20 shadow-2xl",
                 "pointer-events-auto",
-                "max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-1.5rem)] overflow-y-auto",
+                // Mobile: Max height with safe area
+                "max-h-[90vh] sm:max-h-[85vh] overflow-y-auto",
+                // Mobile: Slide up animation
                 className
               )}
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, y: "100%", scale: 1 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: "100%", scale: 0.95 }}
               transition={{
                 type: "spring",
-                stiffness: 300,
-                damping: 30,
+                stiffness: 400,
+                damping: 35,
+                mass: 0.8,
               }}
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Mobile: Drag handle indicator */}
+              <div className="sm:hidden flex justify-center mb-3 pt-2">
+                <motion.div
+                  className="w-12 h-1.5 bg-white/30 rounded-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                />
+              </div>
+
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group z-10"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 transition-all duration-200 group z-10 touch-manipulation"
+                style={{ minWidth: '44px', minHeight: '44px' }}
               >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white group-hover:text-teal-300 transition-colors" />
+                <X className="w-5 h-5 text-white group-active:scale-90 transition-transform" />
               </button>
 
               {/* Title */}
               {title && (
                 <motion.h2
-                  className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-teal-300 text-center mb-3 sm:mb-4 md:mb-5 lg:mb-6 pr-6 sm:pr-8 md:pr-10"
+                  className="text-lg sm:text-xl md:text-2xl font-bold text-teal-300 text-center mb-4 sm:mb-5 md:mb-6 pr-10 sm:pr-12"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
+                  transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
                 >
                   {title}
                 </motion.h2>
@@ -69,9 +88,10 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
 
               {/* Content */}
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                className="space-y-4 sm:space-y-5 md:space-y-6"
               >
                 {children}
               </motion.div>

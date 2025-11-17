@@ -44,12 +44,12 @@ export default function dashboard() {
   ]
 
   return (
-    <div className="min-h-screen w-full bg-[#050810] text-white">
+    <div className="min-h-screen w-full bg-[#050810] text-white safe-area-inset">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <div className="fixed inset-0 bg-gradient-to-br from-teal-900/10 via-transparent to-blue-900/10 pointer-events-none" />
 
-      <div className="relative z-10 px-4 sm:px-6 md:px-12 py-6 sm:py-8 max-w-4xl mx-auto">
+      <div className="relative z-10 px-4 sm:px-5 md:px-6 lg:px-12 py-safe sm:py-6 md:py-8 max-w-4xl mx-auto">
         {/* Header Section */}
         <motion.div
           className="mb-10"
@@ -57,7 +57,7 @@ export default function dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start md:items-center gap-5 sm:gap-6 mb-6 sm:mb-8">
             {/* Profile Picture */}
             <EditableProfilePicture
               src={profileImage}
@@ -76,7 +76,7 @@ export default function dashboard() {
             />
 
             {/* Name and Bio */}
-            <div className="flex-1">
+            <div className="flex-1 w-full text-center md:text-left">
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-teal-300 mb-3 sm:mb-4">
                 <TextReveal text={`welcome back ${name}`} />
               </h2>
@@ -93,17 +93,17 @@ export default function dashboard() {
 
         {/* Quick Actions */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
         >
           {quickActions.map((action, index) => {
             const IconComponent = action.icon
             return (
               <QuickActionCard
                 key={action.title}
-                icon={<IconComponent className="w-5 h-5 text-teal-300" />}
+                icon={<IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-teal-300" />}
                 title={action.title}
                 description={action.description}
                 onClick={action.onClick}
@@ -115,15 +115,16 @@ export default function dashboard() {
 
         {/* Primary CTA */}
         <motion.div
-          className="flex justify-center mb-10"
+          className="flex justify-center mb-8 sm:mb-10"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 300 }}
         >
           <PrimaryButton
             onClick={() => router.push("/spin")}
             size="md"
             variant="primary"
+            className="w-full sm:w-auto min-h-[52px] text-base sm:text-lg font-semibold touch-manipulation px-8"
           >
             start spin
           </PrimaryButton>
@@ -131,10 +132,10 @@ export default function dashboard() {
 
         {/* Dashboard Cards Grid */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6 pb-safe sm:pb-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
         >
           <DashboardCard
             onClick={() => setShowMatches(true)}
