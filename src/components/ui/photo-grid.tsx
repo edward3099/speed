@@ -31,14 +31,16 @@ export function PhotoGrid({ photos, className }: PhotoGridProps) {
         {photos.map((photo, index) => (
           <motion.div
             key={index}
-            className={index % 2 === 1 ? "mt-6 sm:mt-8 md:mt-10 lg:mt-12" : ""}
+            className={index % 2 === 1 ? "mt-8 sm:mt-10 md:mt-12 lg:mt-14" : ""}
             variants={{
-              hidden: { opacity: 0, y: 30 },
+              hidden: { opacity: 0, y: 30, scale: 0.9 },
               visible: {
                 opacity: 1,
                 y: 0,
+                scale: 1,
                 transition: {
                   duration: 0.6,
+                  delay: index * 0.1,
                   ease: [0.22, 1, 0.36, 1],
                 },
               },

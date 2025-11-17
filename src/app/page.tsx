@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { motion } from "framer-motion"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
 import { Sparkles } from "@/components/magicui/sparkles"
 import { TextReveal } from "@/components/magicui/text-reveal"
@@ -29,49 +30,80 @@ export default function landing() {
         }}
       />
 
-      {/* Mobile: Centered symmetrical layout, Desktop: Side-by-side */}
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-center md:justify-between px-5 sm:px-6 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto pt-safe sm:pt-8 md:pt-12 lg:pt-16 xl:pt-20 pb-safe sm:pb-8 md:pb-12 gap-8 sm:gap-10 md:gap-12 lg:gap-16">
-        {/* Hero content - Mobile: Centered, Desktop: Left */}
-        <div className="flex flex-col gap-4 sm:gap-5 md:gap-6 max-w-xl w-full animate-fadeUp text-center md:text-left">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-teal-300 drop-shadow-sm leading-tight">
+      {/* Mobile-first symmetrical design - S.P.A.R.K. Framework */}
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-center md:justify-between px-4 sm:px-5 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto pt-safe sm:pt-12 md:pt-16 lg:pt-20 pb-safe sm:pb-12 md:pb-16 gap-10 sm:gap-12 md:gap-14 lg:gap-16">
+        {/* Hero content - Perfectly centered on mobile */}
+        <motion.div 
+          className="flex flex-col gap-5 sm:gap-6 md:gap-7 max-w-xl w-full text-center md:text-left"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {/* Main heading with enhanced mobile typography */}
+          <motion.h1 
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-teal-300 drop-shadow-lg leading-[1.1] mb-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+          >
             <TextReveal text="meet someone new" />
-          </h1>
+          </motion.h1>
 
-          <p className="text-base sm:text-lg md:text-xl opacity-80 leading-relaxed max-w-[640px] mx-auto md:mx-0">
+          {/* Description with refined spacing */}
+          <motion.p 
+            className="text-base sm:text-lg md:text-xl opacity-75 leading-relaxed max-w-[600px] mx-auto md:mx-0 mb-6 sm:mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 0.75, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
             a clean modern way to connect through short face to face conversations. simple flow and smooth interactions.
-          </p>
+          </motion.p>
 
-          {/* Buttons - Mobile: Centered equal width, Desktop: Inline */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-2 sm:mt-4 justify-center md:justify-start">
+          {/* Action buttons - Perfectly symmetrical on mobile */}
+          <motion.div 
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          >
             <ShimmerButton
               onClick={() => setShowModal(true)}
-              className="px-8 py-4 rounded-2xl text-base sm:text-lg font-semibold bg-teal-300 text-black hover:bg-teal-300 hover:text-black w-full sm:w-auto touch-manipulation active:scale-95 transition-transform"
+              className="px-8 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold bg-teal-300 text-black hover:bg-teal-300 hover:text-black w-full sm:w-auto touch-manipulation active:scale-95 transition-transform shadow-lg shadow-teal-300/40"
               shimmerColor="#ffffff"
               background="rgba(94, 234, 212, 1)"
             >
               start now
             </ShimmerButton>
 
-            <button
-              className="px-8 py-4 rounded-2xl text-base sm:text-lg font-semibold bg-white bg-opacity-10 text-white transition-all hover:bg-opacity-20 active:scale-95 w-full sm:w-auto touch-manipulation"
+            <motion.button
+              className="px-8 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold bg-white/10 text-white backdrop-blur-sm border border-white/20 transition-all hover:bg-white/20 hover:border-white/30 active:scale-95 w-full sm:w-auto touch-manipulation"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.95 }}
             >
               learn more
-            </button>
-          </div>
-        </div>
+            </motion.button>
+          </motion.div>
+        </motion.div>
 
-        {/* Photo grid - Mobile: Centered symmetrical, Desktop: Right */}
-        <div className="relative flex items-center justify-center w-full md:w-1/2 animate-floatSlow">
-          <PhotoGrid
-            photos={[
-              { src: "https://i.pravatar.cc/200?img=12", alt: "Profile 1" },
-              { src: "https://i.pravatar.cc/200?img=20", alt: "Profile 2" },
-              { src: "https://i.pravatar.cc/200?img=33", alt: "Profile 3" },
-              { src: "https://i.pravatar.cc/200?img=5", alt: "Profile 4" },
-            ]}
-            className="w-full max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto"
-          />
-        </div>
+        {/* Photo grid - Perfectly centered and symmetrical */}
+        <motion.div 
+          className="relative flex items-center justify-center w-full md:w-1/2"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="w-full max-w-[300px] sm:max-w-[360px] md:max-w-md lg:max-w-lg">
+            <PhotoGrid
+              photos={[
+                { src: "https://i.pravatar.cc/200?img=12", alt: "Profile 1" },
+                { src: "https://i.pravatar.cc/200?img=20", alt: "Profile 2" },
+                { src: "https://i.pravatar.cc/200?img=33", alt: "Profile 3" },
+                { src: "https://i.pravatar.cc/200?img=5", alt: "Profile 4" },
+              ]}
+              className="w-full"
+            />
+          </div>
+        </motion.div>
       </div>
 
       {showModal && (
