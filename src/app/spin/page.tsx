@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart, User, MessageCircle } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart, User, MessageCircle, Calendar } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -30,7 +30,9 @@ export default function spin() {
   const [user, setUser] = useState({
     name: "jason",
     bio: "i like good conversations and new experiences",
-    photo: "https://i.pravatar.cc/200?img=15"
+    photo: "https://i.pravatar.cc/200?img=15",
+    age: 28,
+    location: "new york, ny"
   })
 
   // Mock matches data (users who both said yes after a date)
@@ -887,13 +889,52 @@ export default function spin() {
             <h2 className="text-2xl font-bold text-teal-300">{user.name}</h2>
           </motion.div>
 
-          {/* Bio */}
+          {/* Age - Uneditable */}
           <motion.div
+            className="flex flex-col gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <label className="text-sm font-medium opacity-80 mb-2 block">
+            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-teal-300" />
+              age
+            </label>
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-lg opacity-80">{user.age}</p>
+            </div>
+            <p className="text-xs opacity-60">age cannot be changed</p>
+          </motion.div>
+
+          {/* Location - Editable */}
+          <motion.div
+            className="flex flex-col gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-teal-300" />
+              location
+            </label>
+            <EditableBio
+              initialBio={user.location}
+              onBioChange={(newLocation) => {
+                setUser(prev => ({ ...prev, location: newLocation }))
+                // In a real app, save to backend
+              }}
+              maxLength={100}
+            />
+          </motion.div>
+
+          {/* Bio */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <label className="text-sm font-medium opacity-80 mb-2 block flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-teal-300" />
               bio
             </label>
             <EditableBio
@@ -910,14 +951,14 @@ export default function spin() {
             className="p-4 rounded-xl bg-teal-300/10 border border-teal-300/20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.7 }}
           >
             <div className="flex items-start gap-3">
               <MessageCircle className="w-5 h-5 text-teal-300 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-teal-300 mb-1">profile tips</p>
                 <p className="text-xs opacity-70">
-                  keep your bio fresh and authentic. this helps others get to know the real you!
+                  keep your bio and location updated. this helps others find you and get to know the real you!
                 </p>
               </div>
             </div>
