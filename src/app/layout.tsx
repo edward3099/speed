@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import HeaderWrapper from "@/components/HeaderWrapper";
+import { ChakraUIProvider } from "@/providers/chakra-provider";
 
 export const metadata: Metadata = {
   title: "speed date",
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-black text-white overflow-x-hidden">
-        <HeaderWrapper />
-        {children}
+        <ChakraUIProvider>
+          <HeaderWrapper />
+          {children}
+        </ChakraUIProvider>
       </body>
     </html>
   );
