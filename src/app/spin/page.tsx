@@ -275,14 +275,15 @@ export default function spin() {
       {/* Main content */}
       <AnimatePresence mode="wait">
         {started && (
-          <motion.div
-            key="started"
-            className="w-full max-w-6xl h-full flex flex-col gap-2 sm:gap-4 md:gap-6 py-2 sm:py-4 md:py-8 overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <>
+            <motion.div
+              key="started"
+              className="w-full max-w-6xl h-full flex flex-col gap-2 sm:gap-4 md:gap-6 py-2 sm:py-4 md:py-8 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
             {/* Vote header - Center Top, Prominent (S.P.A.R.K. - Refined Clarity + Action Feedback) */}
             {revealed && (
               <motion.div
@@ -532,41 +533,42 @@ export default function spin() {
                 )}
               </AnimatePresence>
             </div>
-          </motion.div>
-
-          {/* Action buttons - Bottom center, full width (S.P.A.R.K. - Action Feedback) */}
-          {revealed && (
-            <motion.div
-              className="w-full flex items-center justify-center px-4 pb-2 sm:pb-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-            >
-              <div className="flex gap-2 sm:gap-3 w-full max-w-[280px] sm:max-w-sm justify-center">
-                <SpinButton
-                  variant="pass"
-                  onClick={() => {
-                    setUserVote("pass")
-                    setRevealed(false)
-                    startSpin()
-                  }}
-                  className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
-                >
-                  pass
-                </SpinButton>
-                <SpinButton
-                  variant="yes"
-                  onClick={() => {
-                    setUserVote("yes")
-                  }}
-                  className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
-                >
-                  yes
-                </SpinButton>
-              </div>
             </motion.div>
-          )}
+
+            {/* Action buttons - Bottom center, full width (S.P.A.R.K. - Action Feedback) */}
+            {revealed && (
+              <motion.div
+                className="w-full flex items-center justify-center px-4 pb-2 sm:pb-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
+              >
+                <div className="flex gap-2 sm:gap-3 w-full max-w-[280px] sm:max-w-sm justify-center">
+                  <SpinButton
+                    variant="pass"
+                    onClick={() => {
+                      setUserVote("pass")
+                      setRevealed(false)
+                      startSpin()
+                    }}
+                    className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
+                  >
+                    pass
+                  </SpinButton>
+                  <SpinButton
+                    variant="yes"
+                    onClick={() => {
+                      setUserVote("yes")
+                    }}
+                    className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg font-semibold touch-manipulation"
+                  >
+                    yes
+                  </SpinButton>
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </AnimatePresence>
 
