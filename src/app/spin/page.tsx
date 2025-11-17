@@ -976,20 +976,19 @@ export default function spin() {
                   onClick={() => {
                     // In a real app, this would schedule the date and notify the match
                     console.log("Scheduling date with match:", selectedMatchForSchedule)
+                    // Just schedule the date, don't navigate to video-date
+                    // The date will start at the scheduled time
                     setShowScheduleModal(false)
                     setSelectedMatchForSchedule(null)
-                    // Navigate to video-date after scheduling
-                    setTimeout(() => {
-                      window.location.href = "/video-date"
-                    }, 300)
+                    // In a real app, you might show a success notification here
                   }}
                   className="flex-1 px-6 py-3 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 transition-all duration-300 shadow-lg shadow-teal-300/30"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <Video className="w-5 h-5" />
-                    <span>start date</span>
+                    <Calendar className="w-5 h-5" />
+                    <span>schedule</span>
                   </div>
                 </motion.button>
               </motion.div>
@@ -1002,7 +1001,7 @@ export default function spin() {
                 transition={{ delay: 0.7 }}
               >
                 <p className="text-xs opacity-70 text-center">
-                  your match will be notified of the scheduled date time
+                  your match will be notified. the date will start automatically at the scheduled time.
                 </p>
               </motion.div>
             </>
