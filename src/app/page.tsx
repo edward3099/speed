@@ -71,18 +71,18 @@ export default function landing() {
 
         {/* Right animated visual */}
         <div className="relative flex items-center justify-center w-full md:w-1/2 h-96 animate-floatSlow">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-5">
             <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all">
-              <img src="https://i.pravatar.cc/200?img=12" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 1" />
+              <img src="https://i.pravatar.cc/200?img=12" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 1" />
             </div>
             <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all mt-8">
-              <img src="https://i.pravatar.cc/200?img=20" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 2" />
+              <img src="https://i.pravatar.cc/200?img=20" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 2" />
             </div>
             <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all">
-              <img src="https://i.pravatar.cc/200?img=33" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 3" />
+              <img src="https://i.pravatar.cc/200?img=33" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 3" />
             </div>
             <div className="animated-card hover:rotate-1 hover:-translate-y-1 transition-all mt-8">
-              <img src="https://i.pravatar.cc/200?img=5" className="w-32 h-32 rounded-2xl object-cover" alt="Profile 4" />
+              <img src="https://i.pravatar.cc/200?img=5" className="w-40 h-40 md:w-44 md:h-44 rounded-2xl object-cover" alt="Profile 4" />
             </div>
           </div>
         </div>
