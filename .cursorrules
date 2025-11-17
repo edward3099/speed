@@ -1,0 +1,5 @@
+# Project-specific heuristics
+
+- The environment exports `PORT=26053`, which conflicts with a resident node daemon. Always run the dev server with `PORT=3000 npm run dev` (or explicitly set another free port) before tunneling.
+- When exposing the app, use the bundled `./cloudflared` binary with `--no-autoupdate` to avoid permission prompts: `./cloudflared tunnel --no-autoupdate --url http://localhost:3000`.
+- Capture tunnel output from `/home/ubuntu/.cursor/projects/workspace/terminals/*.txt` so the generated trycloudflare URL can be relayed to stakeholders.
