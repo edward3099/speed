@@ -111,7 +111,7 @@ export default function spin() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#050810] text-white px-4 sm:px-5 md:px-6 flex items-center justify-center relative overflow-hidden safe-area-inset">
+    <div className="h-screen w-full bg-[#050810] text-white px-4 sm:px-5 md:px-6 flex items-center justify-center relative overflow-hidden safe-area-inset">
       {/* Background layers */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <AnimatedGradientBackground />
@@ -156,7 +156,7 @@ export default function spin() {
       />
 
       {/* Top bar buttons - Mobile optimized */}
-      <div className="absolute top-safe sm:top-4 md:top-6 left-4 sm:left-5 md:left-6 right-4 sm:right-5 md:right-6 z-20 flex items-center justify-between gap-2.5">
+      <div className="absolute top-2 sm:top-4 md:top-6 left-4 sm:left-5 md:left-6 right-4 sm:right-5 md:right-6 z-20 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           {/* Profile button */}
           <motion.div
@@ -167,13 +167,13 @@ export default function spin() {
           >
             <ShimmerButton
               onClick={() => setShowProfile(true)}
-              className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
+              className="h-9 sm:h-12 md:h-14 px-3 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
               shimmerColor="#ffffff"
               background="rgba(94, 234, 212, 1)"
             >
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-sm sm:text-base font-medium">profile</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <User className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                <span className="text-xs sm:text-base font-medium">profile</span>
               </div>
             </ShimmerButton>
           </motion.div>
@@ -188,13 +188,13 @@ export default function spin() {
         >
           <ShimmerButton
             onClick={() => setShowFilters(true)}
-            className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
+            className="h-9 sm:h-12 md:h-14 px-3 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
             shimmerColor="#ffffff"
             background="rgba(94, 234, 212, 1)"
           >
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base font-medium">filters</span>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Filter className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              <span className="text-xs sm:text-base font-medium">filters</span>
             </div>
           </ShimmerButton>
         </motion.div>
@@ -204,7 +204,7 @@ export default function spin() {
       <AnimatePresence>
         {!started && (
           <motion.div
-            className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-8"
+            className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-4 sm:gap-8"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
@@ -261,7 +261,7 @@ export default function spin() {
 
             {/* Subtitle */}
             <motion.p
-              className="text-lg opacity-60 text-center max-w-md"
+              className="text-sm sm:text-lg opacity-60 text-center max-w-md px-4"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 0.6, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -277,7 +277,7 @@ export default function spin() {
         {started && (
           <motion.div
             key="started"
-            className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-12 md:gap-16"
+            className="w-full max-w-6xl h-full flex flex-col md:flex-row items-center justify-center gap-3 sm:gap-6 md:gap-12 lg:gap-16 py-2 sm:py-4 md:py-8 overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -285,7 +285,7 @@ export default function spin() {
           >
             {/* Left side - User profile */}
             <motion.div
-              className="w-full md:w-1/2 flex flex-col items-center text-center gap-6 relative"
+              className="w-full md:w-1/2 flex flex-col items-center text-center gap-2 sm:gap-4 md:gap-6 relative"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -308,7 +308,7 @@ export default function spin() {
 
               {userVote === "yes" && (
                 <motion.div
-                  className="absolute -top-12 left-1/2 -translate-x-1/2 z-20"
+                  className="absolute -top-8 sm:-top-12 left-1/2 -translate-x-1/2 z-20"
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ 
                     scale: [1, 1.2, 1],
@@ -330,14 +330,14 @@ export default function spin() {
                     },
                   }}
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
-                    <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">✓</span>
+                  <div className="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
+                    <span className="text-lg sm:text-3xl md:text-4xl font-bold text-black">✓</span>
                   </div>
                 </motion.div>
               )}
               
               <motion.div
-                className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+                className="relative w-20 h-20 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
                 whileHover={{ scale: 1.05 }}
                 animate={{
                   boxShadow: [
@@ -373,7 +373,7 @@ export default function spin() {
                 />
               </motion.div>
               <motion.h2
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-teal-300"
+                className="text-lg sm:text-3xl md:text-4xl font-bold text-teal-300"
                 animate={{
                   textShadow: [
                     "0 0 10px rgba(94,234,212,0.5)",
@@ -389,7 +389,7 @@ export default function spin() {
               >
                 {user.name}
               </motion.h2>
-              <p className="text-sm sm:text-base md:text-lg opacity-80 max-w-xs leading-relaxed text-center">{user.bio}</p>
+              <p className="text-xs sm:text-base md:text-lg opacity-80 max-w-xs leading-relaxed text-center px-2">{user.bio}</p>
             </motion.div>
 
             {/* Connecting line */}
@@ -459,7 +459,7 @@ export default function spin() {
                 {revealed && (
                   <motion.div
                     key="revealed"
-                    className="w-full flex flex-col items-center gap-6 relative"
+                    className="w-full flex flex-col items-center gap-2 sm:gap-4 md:gap-6 relative"
                     initial={{ opacity: 0, scale: 0.8, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8 }}
@@ -467,13 +467,13 @@ export default function spin() {
                   >
                     {/* Vote header with countdown */}
                     <motion.div
-                      className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
+                      className="flex items-center gap-1.5 sm:gap-3 mb-1 sm:mb-3 md:mb-4 px-2 sm:px-4 py-1 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
                       <motion.span
-                        className="text-sm sm:text-base md:text-lg font-semibold text-teal-300"
+                        className="text-xs sm:text-base md:text-lg font-semibold text-teal-300"
                         animate={{
                           textShadow: [
                             "0 0 10px rgba(94,234,212,0.5)",
@@ -489,7 +489,7 @@ export default function spin() {
                       >
                         vote
                       </motion.span>
-                      <span className="text-sm sm:text-base md:text-lg opacity-60">•</span>
+                      <span className="text-xs sm:text-base md:text-lg opacity-60">•</span>
                       <CountdownTimer
                         resetKey={revealed ? "revealed" : "hidden"}
                         initialSeconds={10}
@@ -519,7 +519,7 @@ export default function spin() {
 
                     {/* Action buttons with enhanced styling - Mobile optimized */}
                     <motion.div
-                      className="flex gap-3 sm:gap-4 w-full max-w-sm px-2 sm:px-0 pb-safe sm:pb-0"
+                      className="flex gap-2 sm:gap-4 w-full max-w-sm px-2 sm:px-0"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
@@ -531,7 +531,7 @@ export default function spin() {
                           setRevealed(false)
                           startSpin()
                         }}
-                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
+                        className="flex-1 h-10 sm:h-16 text-sm sm:text-lg font-semibold touch-manipulation"
                       >
                         pass
                       </SpinButton>
@@ -540,7 +540,7 @@ export default function spin() {
                         onClick={() => {
                           setUserVote("yes")
                         }}
-                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
+                        className="flex-1 h-10 sm:h-16 text-sm sm:text-lg font-semibold touch-manipulation"
                       >
                         yes
                       </SpinButton>
