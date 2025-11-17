@@ -51,23 +51,35 @@ export function EditableBio({
     <div className={cn("relative", className)}>
       <AnimatePresence mode="wait">
         {!isEditing ? (
-          <motion.div
+          <motion.button
             key="display"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="group relative"
+            onClick={() => setIsEditing(true)}
+            className="group relative w-full text-left p-4 rounded-xl bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
           >
-            <p className="text-lg opacity-80 leading-relaxed max-w-2xl pr-8">
-              {bio || "no bio yet. click to add one..."}
-            </p>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="absolute top-0 right-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all"
-            >
-              <Edit2 className="w-4 h-4 text-teal-300" />
-            </button>
-          </motion.div>
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-lg opacity-80 leading-relaxed flex-1">
+                {bio || (
+                  <span className="opacity-50 italic">
+                    no bio yet. click to add one...
+                  </span>
+                )}
+              </p>
+              <motion.div
+                className="flex-shrink-0 p-2 rounded-lg bg-teal-300/10 group-hover:bg-teal-300/20 transition-colors"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              >
+                <Edit2 className="w-4 h-4 text-teal-300" />
+              </motion.div>
+            </div>
+            <div className="absolute bottom-2 right-2 text-xs opacity-40 group-hover:opacity-60 transition-opacity">
+              click to edit
+            </div>
+          </motion.button>
         ) : (
           <motion.div
             key="editing"
