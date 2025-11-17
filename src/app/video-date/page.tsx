@@ -13,6 +13,8 @@ import Image from "next/image"
 export default function VideoDate() {
   const router = useRouter()
 
+  const [countdown, setCountdown] = useState(15) // 15 sec pre-date countdown
+  const [countdownComplete, setCountdownComplete] = useState(false)
   const [timeLeft, setTimeLeft] = useState(300) // 5 min
   const [showPostModal, setShowPostModal] = useState(false)
   const [showPassModal, setShowPassModal] = useState(false)
@@ -35,7 +37,28 @@ export default function VideoDate() {
     photo: "https://i.pravatar.cc/200?img=15"
   }
 
+  // Pre-date countdown
   useEffect(() => {
+    if (countdownComplete) return
+
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          setCountdownComplete(true)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [countdownComplete])
+
+  // Main date timer (only starts after countdown)
+  useEffect(() => {
+    if (!countdownComplete) return
+
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -48,7 +71,7 @@ export default function VideoDate() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [countdownComplete])
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -88,13 +111,218 @@ export default function VideoDate() {
     }, 2000)
   }
 
-  const progressPercentage = ((300 - timeLeft) / 300) * 100
+  const progressPercentage = countdownComplete ? ((300 - timeLeft) / 300) * 100 : 0
 
   return (
     <div className="min-h-screen w-full bg-[#050810] text-white relative overflow-hidden">
-      {/* Background layers */}
-      <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
-      <AnimatedGradientBackground />
+      {/* Pre-date countdown screen */}
+      <AnimatePresence>
+        {!countdownComplete && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Background */}
+            <div className="absolute inset-0 bg-[#050810]" />
+            <AnimatedGradientBackground />
+            
+            {/* Sparkles effect */}
+            <Sparkles
+              sparklesCount={30}
+              className="absolute inset-0 pointer-events-none"
+              colors={{
+                first: "#5eead4",
+                second: "#3b82f6"
+              }}
+            />
+
+            {/* Floating orbs */}
+            <motion.div
+              className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
+              animate={{
+                x: [0, 50, 0],
+                y: [0, -30, 0],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+              animate={{
+                x: [0, -40, 0],
+                y: [0, 40, 0],
+                scale: [1, 1.15, 1],
+              }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 2,
+              }}
+            />
+
+            {/* Countdown content */}
+            <div className="relative z-10 flex flex-col items-center gap-8">
+              {/* Partner preview */}
+              <motion.div
+                className="flex items-center gap-6 mb-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
+                  <Image
+                    src={user.photo}
+                    alt={user.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <motion.div
+                  animate={{
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                  }}
+                >
+                  <Heart className="w-8 h-8 text-teal-300" />
+                </motion.div>
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-400/50">
+                  <Image
+                    src={partner.photo}
+                    alt={partner.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Countdown number */}
+              <motion.div
+                key={countdown}
+                initial={{ scale: 0, rotate: -180, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                exit={{ scale: 1.5, opacity: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 20,
+                }}
+                className="relative"
+              >
+                <motion.div
+                  className="text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-blue-400 to-teal-300"
+                  animate={{
+                    backgroundPosition: ["0%", "100%", "0%"],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  style={{
+                    backgroundSize: "200% 100%",
+                  }}
+                >
+                  {countdown}
+                </motion.div>
+                
+                {/* Glow effect */}
+                <motion.div
+                  className="absolute inset-0 -z-10"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0.8, 0.5],
+                  }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                  }}
+                >
+                  <div className="w-full h-full bg-teal-300/30 rounded-full blur-3xl" />
+                </motion.div>
+              </motion.div>
+
+              {/* Status text */}
+              <motion.div
+                className="text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <motion.p
+                  className="text-xl opacity-80 mb-2"
+                  animate={{
+                    opacity: [0.6, 1, 0.6],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                  }}
+                >
+                  {countdown > 3 ? "your date is starting" : "get ready"}
+                </motion.p>
+                <p className="text-sm opacity-60">
+                  {countdown > 10 ? "take a deep breath" : countdown > 5 ? "smile and be yourself" : "here we go"}
+                </p>
+              </motion.div>
+
+              {/* Progress ring */}
+              <motion.div
+                className="relative w-32 h-32"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth="4"
+                  />
+                  <motion.circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="url(#gradient)"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 1 }}
+                    animate={{ pathLength: countdown / 15 }}
+                    transition={{ duration: 1, ease: "linear" }}
+                  />
+                  <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#5eead4" />
+                      <stop offset="50%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#5eead4" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main video interface - only show after countdown */}
+      {countdownComplete && (
+        <>
+          {/* Background layers */}
+          <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
+          <AnimatedGradientBackground />
       
       {/* Sparkles effect */}
       <Sparkles
@@ -640,6 +868,8 @@ export default function VideoDate() {
           </motion.div>
         )}
       </AnimatePresence>
+        </>
+      )}
     </div>
   )
 }
