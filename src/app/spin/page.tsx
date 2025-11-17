@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ShimmerButton } from "@/components/ShimmerButton"
 
 export default function spin() {
   const profiles = [
@@ -74,12 +75,12 @@ export default function spin() {
   return (
     <div className="min-h-screen w-full bg-[#0a0f1f] text-white px-6 flex items-center justify-center relative">
       {/* filter button top left */}
-      <button
+      <ShimmerButton
         onClick={() => setShowFilters(true)}
-        className="absolute top-20 left-6 px-4 py-2 rounded-xl bg-white bg-opacity-10 text-sm z-10"
+        className="absolute top-20 left-6 z-10"
       >
         filters
-      </button>
+      </ShimmerButton>
 
       {!started && (
         <button
