@@ -63,8 +63,8 @@ export function CountdownTimer({
         exit={{ scale: 0.8, opacity: 0 }}
         className="text-center"
       >
-        <span className="text-base sm:text-2xl font-bold text-teal-300">{seconds}</span>
-        <span className="text-sm sm:text-lg opacity-70 ml-0.5 sm:ml-1">s</span>
+        <span className="text-xl sm:text-3xl md:text-4xl font-bold text-teal-300">{seconds}</span>
+        <span className="text-lg sm:text-2xl md:text-3xl opacity-70 ml-1 sm:ml-1.5">s</span>
       </motion.div>
     </div>
   )
