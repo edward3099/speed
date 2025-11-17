@@ -156,23 +156,24 @@ export default function spin() {
       />
 
       {/* Top bar buttons */}
-      <div className="absolute top-6 left-6 right-6 z-20 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="absolute top-3 sm:top-4 md:top-6 left-3 sm:left-4 md:left-6 right-3 sm:right-4 md:right-6 z-20 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Profile button */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
+            className="flex-shrink-0"
           >
             <ShimmerButton
               onClick={() => setShowProfile(true)}
-              className="h-14 px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
+              className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
               shimmerColor="#ffffff"
               background="rgba(94, 234, 212, 1)"
             >
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                <span>profile</span>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-xs sm:text-sm md:text-base">profile</span>
               </div>
             </ShimmerButton>
           </motion.div>
@@ -183,16 +184,17 @@ export default function spin() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
+          className="flex-shrink-0"
         >
           <ShimmerButton
             onClick={() => setShowFilters(true)}
-            className="h-14 px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
+            className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
             shimmerColor="#ffffff"
             background="rgba(94, 234, 212, 1)"
           >
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              <span>filters</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-xs sm:text-sm md:text-base">filters</span>
             </div>
           </ShimmerButton>
         </motion.div>
@@ -371,7 +373,7 @@ export default function spin() {
                 />
               </motion.div>
               <motion.h2
-                className="text-4xl font-bold text-teal-300"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-teal-300"
                 animate={{
                   textShadow: [
                     "0 0 10px rgba(94,234,212,0.5)",
@@ -387,7 +389,7 @@ export default function spin() {
               >
                 {user.name}
               </motion.h2>
-              <p className="text-lg opacity-80 max-w-xs leading-relaxed">{user.bio}</p>
+              <p className="text-sm sm:text-base md:text-lg opacity-80 max-w-xs leading-relaxed text-center">{user.bio}</p>
             </motion.div>
 
             {/* Connecting line */}
@@ -465,13 +467,13 @@ export default function spin() {
                   >
                     {/* Vote header with countdown */}
                     <motion.div
-                      className="flex items-center gap-3 mb-4 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
+                      className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
                       <motion.span
-                        className="text-lg font-semibold text-teal-300"
+                        className="text-sm sm:text-base md:text-lg font-semibold text-teal-300"
                         animate={{
                           textShadow: [
                             "0 0 10px rgba(94,234,212,0.5)",
@@ -487,7 +489,7 @@ export default function spin() {
                       >
                         vote
                       </motion.span>
-                      <span className="text-lg opacity-60">•</span>
+                      <span className="text-sm sm:text-base md:text-lg opacity-60">•</span>
                       <CountdownTimer
                         resetKey={revealed ? "revealed" : "hidden"}
                         initialSeconds={10}
@@ -517,7 +519,7 @@ export default function spin() {
 
                     {/* Action buttons with enhanced styling */}
                     <motion.div
-                      className="flex gap-4 w-full max-w-sm"
+                      className="flex gap-3 sm:gap-4 w-full max-w-sm px-4 sm:px-0"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
@@ -554,7 +556,7 @@ export default function spin() {
         isOpen={showFilters}
         onClose={() => setShowFilters(false)}
         title="filters"
-        className="max-w-md"
+        className="max-w-md mx-4"
       >
         <div className="flex flex-col gap-6">
           {/* Age Range */}
@@ -663,7 +665,7 @@ export default function spin() {
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}
         title="your profile"
-        className="max-w-lg"
+        className="max-w-lg mx-4"
       >
         <motion.div
           className="flex flex-col gap-6"

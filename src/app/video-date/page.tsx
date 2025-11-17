@@ -222,16 +222,16 @@ export default function VideoDate() {
             />
 
             {/* Countdown content */}
-            <div className="relative z-10 w-full max-w-6xl px-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <div className="relative z-10 w-full max-w-6xl px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-center">
                 {/* Left: Partner preview */}
                 <motion.div
-                  className="flex flex-col items-center gap-4"
+                  className="flex flex-col items-center gap-3 sm:gap-4"
                   initial={{ opacity: 0, x: -50 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-4 border-blue-400/50 shadow-[0_0_40px_rgba(59,130,246,0.4)]">
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-3xl overflow-hidden border-4 border-blue-400/50 shadow-[0_0_40px_rgba(59,130,246,0.4)]">
                     <Image
                       src={partner.photo}
                       alt={partner.name}
@@ -329,7 +329,7 @@ export default function VideoDate() {
 
                     {/* Controls */}
                     <motion.div
-                      className="flex items-center justify-center gap-3 mt-4"
+                      className="flex items-center justify-center gap-2 sm:gap-3 mt-3 sm:mt-4"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 }}
@@ -339,7 +339,7 @@ export default function VideoDate() {
                           setCountdownMuted(!countdownMuted)
                           setIsMuted(!countdownMuted)
                         }}
-                        className={`p-3.5 rounded-xl backdrop-blur-sm border-2 transition-all duration-300 ${
+                        className={`p-2.5 sm:p-3.5 rounded-xl backdrop-blur-sm border-2 transition-all duration-300 ${
                           countdownMuted
                             ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-lg shadow-red-500/20"
                             : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15"
@@ -348,7 +348,7 @@ export default function VideoDate() {
                         whileTap={{ scale: 0.9 }}
                         title={countdownMuted ? "Unmute" : "Mute"}
                       >
-                        {countdownMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        {countdownMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
                       </motion.button>
 
                       <motion.button
@@ -356,7 +356,7 @@ export default function VideoDate() {
                           setCountdownVideoOff(!countdownVideoOff)
                           setIsVideoOff(!countdownVideoOff)
                         }}
-                        className={`p-3.5 rounded-xl backdrop-blur-sm border-2 transition-all duration-300 ${
+                        className={`p-2.5 sm:p-3.5 rounded-xl backdrop-blur-sm border-2 transition-all duration-300 ${
                           countdownVideoOff
                             ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-lg shadow-red-500/20"
                             : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15"
@@ -365,7 +365,7 @@ export default function VideoDate() {
                         whileTap={{ scale: 0.9 }}
                         title={countdownVideoOff ? "Turn on video" : "Turn off video"}
                       >
-                        {countdownVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+                        {countdownVideoOff ? <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Video className="w-4 h-4 sm:w-5 sm:h-5" />}
                       </motion.button>
                     </motion.div>
                   </motion.div>
@@ -384,7 +384,7 @@ export default function VideoDate() {
                     className="relative"
                   >
                     <motion.div
-                      className="text-8xl lg:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-blue-400 to-teal-300"
+                      className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-blue-400 to-teal-300"
                       animate={{
                         backgroundPosition: ["0%", "100%", "0%"],
                       }}
@@ -422,7 +422,7 @@ export default function VideoDate() {
                     transition={{ delay: 0.6 }}
                   >
                     <motion.p
-                      className="text-xl lg:text-2xl font-semibold mb-2"
+                      className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold mb-2"
                       animate={{
                         opacity: [0.7, 1, 0.7],
                       }}
@@ -433,7 +433,7 @@ export default function VideoDate() {
                     >
                       {countdown > 3 ? "your date is starting" : "get ready"}
                     </motion.p>
-                    <p className="text-sm opacity-60">
+                    <p className="text-xs sm:text-sm opacity-60">
                       {countdown > 10 ? "test your mic and video" : countdown > 5 ? "smile and be yourself" : "here we go"}
                     </p>
                   </motion.div>
@@ -550,14 +550,14 @@ export default function VideoDate() {
 
           {/* Top bar */}
           <motion.div
-            className="relative z-10 px-6 pt-6 pb-4"
+            className="relative z-10 px-3 sm:px-4 md:px-6 pt-4 sm:pt-5 md:pt-6 pb-3 sm:pb-4"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                   <AnimatePresence mode="wait">
                     {isTimerVisible && (
                       <motion.div
@@ -649,9 +649,9 @@ export default function VideoDate() {
           </motion.div>
 
           {/* Main video layout */}
-          <div className="relative z-10 px-6 pb-6">
+          <div className="relative z-10 px-3 sm:px-4 md:px-6 pb-4 sm:pb-5 md:pb-6">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 md:gap-6 mb-4 sm:mb-5 md:mb-6">
                 {/* Your video */}
                 <motion.div
                   className="relative group"
@@ -782,14 +782,14 @@ export default function VideoDate() {
 
               {/* Control panel */}
               <motion.div
-                className="flex items-center justify-center gap-4"
+                className="flex items-center justify-center gap-3 sm:gap-4 px-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
                 <motion.button
                   onClick={() => setIsMuted(!isMuted)}
-                  className={`p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg ${
+                  className={`p-3 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg ${
                     isMuted
                       ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20"
                       : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15"
@@ -798,12 +798,12 @@ export default function VideoDate() {
                   whileTap={{ scale: 0.9 }}
                   title={isMuted ? "Unmute" : "Mute"}
                 >
-                  {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                  {isMuted ? <MicOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </motion.button>
 
                 <motion.button
                   onClick={() => setIsVideoOff(!isVideoOff)}
-                  className={`p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg ${
+                  className={`p-3 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg ${
                     isVideoOff
                       ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20"
                       : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15"
@@ -812,7 +812,7 @@ export default function VideoDate() {
                   whileTap={{ scale: 0.9 }}
                   title={isVideoOff ? "Turn on video" : "Turn off video"}
                 >
-                  {isVideoOff ? <VideoOff className="w-6 h-6" /> : <Video className="w-6 h-6" />}
+                  {isVideoOff ? <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Video className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </motion.button>
 
                 <motion.div
@@ -823,10 +823,10 @@ export default function VideoDate() {
                     onClick={handleEndDate}
                     size="md"
                     variant="secondary"
-                    className="px-8"
+                    className="px-4 sm:px-6 md:px-8 text-sm sm:text-base"
                   >
-                    <div className="flex items-center gap-2">
-                      <PhoneOff className="w-5 h-5" />
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span>end date</span>
                     </div>
                   </PrimaryButton>
@@ -842,7 +842,7 @@ export default function VideoDate() {
         isOpen={showPostModal}
         onClose={() => {}}
         title="how was your date?"
-        className="max-w-lg"
+        className="max-w-lg mx-4"
       >
         <motion.div
           className="flex flex-col gap-6"
@@ -1074,7 +1074,7 @@ export default function VideoDate() {
         isOpen={showContactModal}
         onClose={() => {}}
         title="exchange contact details"
-        className="max-w-lg"
+        className="max-w-lg mx-4"
       >
         <motion.div
           className="flex flex-col gap-6"
@@ -1240,7 +1240,7 @@ export default function VideoDate() {
               onClick={() => {}}
             />
             <motion.div
-              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full border border-white/10 shadow-2xl text-center"
+              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-6 sm:p-8 max-w-md w-full mx-4 border border-white/10 shadow-2xl text-center"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0 }}

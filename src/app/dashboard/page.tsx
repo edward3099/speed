@@ -49,7 +49,7 @@ export default function dashboard() {
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <div className="fixed inset-0 bg-gradient-to-br from-teal-900/10 via-transparent to-blue-900/10 pointer-events-none" />
 
-      <div className="relative z-10 px-6 md:px-12 py-8 max-w-4xl mx-auto">
+      <div className="relative z-10 px-4 sm:px-6 md:px-12 py-6 sm:py-8 max-w-4xl mx-auto">
         {/* Header Section */}
         <motion.div
           className="mb-10"
@@ -77,7 +77,7 @@ export default function dashboard() {
 
             {/* Name and Bio */}
             <div className="flex-1">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-teal-300 mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-teal-300 mb-3 sm:mb-4">
                 <TextReveal text={`welcome back ${name}`} />
               </h2>
               <EditableBio
