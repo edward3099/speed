@@ -133,11 +133,7 @@ export default function VideoDate() {
     
     setShowContactModal(false)
     setShowMatchModal(true)
-    // Increased timeout to give users time to view contact details
-    setTimeout(() => {
-      setShowMatchModal(false)
-      router.push("/spin")
-    }, 20000) // 20 seconds instead of 5
+    // No timeout - user controls when to continue
   }
 
   const handleContinueFromMatch = () => {
