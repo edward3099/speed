@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon, MapPin, Users, User, Calendar, MessageCircle } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -14,6 +14,8 @@ import { Sparkles } from "@/components/magicui/sparkles"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
 import { FilterInput } from "@/components/ui/filter-input"
 import { RangeInput } from "@/components/ui/range-input"
+import { EditableProfilePicture } from "@/components/ui/editable-profile-picture"
+import { EditableBio } from "@/components/ui/editable-bio"
 import Image from "next/image"
 
 export default function spin() {
@@ -25,17 +27,21 @@ export default function spin() {
     { photo: "https://i.pravatar.cc/200?img=45", name: "riley", age: 27, bio: "bookworm and movie buff" },
   ]
 
-  const user = {
+  const [user, setUser] = useState({
     name: "jason",
     bio: "i like good conversations and new experiences",
-    photo: "https://i.pravatar.cc/200?img=15"
-  }
+    photo: "https://i.pravatar.cc/200?img=15",
+    age: 28,
+    location: "new york, ny"
+  })
+
 
   const [started, setStarted] = useState(false)
   const [spinning, setSpinning] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [selected, setSelected] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [minAge, setMinAge] = useState(18)
   const [maxAge, setMaxAge] = useState(30)
   const [location, setLocation] = useState("")
@@ -61,10 +67,11 @@ export default function spin() {
   const handleCountdownComplete = () => {
     // after countdown ends, check result
     if (userVote === "yes") {
-      // User voted yes - check if other person also voted yes
+      // User voted yes - check if other person also voted yes (both users clicked yes = match)
       const otherYes = Math.random() < 0.5
       if (otherYes) {
-        window.location.href = "/match"
+        // Both users clicked yes - match for video date
+        window.location.href = "/video-date"
       } else {
         // Other person passed - automatically spin to next profile
         setRevealed(false)
@@ -83,15 +90,35 @@ export default function spin() {
     }
   }
 
+  const handleMinAgeChange = (newMinAge: number) => {
+    // Ensure min age doesn't exceed max age
+    if (newMinAge > maxAge) {
+      setMinAge(maxAge)
+      setMaxAge(newMinAge)
+    } else {
+      setMinAge(newMinAge)
+    }
+  }
+
+  const handleMaxAgeChange = (newMaxAge: number) => {
+    // Ensure max age doesn't go below min age
+    if (newMaxAge < minAge) {
+      setMaxAge(minAge)
+      setMinAge(newMaxAge)
+    } else {
+      setMaxAge(newMaxAge)
+    }
+  }
+
   return (
-    <div className="min-h-screen w-full bg-[#050810] text-white px-6 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#050810] text-white px-4 sm:px-5 md:px-6 flex items-center justify-center relative overflow-hidden safe-area-inset">
       {/* Background layers */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <AnimatedGradientBackground />
       
       {/* Floating orbs */}
       <motion.div
-        className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
+        className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
         animate={{
           x: [0, 50, 0],
           y: [0, -30, 0],
@@ -104,7 +131,7 @@ export default function spin() {
         }}
       />
       <motion.div
-        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+        className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
         animate={{
           x: [0, -40, 0],
           y: [0, 40, 0],
@@ -128,25 +155,50 @@ export default function spin() {
         }}
       />
 
-      {/* Filter button top left */}
-      <motion.div
-        className="absolute top-20 left-6 z-10"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <ShimmerButton
-          onClick={() => setShowFilters(true)}
-          className="h-14 px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black"
-          shimmerColor="#ffffff"
-          background="rgba(94, 234, 212, 1)"
+      {/* Top bar buttons - Mobile optimized */}
+      <div className="absolute top-safe sm:top-4 md:top-6 left-4 sm:left-5 md:left-6 right-4 sm:right-5 md:right-6 z-20 flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5">
+          {/* Profile button */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+            className="flex-shrink-0"
+          >
+            <ShimmerButton
+              onClick={() => setShowProfile(true)}
+              className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
+              shimmerColor="#ffffff"
+              background="rgba(94, 234, 212, 1)"
+            >
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base font-medium">profile</span>
+              </div>
+            </ShimmerButton>
+          </motion.div>
+        </div>
+
+        {/* Filter button */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+          className="flex-shrink-0"
         >
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            <span>filters</span>
-          </div>
-        </ShimmerButton>
-      </motion.div>
+          <ShimmerButton
+            onClick={() => setShowFilters(true)}
+            className="h-11 sm:h-12 md:h-14 px-4 sm:px-5 md:px-6 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation"
+            shimmerColor="#ffffff"
+            background="rgba(94, 234, 212, 1)"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-base font-medium">filters</span>
+            </div>
+          </ShimmerButton>
+        </motion.div>
+      </div>
 
       {/* Start spin button */}
       <AnimatePresence>
@@ -171,7 +223,7 @@ export default function spin() {
                 ease: "easeInOut",
               }}
             >
-              <div className="w-96 h-96 bg-teal-300/20 rounded-full blur-3xl" />
+              <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-teal-300/20 rounded-full blur-3xl" />
             </motion.div>
 
             <motion.div
@@ -251,7 +303,7 @@ export default function spin() {
                   ease: "easeInOut",
                 }}
               >
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-teal-300/20 rounded-full blur-3xl" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-teal-300/20 rounded-full blur-3xl" />
               </motion.div>
 
               {userVote === "yes" && (
@@ -278,14 +330,14 @@ export default function spin() {
                     },
                   }}
                 >
-                  <div className="w-16 h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
-                    <span className="text-4xl font-bold text-black">✓</span>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">✓</span>
                   </div>
                 </motion.div>
               )}
               
               <motion.div
-                className="relative w-48 h-48 rounded-2xl overflow-hidden border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
+                className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
                 whileHover={{ scale: 1.05 }}
                 animate={{
                   boxShadow: [
@@ -321,7 +373,7 @@ export default function spin() {
                 />
               </motion.div>
               <motion.h2
-                className="text-4xl font-bold text-teal-300"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-teal-300"
                 animate={{
                   textShadow: [
                     "0 0 10px rgba(94,234,212,0.5)",
@@ -337,7 +389,7 @@ export default function spin() {
               >
                 {user.name}
               </motion.h2>
-              <p className="text-lg opacity-80 max-w-xs leading-relaxed">{user.bio}</p>
+              <p className="text-sm sm:text-base md:text-lg opacity-80 max-w-xs leading-relaxed text-center">{user.bio}</p>
             </motion.div>
 
             {/* Connecting line */}
@@ -367,7 +419,7 @@ export default function spin() {
                     ease: "easeInOut",
                   }}
                 >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-blue-500/20 rounded-full blur-3xl" />
                 </motion.div>
               )}
 
@@ -415,13 +467,13 @@ export default function spin() {
                   >
                     {/* Vote header with countdown */}
                     <motion.div
-                      className="flex items-center gap-3 mb-4 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
+                      className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
                       <motion.span
-                        className="text-lg font-semibold text-teal-300"
+                        className="text-sm sm:text-base md:text-lg font-semibold text-teal-300"
                         animate={{
                           textShadow: [
                             "0 0 10px rgba(94,234,212,0.5)",
@@ -437,7 +489,7 @@ export default function spin() {
                       >
                         vote
                       </motion.span>
-                      <span className="text-lg opacity-60">•</span>
+                      <span className="text-sm sm:text-base md:text-lg opacity-60">•</span>
                       <CountdownTimer
                         resetKey={revealed ? "revealed" : "hidden"}
                         initialSeconds={10}
@@ -461,16 +513,16 @@ export default function spin() {
                         name={profiles[selected].name}
                         age={profiles[selected].age}
                         bio={profiles[selected].bio}
-                        isSelected={userVote === "yes"}
+                        isSelected={false}
                       />
                     </motion.div>
 
-                    {/* Action buttons with enhanced styling */}
+                    {/* Action buttons with enhanced styling - Mobile optimized */}
                     <motion.div
-                      className="flex gap-4 w-full max-w-sm"
+                      className="flex gap-3 sm:gap-4 w-full max-w-sm px-2 sm:px-0 pb-safe sm:pb-0"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
                     >
                       <SpinButton
                         variant="pass"
@@ -479,6 +531,7 @@ export default function spin() {
                           setRevealed(false)
                           startSpin()
                         }}
+                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
                       >
                         pass
                       </SpinButton>
@@ -487,6 +540,7 @@ export default function spin() {
                         onClick={() => {
                           setUserVote("yes")
                         }}
+                        className="flex-1 h-14 sm:h-16 text-base sm:text-lg font-semibold touch-manipulation"
                       >
                         yes
                       </SpinButton>
@@ -506,7 +560,7 @@ export default function spin() {
         title="filters"
         className="max-w-md"
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
           {/* Age Range */}
           <FilterInput
             label="age range"
@@ -516,19 +570,19 @@ export default function spin() {
               <div className="flex-1">
                 <RangeInput
                   min={18}
-                  max={100}
+                  max={maxAge}
                   value={minAge}
-                  onChange={setMinAge}
+                  onChange={handleMinAgeChange}
                   label="minimum age"
                 />
               </div>
               <div className="text-lg opacity-60">-</div>
               <div className="flex-1">
                 <RangeInput
-                  min={18}
+                  min={minAge}
                   max={100}
                   value={maxAge}
-                  onChange={setMaxAge}
+                  onChange={handleMaxAgeChange}
                   label="maximum age"
                 />
               </div>
@@ -561,8 +615,9 @@ export default function spin() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300"
+              className="w-full p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-base touch-manipulation"
               placeholder="enter city or zip code"
+              style={{ minHeight: '48px' }}
             />
           </FilterInput>
 
@@ -580,8 +635,8 @@ export default function spin() {
             />
           </FilterInput>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 mt-4">
+          {/* Action Buttons - Mobile optimized */}
+          <div className="flex gap-3 mt-4 pb-safe sm:pb-0">
             <motion.button
               onClick={() => {
                 setMinAge(18)
@@ -589,9 +644,10 @@ export default function spin() {
                 setLocation("")
                 setMaxDistance(50)
               }}
-              className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium"
+              className="flex-1 px-4 py-3.5 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm sm:text-base font-semibold touch-manipulation"
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.95 }}
+              style={{ minHeight: '48px' }}
             >
               reset
             </motion.button>
@@ -599,12 +655,126 @@ export default function spin() {
               onClick={() => setShowFilters(false)}
               size="sm"
               variant="primary"
-              className="flex-1"
+              className="flex-1 h-12 sm:h-auto min-h-[48px] font-semibold text-base touch-manipulation"
             >
               apply filters
             </PrimaryButton>
           </div>
         </div>
+      </Modal>
+
+
+      {/* Profile modal */}
+      <Modal
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+        title="your profile"
+        className="max-w-lg"
+      >
+        <motion.div
+          className="flex flex-col gap-4 sm:gap-5 md:gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+        >
+          {/* Profile picture */}
+          <motion.div
+            className="flex flex-col items-center gap-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <EditableProfilePicture
+              src={user.photo}
+              alt={`${user.name}'s profile`}
+              size="lg"
+              onImageChange={(file) => {
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                  setUser(prev => ({ ...prev, photo: reader.result as string }))
+                  // In a real app, upload to backend
+                }
+                reader.readAsDataURL(file)
+              }}
+            />
+            <h2 className="text-2xl font-bold text-teal-300">{user.name}</h2>
+          </motion.div>
+
+          {/* Age - Uneditable */}
+          <motion.div
+            className="flex flex-col gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <label className="text-sm sm:text-base font-medium opacity-80 flex items-center gap-2">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300" />
+              age
+            </label>
+            <div className="p-3.5 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+              <p className="text-base sm:text-lg opacity-80">{user.age}</p>
+            </div>
+            <p className="text-xs sm:text-sm opacity-60">age cannot be changed</p>
+          </motion.div>
+
+          {/* Location - Editable */}
+          <motion.div
+            className="flex flex-col gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-teal-300" />
+              location
+            </label>
+            <EditableBio
+              initialBio={user.location}
+              onBioChange={(newLocation) => {
+                setUser(prev => ({ ...prev, location: newLocation }))
+                // In a real app, save to backend
+              }}
+              maxLength={100}
+            />
+          </motion.div>
+
+          {/* Bio */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <label className="text-sm font-medium opacity-80 mb-2 block flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-teal-300" />
+              bio
+            </label>
+            <EditableBio
+              initialBio={user.bio}
+              onBioChange={(newBio) => {
+                setUser(prev => ({ ...prev, bio: newBio }))
+                // In a real app, save to backend
+              }}
+            />
+          </motion.div>
+
+          {/* Info message */}
+          <motion.div
+            className="p-4 rounded-xl bg-teal-300/10 border border-teal-300/20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+          >
+            <div className="flex items-start gap-3">
+              <MessageCircle className="w-5 h-5 text-teal-300 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-teal-300 mb-1">profile tips</p>
+                <p className="text-xs opacity-70">
+                  keep your bio and location updated. this helps others find you and get to know the real you!
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
       </Modal>
 
     </div>

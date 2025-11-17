@@ -40,9 +40,9 @@ export function PhotoCard({ src, alt, className, delay = 0 }: PhotoCardProps) {
         transition={{ duration: 0.3 }}
       />
 
-      {/* Image container with micro tilt and border */}
+      {/* Image container with micro tilt and border - Mobile: Square, Desktop: Larger */}
       <motion.div
-        className="relative overflow-hidden rounded-2xl w-40 h-40 md:w-44 md:h-44 border-2 border-teal-300/0 group-hover:border-teal-300/50 transition-colors duration-300"
+        className="relative overflow-hidden rounded-xl sm:rounded-2xl w-full aspect-square border-2 border-teal-300/0 group-hover:border-teal-300/50 transition-colors duration-300"
         whileHover={{
           scale: 1.05,
           rotate: 2,

@@ -25,7 +25,7 @@ export function ProfileCardSpin({
   return (
     <motion.div
       className={cn(
-        "w-full max-w-sm p-6 rounded-2xl bg-white/5 backdrop-blur-sm",
+        "w-full max-w-xs sm:max-w-sm p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl bg-white/5 backdrop-blur-sm",
         "border border-white/10 relative overflow-hidden",
         isSelected && "border-teal-300/50",
         className
@@ -102,7 +102,7 @@ export function ProfileCardSpin({
         </motion.div>
       )}
 
-      <div className="relative w-full h-64 rounded-xl overflow-hidden mb-4 border-2 border-white/10">
+      <div className="relative w-full h-48 sm:h-56 md:h-64 rounded-lg sm:rounded-xl overflow-hidden mb-3 sm:mb-4 border-2 border-white/10">
         <Image
           src={photo}
           alt={name}
@@ -128,7 +128,7 @@ export function ProfileCardSpin({
       </div>
 
       <motion.h3
-        className="text-2xl font-bold text-white mb-2"
+        className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1 sm:mb-2"
         animate={isSelected ? {
           textShadow: [
             "0 0 10px rgba(94,234,212,0.5)",
@@ -145,7 +145,7 @@ export function ProfileCardSpin({
         {name}
         {age && <span className="text-teal-300">, {age}</span>}
       </motion.h3>
-      <p className="text-sm opacity-80 leading-relaxed">{bio}</p>
+      <p className="text-xs sm:text-sm opacity-80 leading-relaxed">{bio}</p>
     </motion.div>
   )
 }
