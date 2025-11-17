@@ -1,23 +1,38 @@
 "use client"
 
 import { useEffect, useState } from "react"
-
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
+import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2 } from "lucide-react"
+import { PrimaryButton } from "@/components/ui/primary-button"
+import { Modal } from "@/components/ui/modal"
+import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
+import { Sparkles } from "@/components/magicui/sparkles"
+import Image from "next/image"
 
-export default function videoDate() {
+export default function VideoDate() {
   const router = useRouter()
 
   const [timeLeft, setTimeLeft] = useState(300) // 5 min
-
   const [showPostModal, setShowPostModal] = useState(false)
   const [showPassModal, setShowPassModal] = useState(false)
   const [showMatchModal, setShowMatchModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
+  const [isVideoOff, setIsVideoOff] = useState(false)
+  const [isPartnerMuted, setIsPartnerMuted] = useState(true) // Partner starts muted
+  const [isPartnerVideoOff, setIsPartnerVideoOff] = useState(false)
+  const [isEnding, setIsEnding] = useState(false)
 
   const partner = {
     name: "alex",
     photo: "https://i.pravatar.cc/200?img=20",
     bio: "enjoys deep chats music and new experiences"
+  }
+
+  const user = {
+    name: "jason",
+    photo: "https://i.pravatar.cc/200?img=15"
   }
 
   useEffect(() => {
@@ -35,143 +50,596 @@ export default function videoDate() {
     return () => clearInterval(timer)
   }, [])
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
     const s = seconds % 60
     return `${m}:${s < 10 ? "0" + s : s}`
   }
 
-  const endNow = () => {
-    setShowPostModal(true)
+  const handleEndDate = () => {
+    setIsEnding(true)
+    setTimeout(() => {
+      setShowPostModal(true)
+      setIsEnding(false)
+    }, 500)
   }
 
+  const handleYes = () => {
+    setShowPostModal(false)
+    const otherYes = Math.random() < 0.5
+    if (otherYes) {
+      setShowMatchModal(true)
+      setTimeout(() => {
+        router.push("/spin")
+      }, 3000)
+    } else {
+      setShowRejectModal(true)
+      setTimeout(() => {
+        router.push("/spin")
+      }, 3000)
+    }
+  }
+
+  const handlePass = () => {
+    setShowPostModal(false)
+    setShowPassModal(true)
+    setTimeout(() => {
+      router.push("/spin")
+    }, 2000)
+  }
+
+  const progressPercentage = ((300 - timeLeft) / 300) * 100
+
   return (
-    <div className="min-h-screen w-full bg-[#0a0f1f] text-white flex flex-col items-center justify-between px-6 py-10 relative">
-      {/* top bar countdown */}
-      <div className="text-3xl font-bold text-teal-300 mb-8">
-        {formatTime(timeLeft)}
-      </div>
+    <div className="min-h-screen w-full bg-[#050810] text-white relative overflow-hidden">
+      {/* Background layers */}
+      <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
+      <AnimatedGradientBackground />
+      
+      {/* Sparkles effect */}
+      <Sparkles
+        sparklesCount={15}
+        className="absolute inset-0 pointer-events-none"
+        colors={{
+          first: "#5eead4",
+          second: "#3b82f6"
+        }}
+      />
 
-      {/* video layout */}
-      <div className="flex flex-col md:flex-row items-center justify-center gap-6 w-full max-w-4xl">
-        <div className="video-box">
-          <div className="video-placeholder">your video</div>
-        </div>
+      {/* Floating orbs */}
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"
+        animate={{
+          x: [0, 50, 0],
+          y: [0, -30, 0],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
+        animate={{
+          x: [0, -40, 0],
+          y: [0, 40, 0],
+          scale: [1, 1.15, 1],
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2,
+        }}
+      />
 
-        <div className="video-box">
-          <div className="video-placeholder">partner video</div>
-        </div>
-
-      </div>
-
-      {/* bottom button */}
-      <button
-        className="bg-white bg-opacity-10 text-white px-10 py-4 rounded-2xl text-lg active:scale-95 transition mt-10"
-        onClick={endNow}
+      {/* Top bar with timer and progress */}
+      <motion.div
+        className="relative z-10 px-6 pt-8 pb-4"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
       >
-        end date
-      </button>
+        <div className="max-w-7xl mx-auto">
+          {/* Timer and controls row */}
+          <div className="flex items-center justify-between mb-4">
+            <motion.div
+              className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
+              whileHover={{ scale: 1.05, borderColor: "rgba(94,234,212,0.5)" }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <SparklesIcon className="w-5 h-5 text-teal-300" />
+              </motion.div>
+              <span className="text-2xl font-bold text-teal-300 tabular-nums">
+                {formatTime(timeLeft)}
+              </span>
+            </motion.div>
 
-      {/* post-date modal */}
-      {showPostModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center fade-in">
-          <div className="bg-white bg-opacity-10 p-8 rounded-3xl w-full max-w-sm flex flex-col items-center gap-6">
-            <h2 className="text-2xl font-bold text-teal-300 text-center">
-              how was your date
-            </h2>
+            {/* Connection status indicator */}
+            <motion.div
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <motion.div
+                className="w-2 h-2 bg-green-400 rounded-full"
+                animate={{
+                  scale: [1, 1.3, 1],
+                  opacity: [1, 0.7, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                }}
+              />
+              <span className="text-sm opacity-80">connected</span>
+            </motion.div>
+          </div>
 
-            <img
-              src={partner.photo}
-              className="w-24 h-24 rounded-2xl object-cover"
-              alt={partner.name}
+          {/* Progress bar */}
+          <motion.div
+            className="h-1.5 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <motion.div
+              className="h-full bg-gradient-to-r from-teal-300 via-blue-400 to-teal-300 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercentage}%` }}
+              transition={{ duration: 1, ease: "linear" }}
+              style={{
+                backgroundSize: "200% 100%",
+              }}
             />
+          </motion.div>
+        </div>
+      </motion.div>
 
-            <h3 className="text-xl font-semibold">
-              {partner.name}
-            </h3>
+      {/* Main video layout */}
+      <div className="relative z-10 px-6 pb-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Your video */}
+            <motion.div
+              className="relative group"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-teal-300/50 transition-all duration-300 shadow-2xl">
+                {/* Video placeholder */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.1, 1],
+                        opacity: [0.5, 0.8, 0.5],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                      }}
+                    >
+                      <Video className="w-16 h-16 text-white/30 mx-auto mb-2" />
+                    </motion.div>
+                    <p className="text-sm opacity-60">your video</p>
+                  </div>
+                </div>
 
-            <p className="opacity-80 text-center text-sm leading-relaxed">
-              {partner.bio}
-            </p>
+                {/* Profile overlay */}
+                <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-teal-300/50">
+                    <Image
+                      src={user.photo}
+                      alt={user.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{user.name}</p>
+                    <p className="text-xs opacity-60">you</p>
+                  </div>
+                </div>
 
-            <div className="flex gap-4 w-full mt-4">
-              <button
-                className="flex-1 bg-teal-300 text-black py-3 rounded-xl font-semibold active:scale-95 transition"
-                onClick={() => {
-                  const otherYes = Math.random() < 0.5
-                  setShowPostModal(false)
-                  if (otherYes) {
-                    setShowMatchModal(true)
-                    setTimeout(() => {
-                      router.push("/spin")
-                    }, 3000)
-                  } else {
-                    setShowRejectModal(true)
-                    setTimeout(() => {
-                      router.push("/spin")
-                    }, 3000)
-                  }
-                }}
+                {/* Status indicators */}
+                {isMuted && (
+                  <motion.div
+                    className="absolute top-4 right-4 p-2 rounded-full bg-red-500/80 backdrop-blur-sm"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                  >
+                    <MicOff className="w-4 h-4" />
+                  </motion.div>
+                )}
+                {isVideoOff && (
+                  <motion.div
+                    className="absolute top-4 right-4 p-2 rounded-full bg-red-500/80 backdrop-blur-sm"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                  >
+                    <VideoOff className="w-4 h-4" />
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Partner video */}
+            <motion.div
+              className="relative group"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-blue-400/50 transition-all duration-300 shadow-2xl">
+                {/* Video placeholder */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.1, 1],
+                        opacity: [0.5, 0.8, 0.5],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        delay: 0.5,
+                      }}
+                    >
+                      <Video className="w-16 h-16 text-white/30 mx-auto mb-2" />
+                    </motion.div>
+                    <p className="text-sm opacity-60">partner video</p>
+                  </div>
+                </div>
+
+                {/* Profile overlay */}
+                <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-blue-400/50">
+                    <Image
+                      src={partner.photo}
+                      alt={partner.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{partner.name}</p>
+                    <p className="text-xs opacity-60">partner</p>
+                  </div>
+                </div>
+
+                {/* Status indicators */}
+                {isPartnerMuted && (
+                  <motion.div
+                    className="absolute top-4 right-4 p-2 rounded-full bg-red-500/80 backdrop-blur-sm"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                  >
+                    <MicOff className="w-4 h-4" />
+                  </motion.div>
+                )}
+                {isPartnerVideoOff && (
+                  <motion.div
+                    className="absolute top-4 right-4 p-2 rounded-full bg-red-500/80 backdrop-blur-sm"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                  >
+                    <VideoOff className="w-4 h-4" />
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Control panel */}
+          <motion.div
+            className="flex items-center justify-center gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            {/* Mute button */}
+            <motion.button
+              onClick={() => setIsMuted(!isMuted)}
+              className={`p-4 rounded-full backdrop-blur-sm border-2 transition-all duration-300 ${
+                isMuted
+                  ? "bg-red-500/20 border-red-500/50 text-red-300"
+                  : "bg-white/5 border-white/10 hover:border-teal-300/50 text-white"
+              }`}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </motion.button>
+
+            {/* Video toggle */}
+            <motion.button
+              onClick={() => setIsVideoOff(!isVideoOff)}
+              className={`p-4 rounded-full backdrop-blur-sm border-2 transition-all duration-300 ${
+                isVideoOff
+                  ? "bg-red-500/20 border-red-500/50 text-red-300"
+                  : "bg-white/5 border-white/10 hover:border-teal-300/50 text-white"
+              }`}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              title={isVideoOff ? "Turn on video" : "Turn off video"}
+            >
+              {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+            </motion.button>
+
+            {/* End date button */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <PrimaryButton
+                onClick={handleEndDate}
+                size="md"
+                variant="secondary"
+                className="px-8"
               >
-                yes
-              </button>
+                <div className="flex items-center gap-2">
+                  <PhoneOff className="w-5 h-5" />
+                  <span>end date</span>
+                </div>
+              </PrimaryButton>
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
 
-              <button
-                className="flex-1 bg-white bg-opacity-10 py-3 rounded-xl active:scale-95 transition"
-                onClick={() => {
-                  setShowPostModal(false)
-                  setShowPassModal(true)
-                  setTimeout(() => {
-                    router.push("/spin")
-                  }, 2000)
-                }}
+      {/* Post-date modal */}
+      <Modal
+        isOpen={showPostModal}
+        onClose={() => {}}
+        title="how was your date?"
+        className="max-w-md"
+      >
+        <motion.div
+          className="flex flex-col items-center gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {/* Partner profile */}
+          <motion.div
+            className="relative"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          >
+            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.5)]">
+              <Image
+                src={partner.photo}
+                alt={partner.name}
+                fill
+                className="object-cover"
+              />
+            </div>
+            {/* Glow effect */}
+            <motion.div
+              className="absolute inset-0 rounded-2xl"
+              animate={{
+                boxShadow: [
+                  "0 0 20px rgba(94,234,212,0.5)",
+                  "0 0 40px rgba(94,234,212,0.8)",
+                  "0 0 20px rgba(94,234,212,0.5)",
+                ],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+              }}
+            />
+          </motion.div>
+
+          <div className="text-center">
+            <h3 className="text-xl font-semibold mb-2">{partner.name}</h3>
+            <p className="opacity-80 text-sm leading-relaxed">{partner.bio}</p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-4 w-full mt-4">
+            <motion.button
+              onClick={handlePass}
+              className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 font-semibold"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              pass
+            </motion.button>
+            <motion.button
+              onClick={handleYes}
+              className="flex-1 px-6 py-3 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 transition-all duration-300 shadow-lg shadow-teal-300/30"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Heart className="w-5 h-5" />
+                <span>yes</span>
+              </div>
+            </motion.button>
+          </div>
+        </motion.div>
+      </Modal>
+
+      {/* Pass modal */}
+      <AnimatePresence>
+        {showPassModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {}}
+            />
+            <motion.div
+              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-sm w-full border border-white/10 shadow-2xl text-center"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4"
               >
-                pass
-              </button>
+                <X className="w-8 h-8 text-white/60" />
+              </motion.div>
+              <h2 className="text-xl font-bold text-teal-300 mb-2">
+                thanks for the date
+              </h2>
+              <p className="opacity-80 text-sm">you can try another match</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            </div>
+      {/* Match modal */}
+      <AnimatePresence>
+        {showMatchModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {}}
+            />
+            <motion.div
+              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-sm w-full border border-white/10 shadow-2xl text-center"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              {/* Celebration sparkles */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+                <Sparkles
+                  sparklesCount={30}
+                  className="absolute inset-0"
+                  colors={{
+                    first: "#5eead4",
+                    second: "#3b82f6"
+                  }}
+                />
+              </div>
 
-          </div>
-        </div>
-      )}
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                className="w-20 h-20 bg-teal-300 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_40px_rgba(94,234,212,0.8)]"
+              >
+                <CheckCircle2 className="w-10 h-10 text-black" />
+              </motion.div>
+              
+              <motion.h2
+                className="text-2xl font-bold text-teal-300 mb-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                you both want to see each other again
+              </motion.h2>
+              
+              <motion.div
+                className="flex gap-4 justify-center mb-4"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
+                  <Image
+                    src={partner.photo}
+                    alt={partner.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
+                  <Image
+                    src={user.photo}
+                    alt={user.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </motion.div>
+              
+              <motion.p
+                className="opacity-80 text-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.8 }}
+                transition={{ delay: 0.5 }}
+              >
+                saving match…
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {showPassModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center fade-in">
-          <div className="bg-white bg-opacity-10 p-8 rounded-3xl w-full max-w-sm text-center">
-            <h2 className="text-xl font-bold text-teal-300 mb-4">
-              thanks for the date
-            </h2>
-            <p className="opacity-80">you can try another match</p>
-          </div>
-        </div>
-      )}
-
-      {showMatchModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center fade-in">
-          <div className="bg-white bg-opacity-10 p-8 rounded-3xl w-full max-w-sm flex flex-col items-center gap-4 text-center">
-            <h2 className="text-2xl font-bold text-teal-300">
-              you both want to see each other again
-            </h2>
-            <div className="flex gap-4 mt-2">
-              <img src={partner.photo} className="w-20 h-20 rounded-2xl object-cover" alt={partner.name} />
-              <img src="https://i.pravatar.cc/200?img=15" className="w-20 h-20 rounded-2xl object-cover" alt="Your profile" />
-            </div>
-            <p className="opacity-80 mt-2 text-sm">saving match…</p>
-          </div>
-        </div>
-      )}
-
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center fade-in">
-          <div className="bg-white bg-opacity-10 p-8 rounded-3xl w-full max-w-sm text-center">
-            <h2 className="text-xl font-bold text-teal-300 mb-4">
-              they chose not to continue
-            </h2>
-            <p className="opacity-80">thanks for the date</p>
-          </div>
-        </div>
-      )}
-
+      {/* Reject modal */}
+      <AnimatePresence>
+        {showRejectModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {}}
+            />
+            <motion.div
+              className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-sm w-full border border-white/10 shadow-2xl text-center"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4"
+              >
+                <X className="w-8 h-8 text-white/60" />
+              </motion.div>
+              <h2 className="text-xl font-bold text-teal-300 mb-2">
+                they chose not to continue
+              </h2>
+              <p className="opacity-80 text-sm">thanks for the date</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
