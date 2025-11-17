@@ -49,7 +49,9 @@ export default function spin() {
   const [showMatches, setShowMatches] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [selectedMatchForReschedule, setSelectedMatchForReschedule] = useState<number | null>(null)
+  const [selectedMatchForSchedule, setSelectedMatchForSchedule] = useState<number | null>(null)
   const [minAge, setMinAge] = useState(18)
   const [maxAge, setMaxAge] = useState(30)
   const [location, setLocation] = useState("")
@@ -855,7 +857,8 @@ export default function spin() {
                       <motion.button
                         onClick={(e) => {
                           e.stopPropagation()
-                          window.location.href = "/video-date"
+                          setSelectedMatchForSchedule(match.id)
+                          setShowScheduleModal(true)
                         }}
                         className="flex-1 px-3 py-2 rounded-lg bg-teal-300 text-black hover:bg-teal-200 transition-all duration-300 text-xs font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-teal-300/20"
                         whileHover={{ scale: 1.05 }}
@@ -868,6 +871,140 @@ export default function spin() {
                   </motion.div>
                 ))}
               </div>
+            </>
+          )}
+        </motion.div>
+      </Modal>
+
+      {/* Schedule date modal */}
+      <Modal
+        isOpen={showScheduleModal}
+        onClose={() => {
+          setShowScheduleModal(false)
+          setSelectedMatchForSchedule(null)
+        }}
+        title="schedule date"
+        className="max-w-md"
+      >
+        <motion.div
+          className="flex flex-col gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {selectedMatchForSchedule && (
+            <>
+              {/* Match preview */}
+              <motion.div
+                className="flex flex-col items-center gap-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
+                  <Image
+                    src={matches.find(m => m.id === selectedMatchForSchedule)?.photo || ""}
+                    alt={matches.find(m => m.id === selectedMatchForSchedule)?.name || ""}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-1">
+                    {matches.find(m => m.id === selectedMatchForSchedule)?.name}
+                  </h3>
+                  <p className="text-sm opacity-70">
+                    schedule a time for your date
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Date selection */}
+              <motion.div
+                className="flex flex-col gap-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-teal-300" />
+                  select date
+                </label>
+                <input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white transition-all duration-300"
+                />
+              </motion.div>
+
+              {/* Time selection */}
+              <motion.div
+                className="flex flex-col gap-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-teal-300" />
+                  select time
+                </label>
+                <input
+                  type="time"
+                  className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white transition-all duration-300"
+                />
+              </motion.div>
+
+              {/* Action buttons */}
+              <motion.div
+                className="flex gap-3 pt-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <motion.button
+                  onClick={() => {
+                    setShowScheduleModal(false)
+                    setSelectedMatchForSchedule(null)
+                  }}
+                  className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  cancel
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    // In a real app, this would schedule the date and notify the match
+                    console.log("Scheduling date with match:", selectedMatchForSchedule)
+                    setShowScheduleModal(false)
+                    setSelectedMatchForSchedule(null)
+                    // Navigate to video-date after scheduling
+                    setTimeout(() => {
+                      window.location.href = "/video-date"
+                    }, 300)
+                  }}
+                  className="flex-1 px-6 py-3 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 transition-all duration-300 shadow-lg shadow-teal-300/30"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Video className="w-5 h-5" />
+                    <span>start date</span>
+                  </div>
+                </motion.button>
+              </motion.div>
+
+              {/* Info message */}
+              <motion.div
+                className="p-3 rounded-xl bg-teal-300/10 border border-teal-300/20"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+              >
+                <p className="text-xs opacity-70 text-center">
+                  your match will be notified of the scheduled date time
+                </p>
+              </motion.div>
             </>
           )}
         </motion.div>
