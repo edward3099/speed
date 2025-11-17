@@ -24,19 +24,19 @@ export default function dashboard() {
   // Quick actions
   const quickActions = [
     {
-      icon: <Sparkles className="w-5 h-5 text-teal-300" />,
+      icon: Sparkles,
       title: "discover matches",
       description: "find new connections",
       onClick: () => router.push("/spin"),
     },
     {
-      icon: <TrendingUp className="w-5 h-5 text-teal-300" />,
+      icon: TrendingUp,
       title: "view activity",
       description: "see your recent interactions",
       onClick: () => setShowMatches(true),
     },
     {
-      icon: <Settings className="w-5 h-5 text-teal-300" />,
+      icon: Settings,
       title: "preferences",
       description: "manage your settings",
       onClick: () => {},
@@ -98,16 +98,19 @@ export default function dashboard() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {quickActions.map((action, index) => (
-            <QuickActionCard
-              key={action.title}
-              icon={action.icon}
-              title={action.title}
-              description={action.description}
-              onClick={action.onClick}
-              delay={index * 0.1}
-            />
-          ))}
+          {quickActions.map((action, index) => {
+            const IconComponent = action.icon
+            return (
+              <QuickActionCard
+                key={action.title}
+                icon={<IconComponent className="w-5 h-5 text-teal-300" />}
+                title={action.title}
+                description={action.description}
+                onClick={action.onClick}
+                delay={index * 0.1}
+              />
+            )
+          })}
         </motion.div>
 
         {/* Primary CTA */}
