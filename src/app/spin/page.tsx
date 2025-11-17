@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon, SkipForward, Undo2, Info, Flag, Pause, Play } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -12,6 +12,8 @@ import { Modal } from "@/components/ui/modal"
 import { ShimmerButton } from "@/components/magicui/shimmer-button"
 import { Sparkles } from "@/components/magicui/sparkles"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
+import { ControlButton } from "@/components/ui/control-button"
+import { ControlPanel } from "@/components/ui/control-panel"
 import Image from "next/image"
 
 export default function spin() {
@@ -34,11 +36,14 @@ export default function spin() {
   const [revealed, setRevealed] = useState(false)
   const [selected, setSelected] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
+  const [showProfileDetails, setShowProfileDetails] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
   const [minAge, setMinAge] = useState("18")
   const [maxAge, setMaxAge] = useState("30")
   const [location, setLocation] = useState("")
   const [countdown, setCountdown] = useState(10)
   const [userVote, setUserVote] = useState<"yes" | "pass" | null>(null)
+  const [voteHistory, setVoteHistory] = useState<Array<{ profile: number; vote: "yes" | "pass" }>>([])
 
   const startSpin = () => {
     setUserVote(null)           // reset check mark every new spin
@@ -66,6 +71,33 @@ export default function spin() {
         startSpin()
       }
     } else {
+      setRevealed(false)
+      startSpin()
+    }
+  }
+
+  const handleSkip = () => {
+    if (revealed) {
+      setUserVote("pass")
+      setRevealed(false)
+      startSpin()
+    }
+  }
+
+  const handleUndo = () => {
+    if (voteHistory.length > 0) {
+      const lastVote = voteHistory[voteHistory.length - 1]
+      setVoteHistory(voteHistory.slice(0, -1))
+      setSelected(lastVote.profile)
+      setUserVote(null)
+      setRevealed(true)
+    }
+  }
+
+  const handleVote = (vote: "yes" | "pass") => {
+    setUserVote(vote)
+    setVoteHistory([...voteHistory, { profile: selected, vote }])
+    if (vote === "pass") {
       setRevealed(false)
       startSpin()
     }
@@ -462,19 +494,13 @@ export default function spin() {
                     >
                       <SpinButton
                         variant="pass"
-                        onClick={() => {
-                          setUserVote("pass")
-                          setRevealed(false)
-                          startSpin()
-                        }}
+                        onClick={() => handleVote("pass")}
                       >
                         pass
                       </SpinButton>
                       <SpinButton
                         variant="yes"
-                        onClick={() => {
-                          setUserVote("yes")
-                        }}
+                        onClick={() => handleVote("yes")}
                       >
                         yes
                       </SpinButton>
@@ -486,6 +512,90 @@ export default function spin() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Control Panel - Bottom (when profile is revealed) */}
+      {started && revealed && (
+        <ControlPanel position="bottom">
+          <ControlButton
+            icon={<Info className="w-5 h-5" />}
+            label="details"
+            onClick={() => setShowProfileDetails(true)}
+          />
+          <ControlButton
+            icon={<SkipForward className="w-5 h-5" />}
+            label="skip"
+            onClick={handleSkip}
+          />
+          {voteHistory.length > 0 && (
+            <ControlButton
+              icon={<Undo2 className="w-5 h-5" />}
+              label="undo"
+              onClick={handleUndo}
+            />
+          )}
+          <ControlButton
+            icon={<Flag className="w-5 h-5" />}
+            label="report"
+            variant="danger"
+            onClick={() => {
+              // Handle report
+              alert("Report feature coming soon")
+            }}
+          />
+        </ControlPanel>
+      )}
+
+      {/* Control Panel - Top Right (when spinning) */}
+      {spinning && (
+        <ControlPanel position="top" className="!top-20 !right-6 !left-auto !translate-x-0">
+          <ControlButton
+            icon={isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+            label={isPaused ? "resume" : "pause"}
+            onClick={() => setIsPaused(!isPaused)}
+          />
+        </ControlPanel>
+      )}
+
+      {/* Profile Details Modal */}
+      <Modal
+        isOpen={showProfileDetails}
+        onClose={() => setShowProfileDetails(false)}
+        title="profile details"
+      >
+        {revealed && (
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-32 h-32 rounded-2xl overflow-hidden">
+              <Image
+                src={profiles[selected].photo}
+                alt={profiles[selected].name}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-white mb-2">
+                {profiles[selected].name}
+                {profiles[selected].age && (
+                  <span className="text-teal-300">, {profiles[selected].age}</span>
+                )}
+              </h3>
+              <p className="text-sm opacity-80 leading-relaxed mb-4">
+                {profiles[selected].bio}
+              </p>
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <div className="p-3 rounded-xl bg-white/5">
+                  <div className="text-xs opacity-60 mb-1">location</div>
+                  <div className="text-sm font-medium">new york</div>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5">
+                  <div className="text-xs opacity-60 mb-1">interests</div>
+                  <div className="text-sm font-medium">music, art</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Filter modal */}
       <Modal
