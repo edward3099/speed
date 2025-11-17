@@ -58,16 +58,25 @@ export default function spin() {
   const handleCountdownComplete = () => {
     // after countdown ends, check result
     if (userVote === "yes") {
+      // User voted yes - check if other person also voted yes
       const otherYes = Math.random() < 0.5
       if (otherYes) {
         window.location.href = "/match"
       } else {
+        // Other person passed - automatically spin to next profile
         setRevealed(false)
         startSpin()
       }
-    } else {
+    } else if (userVote === "pass") {
+      // User already clicked pass - this shouldn't happen as pass triggers immediate spin
+      // But if it does, spin to next
       setRevealed(false)
       startSpin()
+    } else {
+      // User didn't vote - don't auto-spin, just reset to start screen
+      setRevealed(false)
+      setStarted(false)
+      setUserVote(null)
     }
   }
 
