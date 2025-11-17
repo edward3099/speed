@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2, Star, Flag, MessageSquare } from "lucide-react"
+import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2, Star, Flag, MessageSquare, Eye, EyeOff, Clock } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { Modal } from "@/components/ui/modal"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
@@ -29,6 +29,7 @@ export default function VideoDate() {
   const [isPartnerMuted, setIsPartnerMuted] = useState(true) // Partner starts muted
   const [isPartnerVideoOff, setIsPartnerVideoOff] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
+  const [isTimerVisible, setIsTimerVisible] = useState(true)
 
   const partner = {
     name: "alex",
@@ -404,27 +405,56 @@ export default function VideoDate() {
         <div className="max-w-7xl mx-auto">
           {/* Timer and controls row */}
           <div className="flex items-center justify-between mb-4">
-            <motion.div
-              className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
-              whileHover={{ scale: 1.05, borderColor: "rgba(94,234,212,0.5)" }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+            <div className="flex items-center gap-3">
+              <AnimatePresence mode="wait">
+                {isTimerVisible && (
+                  <motion.div
+                    key="timer"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-sm border border-white/10"
+                    whileHover={{ scale: 1.05, borderColor: "rgba(94,234,212,0.5)" }}
+                  >
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <SparklesIcon className="w-5 h-5 text-teal-300" />
+                    </motion.div>
+                    <span className="text-2xl font-bold text-teal-300 tabular-nums">
+                      {formatTime(timeLeft)}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Toggle timer button */}
+              <motion.button
+                onClick={() => setIsTimerVisible(!isTimerVisible)}
+                className={`p-3 rounded-full backdrop-blur-sm border-2 transition-all duration-300 ${
+                  isTimerVisible
+                    ? "bg-white/5 border-white/10 hover:border-teal-300/50 text-white"
+                    : "bg-teal-300/20 border-teal-300/50 text-teal-300"
+                }`}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                title={isTimerVisible ? "Hide timer" : "Show timer"}
               >
-                <SparklesIcon className="w-5 h-5 text-teal-300" />
-              </motion.div>
-              <span className="text-2xl font-bold text-teal-300 tabular-nums">
-                {formatTime(timeLeft)}
-              </span>
-            </motion.div>
+                {isTimerVisible ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </motion.button>
+            </div>
 
             {/* Connection status indicator */}
             <motion.div
@@ -449,22 +479,27 @@ export default function VideoDate() {
           </div>
 
           {/* Progress bar */}
-          <motion.div
-            className="h-1.5 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <motion.div
-              className="h-full bg-gradient-to-r from-teal-300 via-blue-400 to-teal-300 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercentage}%` }}
-              transition={{ duration: 1, ease: "linear" }}
-              style={{
-                backgroundSize: "200% 100%",
-              }}
-            />
-          </motion.div>
+          <AnimatePresence>
+            {isTimerVisible && (
+              <motion.div
+                className="h-1.5 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 6 }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div
+                  className="h-full bg-gradient-to-r from-teal-300 via-blue-400 to-teal-300 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercentage}%` }}
+                  transition={{ duration: 1, ease: "linear" }}
+                  style={{
+                    backgroundSize: "200% 100%",
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 
