@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart, User, MessageCircle, Calendar } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon, MapPin, Users, Heart, User, MessageCircle, Calendar, Clock, Video } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -48,6 +48,8 @@ export default function spin() {
   const [showFilters, setShowFilters] = useState(false)
   const [showMatches, setShowMatches] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [selectedMatchForReschedule, setSelectedMatchForReschedule] = useState<number | null>(null)
   const [minAge, setMinAge] = useState(18)
   const [maxAge, setMaxAge] = useState(30)
   const [location, setLocation] = useState("")
@@ -835,19 +837,168 @@ export default function spin() {
                       </div>
                     </div>
 
-                    {/* Hover indicator */}
-                    <motion.div
-                      className="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      initial={{ y: 10 }}
-                      whileHover={{ y: 0 }}
-                    >
-                      <div className="px-4 py-1.5 rounded-full bg-teal-300/20 border border-teal-300/50 text-xs font-semibold text-teal-300">
-                        start date
-                      </div>
-                    </motion.div>
+                    {/* Action buttons */}
+                    <div className="flex gap-2 mt-4 relative z-10">
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedMatchForReschedule(match.id)
+                          setShowRescheduleModal(true)
+                        }}
+                        className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300 text-xs font-semibold flex items-center justify-center gap-1.5"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>reschedule</span>
+                      </motion.button>
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          window.location.href = "/video-date"
+                        }}
+                        className="flex-1 px-3 py-2 rounded-lg bg-teal-300 text-black hover:bg-teal-200 transition-all duration-300 text-xs font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-teal-300/20"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        <span>start date</span>
+                      </motion.button>
+                    </div>
                   </motion.div>
                 ))}
               </div>
+            </>
+          )}
+        </motion.div>
+      </Modal>
+
+      {/* Reschedule modal */}
+      <Modal
+        isOpen={showRescheduleModal}
+        onClose={() => {
+          setShowRescheduleModal(false)
+          setSelectedMatchForReschedule(null)
+        }}
+        title="reschedule date"
+        className="max-w-md"
+      >
+        <motion.div
+          className="flex flex-col gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {selectedMatchForReschedule && (
+            <>
+              {/* Match preview */}
+              <motion.div
+                className="flex flex-col items-center gap-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-300/50">
+                  <Image
+                    src={matches.find(m => m.id === selectedMatchForReschedule)?.photo || ""}
+                    alt={matches.find(m => m.id === selectedMatchForReschedule)?.name || ""}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-1">
+                    {matches.find(m => m.id === selectedMatchForReschedule)?.name}
+                  </h3>
+                  <p className="text-sm opacity-70">
+                    choose a new time for your date
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Date selection */}
+              <motion.div
+                className="flex flex-col gap-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-teal-300" />
+                  select date
+                </label>
+                <input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white transition-all duration-300"
+                />
+              </motion.div>
+
+              {/* Time selection */}
+              <motion.div
+                className="flex flex-col gap-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <label className="text-sm font-medium opacity-80 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-teal-300" />
+                  select time
+                </label>
+                <input
+                  type="time"
+                  className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white transition-all duration-300"
+                />
+              </motion.div>
+
+              {/* Action buttons */}
+              <motion.div
+                className="flex gap-3 pt-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <motion.button
+                  onClick={() => {
+                    setShowRescheduleModal(false)
+                    setSelectedMatchForReschedule(null)
+                  }}
+                  className="flex-1 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300 font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  cancel
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    // In a real app, this would send reschedule request to backend
+                    console.log("Rescheduling date with match:", selectedMatchForReschedule)
+                    setShowRescheduleModal(false)
+                    setSelectedMatchForReschedule(null)
+                    // Show success message or notification
+                  }}
+                  className="flex-1 px-6 py-3 rounded-xl bg-teal-300 text-black font-semibold hover:bg-teal-200 transition-all duration-300 shadow-lg shadow-teal-300/30"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    <span>reschedule</span>
+                  </div>
+                </motion.button>
+              </motion.div>
+
+              {/* Info message */}
+              <motion.div
+                className="p-3 rounded-xl bg-teal-300/10 border border-teal-300/20"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+              >
+                <p className="text-xs opacity-70 text-center">
+                  your match will be notified of the new date time
+                </p>
+              </motion.div>
             </>
           )}
         </motion.div>
