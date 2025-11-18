@@ -13,7 +13,7 @@ interface ModalProps {
   className?: string
 }
 
-export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -28,25 +28,30 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
             transition={{ duration: 0.2 }}
           />
 
-          {/* Modal - Mobile: Bottom sheet style, Desktop: Centered */}
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none overflow-y-auto">
+          {/* Modal - Mobile: Centered with margins, Desktop: Centered */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none overflow-hidden p-4 sm:p-0">
             <motion.div
               className={cn(
-                // Mobile: Full width bottom sheet with rounded top corners
+                // Mobile: Centered modal with rounded corners and margins
                 "relative bg-gradient-to-b from-white/15 via-white/10 to-white/10 backdrop-blur-2xl",
-                "rounded-t-3xl sm:rounded-2xl md:rounded-3xl",
-                "w-full sm:w-auto sm:max-w-md md:max-w-lg",
-                "p-3 sm:p-5 md:p-6 lg:p-8",
-                "border-t sm:border border-white/20 shadow-2xl",
+                "rounded-2xl sm:rounded-2xl md:rounded-3xl",
+                // Mobile: Add horizontal margins for space from edges, Desktop: auto width
+                "w-full max-w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md md:max-w-lg",
+                "p-2.5 sm:p-3 md:p-4 lg:p-5",
+                "border sm:border border-white/20 shadow-2xl",
                 "pointer-events-auto",
-                // Mobile: Max height with safe area - reduced for mobile
-                "max-h-[85vh] sm:max-h-[85vh] overflow-y-auto",
-                // Mobile: Slide up animation
+                // Mobile: Use dynamic viewport height - fit without scroll, centered vertically
+                "max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)]",
+                "flex flex-col",
+                // Prevent horizontal overflow
+                "min-w-0 max-w-full",
+                "overflow-hidden",
+                // Mobile: Fade and scale animation (centered)
                 className
               )}
-              initial={{ opacity: 0, y: "100%", scale: 1 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: "100%", scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{
                 type: "spring",
                 stiffness: 400,
@@ -56,7 +61,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
               onClick={(e) => e.stopPropagation()}
             >
               {/* Mobile: Drag handle indicator */}
-              <div className="sm:hidden flex justify-center mb-3 pt-2">
+              <div className="sm:hidden flex justify-center mb-2 pt-1">
                 <motion.div
                   className="w-12 h-1.5 bg-white/30 rounded-full"
                   initial={{ opacity: 0 }}
@@ -77,7 +82,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
               {/* Title */}
               {title && (
                 <motion.h2
-                  className="text-base sm:text-xl md:text-2xl font-bold text-teal-300 text-center mb-3 sm:mb-5 md:mb-6 pr-8 sm:pr-12"
+                  className="text-sm sm:text-base md:text-lg font-bold text-teal-300 text-center mb-1.5 sm:mb-2 md:mb-2.5 pr-8 sm:pr-12 flex-shrink-0"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
@@ -86,12 +91,13 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
                 </motion.h2>
               )}
 
-              {/* Content */}
+              {/* Content - Scrollable if needed but constrained to fit */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-                className="space-y-3 sm:space-y-5 md:space-y-6"
+                className="min-w-0 max-w-full overflow-x-hidden overflow-y-auto flex-1 min-h-0"
+                style={{ maxHeight: 'calc(100dvh - 8rem)' }}
               >
                 {children}
               </motion.div>
@@ -102,3 +108,5 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     </AnimatePresence>
   )
 }
+
+export { Modal }

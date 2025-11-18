@@ -19,55 +19,38 @@ export default function Header({
   const router = useRouter()
   const pathname = usePathname()
 
-  const navItems = [
-    { path: "/dashboard", label: "dashboard" },
-    { path: "/spin", label: "spin" },
-  ]
-
   return (
-    <header className="w-full bg-[#0a0f1f] border-b border-white border-opacity-10">
-      <div className="flex items-center justify-between px-6 py-4">
+    <header className="fixed top-0 left-0 right-0 w-full bg-[#000000] border-b border-white/5 z-50">
+      <div className="flex items-center justify-between px-6 sm:px-8 lg:px-12 h-14 sm:h-16">
+        {/* Home button - "speed date" logo */}
         <button 
           onClick={() => router.push("/")}
-          className="text-xl font-bold text-teal-300 hover:opacity-80 transition"
+          className="text-base sm:text-lg font-semibold text-white hover:text-teal-300 transition-colors duration-200 touch-manipulation"
         >
           speed date
         </button>
         
-        <div className="flex items-center gap-4">
-          {pathname !== "/onboarding" && (
-            <nav className="flex items-center gap-3">
-              {navItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => router.push(item.path)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
-                    pathname === item.path
-                      ? "bg-teal-300 text-black"
-                      : "text-white hover:opacity-80"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-          )}
-          
-          {showProfile && (
-            <button 
-              onClick={onProfileClick || (() => router.push("/dashboard"))}
-              className="w-10 h-10 rounded-full bg-white bg-opacity-10 flex items-center justify-center hover:bg-opacity-20 hover:scale-105 active:scale-95 transition overflow-hidden"
-            >
+        {/* Spin button with profile icon */}
+        {pathname !== "/onboarding" && (
+          <button
+            onClick={() => router.push("/spin")}
+            className={`flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-200 touch-manipulation ${
+              pathname === "/spin"
+                ? "ring-1 ring-teal-300/60 ring-offset-0"
+                : "hover:bg-white/5"
+            }`}
+          >
+            <div className="w-full h-full rounded-full overflow-hidden">
               <Image
                 src={profileImage}
                 alt="profile"
-                width={40}
-                height={40}
-                className="object-cover rounded-full"
+                width={36}
+                height={36}
+                className="object-cover w-full h-full"
               />
-            </button>
-          )}
-        </div>
+            </div>
+          </button>
+        )}
       </div>
     </header>
   )

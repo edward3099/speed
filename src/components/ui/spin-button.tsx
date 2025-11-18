@@ -26,8 +26,9 @@ export function SpinButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex-1 px-6 py-4 rounded-2xl text-lg font-semibold transition-all duration-300",
-        "relative overflow-hidden",
+        "flex-1 px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 rounded-2xl text-lg font-semibold transition-all duration-300",
+        "relative",
+        isYes ? "overflow-hidden" : "overflow-visible",
         isYes
           ? "bg-teal-300 text-black hover:bg-teal-200"
           : "bg-white/10 text-white hover:bg-white/20 border border-white/10",
@@ -51,7 +52,7 @@ export function SpinButton({
           }}
         />
       )}
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 whitespace-nowrap overflow-visible">{children}</span>
     </motion.button>
   )
 }

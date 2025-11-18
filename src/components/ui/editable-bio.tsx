@@ -48,7 +48,7 @@ export function EditableBio({
   }
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative min-w-0 max-w-full", className)}>
       <AnimatePresence mode="wait">
         {!isEditing ? (
           <motion.button
@@ -57,12 +57,12 @@ export function EditableBio({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsEditing(true)}
-            className="group relative w-full text-left p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300"
+            className="group relative w-full text-left p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 hover:border-teal-300/50 hover:bg-white/10 transition-all duration-300 min-w-0 max-w-full overflow-hidden"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
-            <div className="flex items-start justify-between gap-3 sm:gap-4">
-              <p className="text-sm sm:text-lg opacity-80 leading-relaxed flex-1">
+            <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0">
+              <p className="text-sm sm:text-lg opacity-80 leading-relaxed flex-1 min-w-0 break-words overflow-wrap-anywhere">
                 {bio || (
                   <span className="opacity-50 italic">
                     no bio yet. click to add one...
@@ -93,7 +93,7 @@ export function EditableBio({
               value={tempBio}
               onChange={(e) => setTempBio(e.target.value)}
               maxLength={maxLength}
-              className="w-full p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 resize-none text-sm sm:text-base"
+              className="w-full min-w-0 max-w-full p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 resize-none text-sm sm:text-base overflow-x-hidden"
               rows={3}
               placeholder="tell us about yourself..."
             />

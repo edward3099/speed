@@ -48,7 +48,15 @@ const Sparkles = ({
   }, [sparklesCount])
 
   return (
-    <div ref={containerRef} className={className}>
+    <div 
+      ref={containerRef} 
+      className={className}
+      style={{
+        background: 'transparent',
+        border: 'none',
+        outline: 'none',
+      }}
+    >
       {sparkles.map((sparkle) => (
         <motion.div
           key={sparkle.id}
@@ -58,6 +66,19 @@ const Sparkles = ({
             top: `${sparkle.y}%`,
             width: '12px',
             height: '12px',
+            background: 'transparent',
+            border: '0',
+            outline: '0',
+            boxShadow: 'none',
+            margin: '0',
+            padding: '0',
+            clipPath: 'none',
+            WebkitAppearance: 'none',
+            appearance: 'none',
+            display: 'block',
+            overflow: 'visible',
+            position: 'absolute',
+            zIndex: 1,
           }}
           initial={{
             opacity: 0,
@@ -81,6 +102,22 @@ const Sparkles = ({
             className="w-full h-full"
             style={{
               filter: `drop-shadow(0 0 4px ${colors.first}) drop-shadow(0 0 8px ${colors.first})`,
+              border: '0',
+              borderWidth: '0',
+              borderStyle: 'none',
+              borderColor: 'transparent',
+              outline: '0',
+              outlineWidth: '0',
+              outlineStyle: 'none',
+              outlineColor: 'transparent',
+              boxShadow: 'none',
+              background: 'transparent',
+              backgroundColor: 'transparent',
+              display: 'block',
+              margin: '0',
+              padding: '0',
+              overflow: 'visible',
+              position: 'relative',
             }}
           >
             <path

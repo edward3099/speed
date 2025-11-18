@@ -25,21 +25,21 @@ export function ShuffleAnimation({
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Mobile: 120px card + 8px gap = 128px per card
+  // Mobile: 70px card + 4px gap = 74px per card (optimized for mobile)
   // Desktop: 192px card + 16px gap = 208px per card
-  const cardWidth = isMobile ? 128 : 208
+  const cardWidth = isMobile ? 74 : 208
   const containerWidth = duplicatedProfiles.length * cardWidth
 
   return (
-    <div className="relative w-full max-w-[280px] sm:max-w-md h-[200px] sm:h-80 rounded-xl sm:rounded-2xl overflow-hidden bg-white/5 border-2 border-teal-300/30 shadow-[0_0_40px_rgba(94,234,212,0.3)] mx-auto">
-      {/* Animated border glow */}
+    <div className="relative w-full max-w-[160px] sm:max-w-md h-[110px] sm:h-80 rounded-md sm:rounded-2xl overflow-hidden bg-white/5 border border-teal-300/30 shadow-[0_0_20px_rgba(94,234,212,0.2)] sm:shadow-[0_0_40px_rgba(94,234,212,0.3)] mx-auto">
+      {/* Animated border glow - subtle on mobile */}
       <motion.div
-        className="absolute inset-0 rounded-xl sm:rounded-2xl"
+        className="absolute inset-0 rounded-md sm:rounded-2xl"
         animate={{
           boxShadow: [
+            "0 0 10px rgba(94,234,212,0.2), inset 0 0 10px rgba(94,234,212,0.05)",
             "0 0 20px rgba(94,234,212,0.3), inset 0 0 20px rgba(94,234,212,0.1)",
-            "0 0 40px rgba(94,234,212,0.5), inset 0 0 40px rgba(94,234,212,0.2)",
-            "0 0 20px rgba(94,234,212,0.3), inset 0 0 20px rgba(94,234,212,0.1)",
+            "0 0 10px rgba(94,234,212,0.2), inset 0 0 10px rgba(94,234,212,0.05)",
           ],
         }}
         transition={{
@@ -50,7 +50,7 @@ export function ShuffleAnimation({
       />
 
       <motion.div
-        className="flex gap-2 sm:gap-4 h-full items-center"
+        className="flex gap-1 sm:gap-4 h-full items-center"
         animate={{
           x: ["0%", "-50%"],
         }}
@@ -65,16 +65,16 @@ export function ShuffleAnimation({
         {duplicatedProfiles.map((src, index) => (
           <motion.div
             key={index}
-            className="relative flex-shrink-0 w-[120px] h-[160px] sm:w-48 sm:h-64 rounded-lg sm:rounded-xl overflow-hidden border-2 border-white/20"
-            initial={{ opacity: 0.5 }}
+            className="relative flex-shrink-0 w-[70px] h-[100px] sm:w-48 sm:h-64 rounded sm:rounded-xl overflow-hidden border border-white/20 sm:border-2"
+            initial={{ opacity: 0.6 }}
             animate={{ 
-              opacity: [0.5, 1, 0.5],
-              scale: [0.95, 1, 0.95],
+              opacity: [0.6, 1, 0.6],
+              scale: [0.96, 1, 0.96],
             }}
             transition={{
-              duration: 0.5,
+              duration: 0.4,
               repeat: Infinity,
-              delay: index * 0.1,
+              delay: index * 0.08,
             }}
           >
             <Image
@@ -83,35 +83,35 @@ export function ShuffleAnimation({
               fill
               className="object-cover"
             />
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            {/* Gradient overlay - lighter on mobile */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent sm:from-black/40" />
             
-            {/* Shimmer effect */}
+            {/* Shimmer effect - subtle on mobile */}
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent sm:via-white/30"
               animate={{
                 x: ["-100%", "100%"],
               }}
               transition={{
-                duration: 1.5,
+                duration: 1.2,
                 repeat: Infinity,
-                delay: index * 0.2,
+                delay: index * 0.15,
               }}
             />
           </motion.div>
         ))}
       </motion.div>
 
-      {/* Center indicator with pulsing effect */}
+      {/* Center indicator with pulsing effect - thinner on mobile */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
         <motion.div
-          className="w-0.5 sm:w-1 h-full bg-teal-300/70 shadow-[0_0_10px_rgba(94,234,212,0.8)] sm:shadow-[0_0_20px_rgba(94,234,212,0.8)]"
+          className="w-px sm:w-1 h-full bg-teal-300/60 sm:bg-teal-300/70 shadow-[0_0_8px_rgba(94,234,212,0.6)] sm:shadow-[0_0_20px_rgba(94,234,212,0.8)]"
           animate={{
-            opacity: [0.7, 1, 0.7],
+            opacity: [0.6, 0.9, 0.6],
             boxShadow: [
-              "0 0 10px rgba(94,234,212,0.8)",
-              "0 0 20px rgba(94,234,212,1)",
-              "0 0 10px rgba(94,234,212,0.8)",
+              "0 0 8px rgba(94,234,212,0.6)",
+              "0 0 15px rgba(94,234,212,0.9)",
+              "0 0 8px rgba(94,234,212,0.6)",
             ],
           }}
           transition={{
@@ -122,11 +122,11 @@ export function ShuffleAnimation({
         />
       </div>
 
-      {/* Corner accents - smaller on mobile */}
-      <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-2 h-2 sm:w-3 sm:h-3 bg-teal-300/50 rounded-full blur-sm" />
-      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-3 sm:h-3 bg-teal-300/50 rounded-full blur-sm" />
-      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 w-2 h-2 sm:w-3 sm:h-3 bg-teal-300/50 rounded-full blur-sm" />
-      <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 w-2 h-2 sm:w-3 sm:h-3 bg-teal-300/50 rounded-full blur-sm" />
+      {/* Corner accents - minimal on mobile */}
+      <div className="absolute top-1 left-1 sm:top-2 sm:left-2 w-1.5 h-1.5 sm:w-3 sm:h-3 bg-teal-300/40 sm:bg-teal-300/50 rounded-full blur-[2px] sm:blur-sm" />
+      <div className="absolute top-1 right-1 sm:top-2 sm:right-2 w-1.5 h-1.5 sm:w-3 sm:h-3 bg-teal-300/40 sm:bg-teal-300/50 rounded-full blur-[2px] sm:blur-sm" />
+      <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 w-1.5 h-1.5 sm:w-3 sm:h-3 bg-teal-300/40 sm:bg-teal-300/50 rounded-full blur-[2px] sm:blur-sm" />
+      <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-1.5 h-1.5 sm:w-3 sm:h-3 bg-teal-300/40 sm:bg-teal-300/50 rounded-full blur-[2px] sm:blur-sm" />
     </div>
   )
 }

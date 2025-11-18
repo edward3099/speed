@@ -55,16 +55,51 @@ export function CountdownTimer({
   }, [seconds])
 
   return (
-    <div className={className}>
+    <div 
+      className={className}
+      style={{
+        background: 'transparent',
+        border: 'none',
+        outline: 'none',
+        boxShadow: 'none',
+      }}
+    >
       <motion.div
         key={seconds}
         initial={{ scale: 1.2, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
         className="text-center"
+        style={{
+          background: 'transparent',
+          border: '0',
+          outline: '0',
+          boxShadow: 'none',
+          margin: '0',
+          padding: '0',
+          clipPath: 'none',
+          WebkitAppearance: 'none',
+          appearance: 'none',
+        }}
       >
-        <span className="text-xl sm:text-3xl md:text-4xl font-bold text-teal-300">{seconds}</span>
-        <span className="text-lg sm:text-2xl md:text-3xl opacity-70 ml-1 sm:ml-1.5">s</span>
+        <motion.span 
+          className="text-sm sm:text-3xl md:text-4xl font-extrabold text-teal-300"
+          animate={{
+            textShadow: [
+              "0 0 15px rgba(94,234,212,0.7)",
+              "0 0 30px rgba(94,234,212,1)",
+              "0 0 15px rgba(94,234,212,0.7)",
+            ],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          {seconds}
+        </motion.span>
+        <span className="text-sm sm:text-3xl md:text-4xl opacity-70 ml-0.5 sm:ml-1">s</span>
       </motion.div>
     </div>
   )
