@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2, Star, Flag, MessageSquare, Eye, EyeOff, Clock, Settings2, Volume2, Mail, Phone, Facebook, Instagram, Link as LinkIcon } from "lucide-react"
@@ -2291,5 +2291,17 @@ export default function VideoDate() {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+export default function VideoDate() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black via-purple-900/20 to-black">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    }>
+      <VideoDateContent />
+    </Suspense>
   )
 }
