@@ -573,6 +573,8 @@ export default function landing() {
                           age: 25,
                           bio: "",
                           photo: "https://i.pravatar.cc/150?img=15",
+                          country: "",
+                          city: "",
                           location: "",
                           latitude: 0,
                           longitude: 0,
