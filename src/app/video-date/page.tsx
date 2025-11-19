@@ -19,7 +19,7 @@ interface Partner {
   bio: string
 }
 
-export default function VideoDate() {
+function VideoDateContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
