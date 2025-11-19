@@ -249,13 +249,13 @@ export default function VideoDate() {
         // Get local tracks
         livekitRoom.localParticipant.videoTrackPublications.forEach((pub) => {
           if (pub.track) {
-            setLocalVideoTrack(pub.track)
+            setLocalVideoTrack(pub.track.mediaStreamTrack)
           }
         })
 
         livekitRoom.localParticipant.audioTrackPublications.forEach((pub) => {
           if (pub.track) {
-            setLocalAudioTrack(pub.track)
+            setLocalAudioTrack(pub.track.mediaStreamTrack)
           }
         })
 
