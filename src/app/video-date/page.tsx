@@ -222,9 +222,9 @@ export default function VideoDate() {
         livekitRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
           if (participant.identity !== authUser.id) {
             if (track.kind === 'video') {
-              setRemoteVideoTrack(track)
+              setRemoteVideoTrack(track.mediaStreamTrack)
             } else if (track.kind === 'audio') {
-              setRemoteAudioTrack(track)
+              setRemoteAudioTrack(track.mediaStreamTrack)
             }
           }
         })
