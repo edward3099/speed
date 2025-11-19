@@ -282,36 +282,48 @@ export default function VideoDate() {
   // Attach video/audio tracks to elements
   useEffect(() => {
     if (localVideoTrack && localVideoRef.current) {
-      localVideoTrack.attach(localVideoRef.current)
+      const stream = new MediaStream([localVideoTrack])
+      localVideoRef.current.srcObject = stream
       return () => {
-        localVideoTrack.detach()
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = null
+        }
       }
     }
   }, [localVideoTrack])
 
   useEffect(() => {
     if (localAudioTrack && localAudioRef.current) {
-      localAudioTrack.attach(localAudioRef.current)
+      const stream = new MediaStream([localAudioTrack])
+      localAudioRef.current.srcObject = stream
       return () => {
-        localAudioTrack.detach()
+        if (localAudioRef.current) {
+          localAudioRef.current.srcObject = null
+        }
       }
     }
   }, [localAudioTrack])
 
   useEffect(() => {
     if (remoteVideoTrack && remoteVideoRef.current) {
-      remoteVideoTrack.attach(remoteVideoRef.current)
+      const stream = new MediaStream([remoteVideoTrack])
+      remoteVideoRef.current.srcObject = stream
       return () => {
-        remoteVideoTrack.detach()
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = null
+        }
       }
     }
   }, [remoteVideoTrack])
 
   useEffect(() => {
     if (remoteAudioTrack && remoteAudioRef.current) {
-      remoteAudioTrack.attach(remoteAudioRef.current)
+      const stream = new MediaStream([remoteAudioTrack])
+      remoteAudioRef.current.srcObject = stream
       return () => {
-        remoteAudioTrack.detach()
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = null
+        }
       }
     }
   }, [remoteAudioTrack])
