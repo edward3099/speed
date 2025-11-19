@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, Sparkles as SparklesIcon, MapPin, Users, User, Calendar, MessageCircle } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
@@ -16,37 +17,42 @@ import { FilterInput } from "@/components/ui/filter-input"
 import { RangeInput } from "@/components/ui/range-input"
 import { EditableProfilePicture } from "@/components/ui/editable-profile-picture"
 import { EditableBio } from "@/components/ui/editable-bio"
+import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
 
-export default function spin() {
-  const profiles = [
-    { photo: "https://i.pravatar.cc/200?img=12", name: "alex", age: 24, bio: "enjoys deep chats music and new experiences" },
-    { photo: "https://i.pravatar.cc/200?img=20", name: "sam", age: 26, bio: "loves traveling and trying new foods" },
-    { photo: "https://i.pravatar.cc/200?img=33", name: "taylor", age: 23, bio: "passionate about art and photography" },
-    { photo: "https://i.pravatar.cc/200?img=5", name: "jordan", age: 25, bio: "fitness enthusiast and coffee lover" },
-    { photo: "https://i.pravatar.cc/200?img=45", name: "riley", age: 27, bio: "bookworm and movie buff" },
-  ]
+interface Profile {
+  id: string
+  name: string
+  age: number
+  bio: string
+  photo: string
+  location: string
+  distance_km?: number
+}
 
-  const [user, setUser] = useState({
-    name: "jason",
-    bio: "i like good conversations and new experiences",
-    photo: "https://i.pravatar.cc/200?img=15",
-    age: 28,
-    location: "new york, ny"
+export default function spin() {
+  const router = useRouter()
+  const supabase = createClient()
+  
+  const [user, setUser] = useState<Profile | null>(null)
+  const [profileQueue, setProfileQueue] = useState<Profile[]>([]) // Queue of 3 profiles
+  const [currentProfileIndex, setCurrentProfileIndex] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [preferences, setPreferences] = useState({
+    minAge: 18,
+    maxAge: 30,
+    maxDistance: 50,
+    genderPreference: 'all' as 'male' | 'female' | 'non-binary' | 'all'
   })
+  const [waitingForMatch, setWaitingForMatch] = useState(false)
+  const [currentMatchId, setCurrentMatchId] = useState<string | null>(null)
 
 
   const [started, setStarted] = useState(false)
   const [spinning, setSpinning] = useState(false)
   const [revealed, setRevealed] = useState(false)
-  const [selected, setSelected] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const [minAge, setMinAge] = useState(18)
-  const [maxAge, setMaxAge] = useState(30)
-  const [location, setLocation] = useState("")
-  const [maxDistance, setMaxDistance] = useState(50)
-  const [countdown, setCountdown] = useState(10)
   const [userVote, setUserVote] = useState<"yes" | "pass" | null>(null)
   const [voteCenterPosition, setVoteCenterPosition] = useState<number>(50) // Percentage from left
   const [voteCenterPx, setVoteCenterPx] = useState<number>(0) // Pixel position as fallback
@@ -67,6 +73,257 @@ export default function spin() {
   const containerRef = useRef<HTMLDivElement>(null)
   const voteHeaderParentRef = useRef<HTMLDivElement>(null)
 
+  // Fetch user profile and preferences on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+        
+        if (authError || !authUser) {
+          router.push('/')
+          return
+        }
+
+        // Fetch profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .single()
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError)
+          router.push('/')
+          return
+        }
+
+        setUser({
+          id: profile.id,
+          name: profile.name,
+          age: profile.age,
+          bio: profile.bio || '',
+          photo: profile.photo || '',
+          location: profile.location || ''
+        })
+
+        // Fetch preferences
+        const { data: prefs, error: prefsError } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', authUser.id)
+          .single()
+
+        if (!prefsError && prefs) {
+          setPreferences({
+            minAge: prefs.min_age,
+            maxAge: prefs.max_age,
+            maxDistance: prefs.max_distance,
+            genderPreference: prefs.gender_preference || 'all'
+          })
+        }
+
+        // Update online status
+        await supabase
+          .from('profiles')
+          .update({ 
+            is_online: true,
+            last_active_at: new Date().toISOString()
+          })
+          .eq('id', authUser.id)
+
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+        router.push('/')
+      }
+    }
+
+    fetchUserData()
+  }, [router, supabase])
+
+  // Fetch profiles for matching
+  const fetchProfiles = async (softenFilters = false) => {
+    try {
+      // Check session first
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.error('No session found when fetching profiles')
+        return []
+      }
+
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        console.error('No authenticated user found')
+        return []
+      }
+
+      console.log('Calling discover_profiles with:', {
+        current_user_id: authUser.id,
+        limit_count: 3,
+        soften_filters: softenFilters
+      })
+
+      // Call the discover_profiles function with better error handling
+      let response
+      try {
+        response = await supabase.rpc('discover_profiles', {
+          current_user_id: authUser.id,
+          limit_count: 3,
+          soften_filters: softenFilters
+        })
+      } catch (rpcError: any) {
+        console.error('RPC call threw exception:', {
+          message: rpcError?.message,
+          stack: rpcError?.stack,
+          name: rpcError?.name,
+          error: rpcError
+        })
+        return []
+      }
+
+      // Log the full response to see what we're getting
+      console.log('RPC response:', {
+        hasData: !!response.data,
+        hasError: !!response.error,
+        dataLength: response.data?.length,
+        errorType: typeof response.error,
+        errorConstructor: response.error?.constructor?.name,
+        responseKeys: response ? Object.keys(response) : 'no response'
+      })
+
+      if (response.error) {
+        // Try to extract error information in multiple ways
+        const error = response.error as any
+        
+        // Method 1: Direct property access
+        const errorDetails = {
+          message: error?.message,
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint,
+          name: error?.name,
+        }
+        
+        // Method 2: Try to access all properties
+        const allProps: any = {}
+        if (error) {
+          try {
+            // Get own property names
+            Object.getOwnPropertyNames(error).forEach(prop => {
+              try {
+                allProps[prop] = (error as any)[prop]
+              } catch (e) {
+                allProps[prop] = '[Error accessing property]'
+              }
+            })
+          } catch (e) {
+            allProps.getOwnPropertyNamesError = String(e)
+          }
+          
+          // Get enumerable keys
+          try {
+            Object.keys(error).forEach(key => {
+              allProps[key] = (error as any)[key]
+            })
+          } catch (e) {
+            allProps.keysError = String(e)
+          }
+        }
+        
+        // Method 3: Try to stringify
+        let stringified = ''
+        try {
+          stringified = JSON.stringify(error, null, 2)
+        } catch (e) {
+          try {
+            stringified = JSON.stringify(error)
+          } catch (e2) {
+            stringified = `[Could not stringify: ${String(e2)}]`
+          }
+        }
+        
+        console.error('Error fetching profiles:', {
+          errorDetails,
+          allProps,
+          stringified,
+          rawError: error
+        })
+        
+        // Check for specific error codes
+        if (error?.code === '42883' || error?.message?.includes('does not exist')) {
+          console.error('discover_profiles function does not exist in database')
+          return []
+        }
+        
+        // If no profiles found and not already softening, try with softened filters
+        if (!softenFilters) {
+          return fetchProfiles(true)
+        }
+        return []
+      }
+
+      console.log('Successfully fetched profiles:', response.data?.length || 0)
+      return response.data || []
+    } catch (error: any) {
+      // Log all error properties
+      const errorDetails: any = {}
+      for (const key in error) {
+        errorDetails[key] = error[key]
+      }
+      console.error('Error in fetchProfiles catch block:', {
+        message: error?.message,
+        stack: error?.stack,
+        errorDetails,
+        stringified: JSON.stringify(error, null, 2)
+      })
+      return []
+    }
+  }
+
+  // Load initial profile queue
+  useEffect(() => {
+    if (!user || loading) return
+
+    const loadProfiles = async () => {
+      const fetchedProfiles = await fetchProfiles()
+      if (fetchedProfiles.length > 0) {
+        setProfileQueue(fetchedProfiles)
+      }
+    }
+
+    loadProfiles()
+  }, [user, loading])
+
+  // Set up real-time match detection
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('matches')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'matches',
+          filter: `user1_id=eq.${user.id} OR user2_id=eq.${user.id}`
+        },
+        (payload) => {
+          const match = payload.new as any
+          // Check if this is a new match (not the one we're waiting for)
+          if (match.id !== currentMatchId && waitingForMatch) {
+            // Match found! Redirect to video date
+            router.push(`/video-date?matchId=${match.id}`)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, waitingForMatch, currentMatchId, router, supabase])
+
   // Rotate through rules every 10 seconds
   useEffect(() => {
     if (!started) {
@@ -81,31 +338,78 @@ export default function spin() {
     }
   }, [started, platformRules.length])
 
-  const startSpin = () => {
-    setUserVote(null)           // reset check mark every new spin
+  const startSpin = async () => {
+    setUserVote(null)
     setRevealed(false)
     setSpinning(true)
     setStarted(true)
+    setWaitingForMatch(false)
+    setCurrentMatchId(null)
+
+    // Check if we need to load more profiles
+    if (currentProfileIndex >= profileQueue.length - 1) {
+      // Load more profiles in background
+      const newProfiles = await fetchProfiles()
+      if (newProfiles.length > 0) {
+        setProfileQueue(prev => [...prev, ...newProfiles])
+      }
+    }
+
     setTimeout(() => {
       setSpinning(false)
-      const pick = Math.floor(Math.random() * profiles.length)
-      setSelected(pick)
-      setTimeout(() => {
-        setRevealed(true)
-      }, 300)
+      // Use next profile from queue
+      if (profileQueue.length > 0) {
+        setCurrentProfileIndex(prev => {
+          const nextIndex = prev + 1
+          return nextIndex < profileQueue.length ? nextIndex : 0
+        })
+        setTimeout(() => {
+          setRevealed(true)
+        }, 300)
+      } else {
+        // No profiles available - try with softened filters
+        fetchProfiles(true).then(newProfiles => {
+          if (newProfiles.length > 0) {
+            setProfileQueue(newProfiles)
+            setCurrentProfileIndex(0)
+            setTimeout(() => {
+              setRevealed(true)
+            }, 300)
+          } else {
+            // Still no profiles - show message or reset
+            setSpinning(false)
+            setStarted(false)
+            alert("No more profiles available. Try adjusting your filters!")
+          }
+        })
+      }
     }, 5000)
   }
 
-  const handleCountdownComplete = () => {
+  const handleCountdownComplete = async () => {
     // after countdown ends, check result
-    if (userVote === "yes") {
-      // User voted yes - check if other person also voted yes (both users clicked yes = match)
-      const otherYes = Math.random() < 0.5
-      if (otherYes) {
-        // Both users clicked yes - match for video date
-        window.location.href = "/video-date"
+    if (userVote === "yes" && waitingForMatch) {
+      // Timeout waiting for match - check if match was created
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+
+      const currentProfile = profileQueue[currentProfileIndex]
+      if (!currentProfile) return
+
+      // Check for match
+      const { data: match } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`and(user1_id.eq.${authUser.id},user2_id.eq.${currentProfile.id}),and(user1_id.eq.${currentProfile.id},user2_id.eq.${authUser.id})`)
+        .eq('status', 'pending')
+        .single()
+
+      if (match) {
+        // Match found! Redirect to video date
+        router.push(`/video-date?matchId=${match.id}`)
       } else {
-        // Other person passed - automatically spin to next profile
+        // No match - spin to next profile
+        setWaitingForMatch(false)
         setRevealed(false)
         startSpin()
       }
@@ -119,6 +423,71 @@ export default function spin() {
       setRevealed(false)
       setStarted(false)
       setUserVote(null)
+    }
+  }
+
+  // Handle vote submission
+  const handleVote = async (voteType: "yes" | "pass") => {
+    if (!user || profileQueue.length === 0) return
+
+    const currentProfile = profileQueue[currentProfileIndex]
+    if (!currentProfile) return
+
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    setUserVote(voteType)
+
+    // Save vote to database
+    const { error: voteError } = await supabase
+      .from('votes')
+      .upsert({
+        voter_id: authUser.id,
+        profile_id: currentProfile.id,
+        vote_type: voteType
+      })
+
+    if (voteError) {
+      console.error('Error saving vote:', voteError)
+      return
+    }
+
+    // Record profile view
+    await supabase
+      .from('profile_views')
+      .upsert({
+        viewer_id: authUser.id,
+        viewed_profile_id: currentProfile.id
+      })
+
+    if (voteType === "yes") {
+      // Set waiting for match state
+      setWaitingForMatch(true)
+      
+      // Check for immediate match (in case other user already voted yes)
+      const { data: match } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`and(user1_id.eq.${authUser.id},user2_id.eq.${currentProfile.id}),and(user1_id.eq.${currentProfile.id},user2_id.eq.${authUser.id})`)
+        .eq('status', 'pending')
+        .single()
+
+      if (match) {
+        // Immediate match! Redirect to video date
+        router.push(`/video-date?matchId=${match.id}`)
+      } else {
+        // Wait for match (real-time subscription will handle redirect)
+        // Set timeout to check after 10 seconds
+        setTimeout(() => {
+          if (waitingForMatch) {
+            handleCountdownComplete()
+          }
+        }, 10000)
+      }
+    } else {
+      // Pass - immediately spin to next profile
+      setRevealed(false)
+      startSpin()
     }
   }
 
@@ -187,23 +556,83 @@ export default function spin() {
 
   const handleMinAgeChange = (newMinAge: number) => {
     // Ensure min age doesn't exceed max age
-    if (newMinAge > maxAge) {
-      setMinAge(maxAge)
-      setMaxAge(newMinAge)
+    if (newMinAge > preferences.maxAge) {
+      setPreferences(prev => ({ ...prev, minAge: prev.maxAge, maxAge: newMinAge }))
     } else {
-      setMinAge(newMinAge)
+      setPreferences(prev => ({ ...prev, minAge: newMinAge }))
     }
   }
 
   const handleMaxAgeChange = (newMaxAge: number) => {
     // Ensure max age doesn't go below min age
-    if (newMaxAge < minAge) {
-      setMaxAge(minAge)
-      setMinAge(newMaxAge)
+    if (newMaxAge < preferences.minAge) {
+      setPreferences(prev => ({ ...prev, maxAge: prev.minAge, minAge: newMaxAge }))
     } else {
-      setMaxAge(newMaxAge)
+      setPreferences(prev => ({ ...prev, maxAge: newMaxAge }))
     }
   }
+
+  // Save preferences to database
+  const savePreferences = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: authUser.id,
+        min_age: preferences.minAge,
+        max_age: preferences.maxAge,
+        max_distance: preferences.maxDistance,
+        gender_preference: preferences.genderPreference,
+        updated_at: new Date().toISOString()
+      })
+
+    if (error) {
+      console.error('Error saving preferences:', error)
+      alert('Failed to save preferences. Please try again.')
+    } else {
+      setShowFilters(false)
+      // Reload profiles with new preferences
+      const newProfiles = await fetchProfiles()
+      if (newProfiles.length > 0) {
+        setProfileQueue(newProfiles)
+        setCurrentProfileIndex(0)
+      }
+    }
+  }
+
+  // Save profile updates to database
+  const saveProfile = async (updates: Partial<Profile>) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', authUser.id)
+
+    if (error) {
+      console.error('Error saving profile:', error)
+      alert('Failed to save profile. Please try again.')
+    } else {
+      setUser(prev => prev ? { ...prev, ...updates } : null)
+      setShowProfile(false)
+    }
+  }
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen w-full bg-[#050810] text-white flex items-center justify-center">
+        <div className="text-teal-300 text-xl">Loading...</div>
+      </div>
+    )
+  }
+
+  const currentProfile = profileQueue[currentProfileIndex]
 
   return (
     <div className="min-h-screen w-full max-w-full bg-[#050810] text-white flex items-center justify-center relative overflow-x-hidden overflow-y-auto" style={{ paddingLeft: 'max(12px, env(safe-area-inset-left, 0px))', paddingRight: 'max(12px, env(safe-area-inset-right, 0px))', width: '100%', maxWidth: '100vw' }}>
@@ -654,13 +1083,13 @@ export default function spin() {
                       }}
                     />
                     <ShuffleAnimation
-                      profiles={profiles.map(p => p.photo)}
+                      profiles={profileQueue.length > 0 ? profileQueue.map(p => p.photo) : []}
                       duration={5000}
                     />
                   </motion.div>
                 )}
 
-                {revealed && (
+                {revealed && currentProfile && (
                   <motion.div
                     key="revealed"
                     className="w-full flex flex-col items-center gap-0.5 sm:gap-3 md:gap-4 relative"
@@ -682,10 +1111,10 @@ export default function spin() {
                       }}
                     >
                       <ProfileCardSpin
-                        photo={profiles[selected].photo}
-                        name={profiles[selected].name}
-                        age={profiles[selected].age}
-                        bio={profiles[selected].bio}
+                        photo={currentProfile.photo}
+                        name={currentProfile.name}
+                        age={currentProfile.age}
+                        bio={currentProfile.bio}
                         isSelected={false}
                       />
                     </motion.div>
@@ -700,23 +1129,18 @@ export default function spin() {
                     >
                       <SpinButton
                         variant="pass"
-                        onClick={() => {
-                          setUserVote("pass")
-                          setRevealed(false)
-                          startSpin()
-                        }}
+                        onClick={() => handleVote("pass")}
                         className="flex-1 min-w-[85px] sm:min-w-[100px] md:min-w-[110px] lg:min-w-[120px] max-w-[120px] sm:max-w-[140px] md:max-w-[150px] lg:max-w-[160px] h-9 sm:h-12 md:h-14 text-xs sm:text-base md:text-lg font-semibold touch-manipulation transition-all duration-200 hover:scale-105 active:scale-95"
                       >
                         respin
                       </SpinButton>
                       <SpinButton
                         variant="yes"
-                        onClick={() => {
-                          setUserVote("yes")
-                        }}
-                        className="flex-1 min-w-[85px] sm:min-w-[100px] md:min-w-[110px] lg:min-w-[120px] max-w-[120px] sm:max-w-[140px] md:max-w-[150px] lg:max-w-[160px] h-9 sm:h-12 md:h-14 text-xs sm:text-base md:text-lg font-semibold touch-manipulation transition-all duration-200 hover:scale-105 active:scale-95"
+                        onClick={() => handleVote("yes")}
+                        disabled={waitingForMatch}
+                        className="flex-1 min-w-[85px] sm:min-w-[100px] md:min-w-[110px] lg:min-w-[120px] max-w-[120px] sm:max-w-[140px] md:max-w-[150px] lg:max-w-[160px] h-9 sm:h-12 md:h-14 text-xs sm:text-base md:text-lg font-semibold touch-manipulation transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
                       >
-                        yes
+                        {waitingForMatch ? "waiting..." : "yes"}
                       </SpinButton>
                     </motion.div>
 
@@ -747,8 +1171,8 @@ export default function spin() {
               <div className="flex-1">
                 <RangeInput
                   min={18}
-                  max={maxAge}
-                  value={minAge}
+                  max={preferences.maxAge}
+                  value={preferences.minAge}
                   onChange={handleMinAgeChange}
                   label="minimum age"
                 />
@@ -756,9 +1180,9 @@ export default function spin() {
               <div className="text-lg opacity-60">-</div>
               <div className="flex-1">
                 <RangeInput
-                  min={minAge}
+                  min={preferences.minAge}
                   max={100}
-                  value={maxAge}
+                  value={preferences.maxAge}
                   onChange={handleMaxAgeChange}
                   label="maximum age"
                 />
@@ -770,7 +1194,7 @@ export default function spin() {
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                {minAge}
+                {preferences.minAge}
               </motion.div>
               <span className="text-sm opacity-60">to</span>
               <motion.div
@@ -778,24 +1202,9 @@ export default function spin() {
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
               >
-                {maxAge}
+                {preferences.maxAge}
               </motion.div>
             </div>
-          </FilterInput>
-
-          {/* Location */}
-          <FilterInput
-            label="location"
-            icon={<MapPin className="w-4 h-4" />}
-          >
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-sm sm:text-base touch-manipulation"
-              placeholder="enter city or zip code"
-              style={{ minHeight: '44px' }}
-            />
           </FilterInput>
 
           {/* Max Distance */}
@@ -806,9 +1215,9 @@ export default function spin() {
             <RangeInput
               min={1}
               max={100}
-              value={maxDistance}
-              onChange={setMaxDistance}
-              label={`${maxDistance} miles`}
+              value={preferences.maxDistance}
+              onChange={(val) => setPreferences(prev => ({ ...prev, maxDistance: val }))}
+              label={`${preferences.maxDistance} miles`}
             />
           </FilterInput>
 
@@ -816,10 +1225,12 @@ export default function spin() {
           <div className="flex gap-2.5 sm:gap-3 mt-3 sm:mt-4 pb-safe sm:pb-0">
             <motion.button
               onClick={() => {
-                setMinAge(18)
-                setMaxAge(30)
-                setLocation("")
-                setMaxDistance(50)
+                setPreferences({
+                  minAge: 18,
+                  maxAge: 30,
+                  maxDistance: 50,
+                  genderPreference: 'all'
+                })
               }}
               className="flex-1 px-3 sm:px-4 py-3 sm:py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm sm:text-base font-semibold touch-manipulation"
               whileHover={{ scale: 1.02 }}
@@ -829,7 +1240,7 @@ export default function spin() {
               reset
             </motion.button>
             <PrimaryButton
-              onClick={() => setShowFilters(false)}
+              onClick={savePreferences}
               size="sm"
               variant="primary"
               className="flex-1 h-11 sm:h-auto min-h-[44px] font-semibold text-sm sm:text-base touch-manipulation"
@@ -846,72 +1257,105 @@ export default function spin() {
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}
         title="your profile"
-        className="max-w-lg"
+        className="max-w-sm sm:max-w-md"
       >
         <motion.div
-          className="flex flex-col gap-3 sm:gap-5 md:gap-6 min-w-0 max-w-full overflow-x-hidden"
+          className="flex flex-col gap-2.5 sm:gap-3 md:gap-4 min-w-0 max-w-full overflow-x-hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
         >
           {/* Profile picture */}
           <motion.div
-            className="flex flex-col items-center gap-3 sm:gap-4 min-w-0 max-w-full overflow-x-hidden"
+            className="flex flex-col items-center gap-2 sm:gap-3 min-w-0 max-w-full overflow-x-hidden"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="scale-75 sm:scale-100">
+            <div className="scale-70 sm:scale-90">
               <EditableProfilePicture
                 src={user.photo}
                 alt={`${user.name}'s profile`}
                 size="lg"
-                onImageChange={(file) => {
-                  const reader = new FileReader()
-                  reader.onloadend = () => {
-                    setUser(prev => ({ ...prev, photo: reader.result as string }))
-                    // In a real app, upload to backend
+                onImageChange={async (file) => {
+                  try {
+                    const { data: { user: authUser } } = await supabase.auth.getUser()
+                    if (!authUser) return
+
+                    // Convert to blob
+                    const blob = await new Promise<Blob>((resolve) => {
+                      const reader = new FileReader()
+                      reader.onloadend = () => {
+                        fetch(reader.result as string)
+                          .then(res => res.blob())
+                          .then(resolve)
+                      }
+                      reader.readAsDataURL(file)
+                    })
+
+                    // Upload to Supabase Storage
+                    const fileExt = file.name.split('.').pop() || 'jpg'
+                    const fileName = `${authUser.id}-${Date.now()}.${fileExt}`
+                    const filePath = `${authUser.id}/${fileName}`
+
+                    const { error: uploadError } = await supabase.storage
+                      .from('profile-pictures')
+                      .upload(filePath, blob, {
+                        cacheControl: '3600',
+                        upsert: true
+                      })
+
+                    if (uploadError) throw uploadError
+
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('profile-pictures')
+                      .getPublicUrl(filePath)
+
+                    // Update profile
+                    await saveProfile({ photo: publicUrl })
+                  } catch (error) {
+                    console.error('Error uploading image:', error)
+                    alert('Failed to upload image. Please try again.')
                   }
-                  reader.readAsDataURL(file)
                 }}
               />
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-teal-300">{user.name}</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-teal-300">{user.name}</h2>
           </motion.div>
 
           {/* Age - Uneditable */}
           <motion.div
-            className="flex flex-col gap-1.5 sm:gap-2 min-w-0 max-w-full overflow-x-hidden"
+            className="flex flex-col gap-1 sm:gap-1.5 min-w-0 max-w-full overflow-x-hidden"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <label className="text-xs sm:text-base font-medium opacity-80 flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-teal-300" />
+            <label className="text-xs sm:text-sm font-medium opacity-80 flex items-center gap-2">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-teal-300" />
               age
             </label>
-            <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 min-w-0 max-w-full overflow-x-hidden">
-              <p className="text-sm sm:text-lg opacity-80 break-words">{user.age}</p>
+            <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 min-w-0 max-w-full overflow-x-hidden">
+              <p className="text-sm sm:text-base opacity-80 break-words">{user.age}</p>
             </div>
-            <p className="text-xs opacity-60">age cannot be changed</p>
+            <p className="text-[10px] sm:text-xs opacity-60">age cannot be changed</p>
           </motion.div>
 
           {/* Location - Editable */}
           <motion.div
-            className="flex flex-col gap-1.5 sm:gap-2 min-w-0 max-w-full overflow-x-hidden"
+            className="flex flex-col gap-1 sm:gap-1.5 min-w-0 max-w-full overflow-x-hidden"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
             <label className="text-xs sm:text-sm font-medium opacity-80 flex items-center gap-2">
-              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300" />
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-teal-300" />
               location
             </label>
             <EditableBio
               initialBio={user.location}
               onBioChange={(newLocation) => {
-                setUser(prev => ({ ...prev, location: newLocation }))
-                // In a real app, save to backend
+                saveProfile({ location: newLocation })
               }}
               maxLength={100}
             />
@@ -924,31 +1368,31 @@ export default function spin() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <label className="text-xs sm:text-sm font-medium opacity-80 mb-1.5 sm:mb-2 block flex items-center gap-2">
-              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300" />
+            <label className="text-xs sm:text-sm font-medium opacity-80 mb-1 sm:mb-1.5 block flex items-center gap-2">
+              <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 text-teal-300" />
               bio
             </label>
             <EditableBio
               initialBio={user.bio}
               onBioChange={(newBio) => {
-                setUser(prev => ({ ...prev, bio: newBio }))
-                // In a real app, save to backend
+                saveProfile({ bio: newBio })
               }}
+              maxLength={20}
             />
           </motion.div>
 
           {/* Info message */}
           <motion.div
-            className="p-3 sm:p-4 rounded-xl bg-teal-300/10 border border-teal-300/20 min-w-0 max-w-full overflow-x-hidden"
+            className="p-2.5 sm:p-3 rounded-xl bg-teal-300/10 border border-teal-300/20 min-w-0 max-w-full overflow-x-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
           >
-            <div className="flex items-start gap-2 sm:gap-3 min-w-0">
-              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-300 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 sm:gap-2.5 min-w-0">
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300 flex-shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-teal-300 mb-0.5 sm:mb-1 break-words">profile tips</p>
-                <p className="text-xs opacity-70 leading-relaxed break-words overflow-wrap-anywhere">
+                <p className="text-[10px] sm:text-xs font-medium text-teal-300 mb-0.5 break-words">profile tips</p>
+                <p className="text-[10px] sm:text-xs opacity-70 leading-relaxed break-words overflow-wrap-anywhere">
                   keep your bio and location updated. this helps others find you and get to know the real you!
                 </p>
               </div>
@@ -960,3 +1404,4 @@ export default function spin() {
     </div>
   )
 }
+

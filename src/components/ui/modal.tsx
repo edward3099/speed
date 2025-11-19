@@ -36,8 +36,8 @@ function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
                 "relative bg-gradient-to-b from-white/15 via-white/10 to-white/10 backdrop-blur-2xl",
                 "rounded-2xl sm:rounded-2xl md:rounded-3xl",
                 // Mobile: Add horizontal margins for space from edges, Desktop: auto width
-                "w-full max-w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md md:max-w-lg",
-                "p-2.5 sm:p-3 md:p-4 lg:p-5",
+                "w-full max-w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm md:max-w-md",
+                "p-2 sm:p-2.5 md:p-3",
                 "border sm:border border-white/20 shadow-2xl",
                 "pointer-events-auto",
                 // Mobile: Use dynamic viewport height - fit without scroll, centered vertically

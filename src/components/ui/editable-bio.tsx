@@ -19,8 +19,8 @@ export function EditableBio({
   maxLength = 200,
 }: EditableBioProps) {
   const [isEditing, setIsEditing] = useState(false)
-  const [bio, setBio] = useState(initialBio)
-  const [tempBio, setTempBio] = useState(initialBio)
+  const [bio, setBio] = useState(initialBio || "")
+  const [tempBio, setTempBio] = useState(initialBio || "")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export function EditableBio({
           >
             <textarea
               ref={textareaRef}
-              value={tempBio}
+              value={tempBio || ""}
               onChange={(e) => setTempBio(e.target.value)}
               maxLength={maxLength}
               className="w-full min-w-0 max-w-full p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 resize-none text-sm sm:text-base overflow-x-hidden"
@@ -99,7 +99,7 @@ export function EditableBio({
             />
             <div className="flex items-center justify-between">
               <span className="text-xs opacity-60">
-                {tempBio.length}/{maxLength}
+                {(tempBio || "").length}/{maxLength}
               </span>
               <div className="flex gap-2">
                 <motion.button

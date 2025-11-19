@@ -1,17 +1,46 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Video, Mic, MicOff, VideoOff, PhoneOff, Heart, X, Sparkles as SparklesIcon, CheckCircle2, Star, Flag, MessageSquare, Eye, EyeOff, Clock, Settings2, Volume2, Mail, Phone, Facebook, Instagram, Link as LinkIcon } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { Modal } from "@/components/ui/modal"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
 import { Sparkles } from "@/components/magicui/sparkles"
+import { createClient } from "@/lib/supabase/client"
+import { Room, RoomEvent, RemoteParticipant, Track } from "livekit-client"
 import Image from "next/image"
+
+interface Partner {
+  id: string
+  name: string
+  photo: string
+  bio: string
+}
 
 export default function VideoDate() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const supabase = createClient()
+  const matchId = searchParams.get('matchId')
+  
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<Partner | null>(null)
+  const [partner, setPartner] = useState<Partner | null>(null)
+  const [videoDateId, setVideoDateId] = useState<string | null>(null)
+  const [room, setRoom] = useState<Room | null>(null)
+  const [localVideoTrack, setLocalVideoTrack] = useState<MediaStreamTrack | null>(null)
+  const [localAudioTrack, setLocalAudioTrack] = useState<MediaStreamTrack | null>(null)
+  const [remoteVideoTrack, setRemoteVideoTrack] = useState<MediaStreamTrack | null>(null)
+  const [remoteAudioTrack, setRemoteAudioTrack] = useState<MediaStreamTrack | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [partnerLeft, setPartnerLeft] = useState(false)
+  
+  const localVideoRef = useRef<HTMLVideoElement>(null)
+  const remoteVideoRef = useRef<HTMLVideoElement>(null)
+  const localAudioRef = useRef<HTMLAudioElement>(null)
+  const remoteAudioRef = useRef<HTMLAudioElement>(null)
 
   const [countdown, setCountdown] = useState(15) // 15 sec pre-date countdown
   const [countdownComplete, setCountdownComplete] = useState(false)
@@ -25,20 +54,25 @@ export default function VideoDate() {
   const [userContactDetails, setUserContactDetails] = useState({
     email: "",
     phone: "",
-    facebook: "",
     instagram: "",
-    other: ""
+    whatsapp: ""
+  })
+  const [shareContactDetails, setShareContactDetails] = useState({
+    email: false,
+    phone: false,
+    instagram: false,
+    whatsapp: false
   })
   const [partnerContactDetails, setPartnerContactDetails] = useState<{
     email?: string
     phone?: string
-    facebook?: string
     instagram?: string
-    other?: string
+    whatsapp?: string
   } | null>(null)
   const [rating, setRating] = useState<number | null>(null)
   const [feedback, setFeedback] = useState("")
   const [reportReason, setReportReason] = useState("")
+  const [reportCategory, setReportCategory] = useState("")
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
   const [isPartnerMuted, setIsPartnerMuted] = useState(true)
@@ -48,26 +82,294 @@ export default function VideoDate() {
   const [countdownMuted, setCountdownMuted] = useState(false)
   const [countdownVideoOff, setCountdownVideoOff] = useState(false)
 
-  const partner = {
-    name: "alex",
-    photo: "https://i.pravatar.cc/200?img=20",
-    bio: "enjoys deep chats music and new experiences"
-  }
+  // Fetch match data and initialize video date
+  useEffect(() => {
+    const initializeVideoDate = async () => {
+      if (!matchId) {
+        router.push('/spin')
+        return
+      }
 
-  const user = {
-    name: "jason",
-    photo: "https://i.pravatar.cc/200?img=15"
+      try {
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+        if (authError || !authUser) {
+          router.push('/')
+          return
+        }
+
+        // Fetch match data
+        const { data: match, error: matchError } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('id', matchId)
+          .single()
+
+        if (matchError || !match) {
+          console.error('Error fetching match:', matchError)
+          router.push('/spin')
+          return
+        }
+
+        // Determine partner ID
+        const partnerId = match.user1_id === authUser.id ? match.user2_id : match.user1_id
+
+        // Fetch user and partner profiles
+        const [userProfile, partnerProfile] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', authUser.id).single(),
+          supabase.from('profiles').select('*').eq('id', partnerId).single()
+        ])
+
+        if (userProfile.error || partnerProfile.error) {
+          console.error('Error fetching profiles:', userProfile.error || partnerProfile.error)
+          router.push('/spin')
+          return
+        }
+
+        setUser({
+          id: userProfile.data.id,
+          name: userProfile.data.name,
+          photo: userProfile.data.photo || '',
+          bio: userProfile.data.bio || ''
+        })
+
+        setPartner({
+          id: partnerProfile.data.id,
+          name: partnerProfile.data.name,
+          photo: partnerProfile.data.photo || '',
+          bio: partnerProfile.data.bio || ''
+        })
+
+        // Check if video date already exists
+        const { data: existingVideoDate } = await supabase
+          .from('video_dates')
+          .select('*')
+          .eq('match_id', matchId)
+          .single()
+
+        let videoDateRecord
+        if (existingVideoDate) {
+          videoDateRecord = existingVideoDate
+          setVideoDateId(existingVideoDate.id)
+        } else {
+          // Create video date record
+          const { data: newVideoDate, error: videoDateError } = await supabase
+            .from('video_dates')
+            .insert({
+              match_id: matchId,
+              user1_id: match.user1_id,
+              user2_id: match.user2_id,
+              status: 'countdown'
+            })
+            .select()
+            .single()
+
+          if (videoDateError) {
+            console.error('Error creating video date:', videoDateError)
+            router.push('/spin')
+            return
+          }
+
+          videoDateRecord = newVideoDate
+          setVideoDateId(newVideoDate.id)
+        }
+
+        // Generate LiveKit room name and tokens
+        const roomName = `date-${matchId}`
+        const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
+
+        if (!wsUrl) {
+          console.error('LiveKit URL not configured')
+          router.push('/spin')
+          return
+        }
+
+        // Get LiveKit token
+        const tokenResponse = await fetch(
+          `/api/livekit-token?room=${roomName}&username=${authUser.id}`
+        )
+        const { token } = await tokenResponse.json()
+
+        if (!token) {
+          console.error('Failed to get LiveKit token')
+          router.push('/spin')
+          return
+        }
+
+        // Connect to LiveKit room
+        const livekitRoom = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+        })
+
+        // Set up event listeners
+        livekitRoom.on(RoomEvent.Connected, () => {
+          setIsConnected(true)
+          console.log('Connected to LiveKit room')
+        })
+
+        livekitRoom.on(RoomEvent.Disconnected, () => {
+          setIsConnected(false)
+          console.log('Disconnected from LiveKit room')
+        })
+
+        livekitRoom.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
+          if (participant.identity !== authUser.id) {
+            setPartnerLeft(true)
+            handleEarlyExit()
+          }
+        })
+
+        livekitRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+          if (participant.identity !== authUser.id) {
+            if (track.kind === 'video') {
+              setRemoteVideoTrack(track)
+            } else if (track.kind === 'audio') {
+              setRemoteAudioTrack(track)
+            }
+          }
+        })
+
+        livekitRoom.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+          if (participant.identity !== authUser.id) {
+            if (track.kind === 'video') {
+              setRemoteVideoTrack(null)
+            } else if (track.kind === 'audio') {
+              setRemoteAudioTrack(null)
+            }
+          }
+        })
+
+        // Connect to room
+        await livekitRoom.connect(wsUrl, token)
+        setRoom(livekitRoom)
+
+        // Enable camera and microphone
+        await livekitRoom.localParticipant.enableCameraAndMicrophone()
+
+        // Get local tracks
+        livekitRoom.localParticipant.videoTrackPublications.forEach((pub) => {
+          if (pub.track) {
+            setLocalVideoTrack(pub.track)
+          }
+        })
+
+        livekitRoom.localParticipant.audioTrackPublications.forEach((pub) => {
+          if (pub.track) {
+            setLocalAudioTrack(pub.track)
+          }
+        })
+
+        // Update video date status to active when countdown completes
+        // This will be handled in the countdown completion effect
+
+        setLoading(false)
+      } catch (error) {
+        console.error('Error initializing video date:', error)
+        router.push('/spin')
+      }
+    }
+
+    initializeVideoDate()
+
+    // Cleanup on unmount
+    return () => {
+      if (room) {
+        room.disconnect()
+      }
+    }
+  }, [matchId, router, supabase])
+
+  // Attach video/audio tracks to elements
+  useEffect(() => {
+    if (localVideoTrack && localVideoRef.current) {
+      localVideoTrack.attach(localVideoRef.current)
+      return () => {
+        localVideoTrack.detach()
+      }
+    }
+  }, [localVideoTrack])
+
+  useEffect(() => {
+    if (localAudioTrack && localAudioRef.current) {
+      localAudioTrack.attach(localAudioRef.current)
+      return () => {
+        localAudioTrack.detach()
+      }
+    }
+  }, [localAudioTrack])
+
+  useEffect(() => {
+    if (remoteVideoTrack && remoteVideoRef.current) {
+      remoteVideoTrack.attach(remoteVideoRef.current)
+      return () => {
+        remoteVideoTrack.detach()
+      }
+    }
+  }, [remoteVideoTrack])
+
+  useEffect(() => {
+    if (remoteAudioTrack && remoteAudioRef.current) {
+      remoteAudioTrack.attach(remoteAudioRef.current)
+      return () => {
+        remoteAudioTrack.detach()
+      }
+    }
+  }, [remoteAudioTrack])
+
+  // Handle early exit
+  const handleEarlyExit = async () => {
+    if (!videoDateId || !user || !partner) return
+
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    // Update video date status
+    await supabase
+      .from('video_dates')
+      .update({
+        status: 'ended_early',
+        ended_by_user_id: authUser.id,
+        ended_at: new Date().toISOString(),
+        outcome: 'pass'
+      })
+      .eq('id', videoDateId)
+
+    // Apply visibility penalty to early leaver
+    await supabase.rpc('increment_visibility_penalty', {
+      user_id: authUser.id
+    })
+
+    // Disconnect from room
+    if (room) {
+      await room.disconnect()
+    }
+
+    // Show pass modal and return to spin
+    setShowPassModal(true)
+    setTimeout(() => {
+      router.push('/spin')
+    }, 2000)
   }
 
   // Pre-date countdown
   useEffect(() => {
-    if (countdownComplete) return
+    if (countdownComplete || loading) return
 
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
           setCountdownComplete(true)
+          // Update video date status to active
+          if (videoDateId) {
+            supabase
+              .from('video_dates')
+              .update({
+                status: 'active',
+                started_at: new Date().toISOString()
+              })
+              .eq('id', videoDateId)
+          }
           return 0
         }
         return prev - 1
@@ -75,16 +377,29 @@ export default function VideoDate() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [countdownComplete])
+  }, [countdownComplete, loading, videoDateId, supabase])
 
   // Main date timer (only starts after countdown)
   useEffect(() => {
     if (!countdownComplete) return
 
+    const startTime = Date.now()
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer)
+          // Save duration when timer ends
+          if (videoDateId) {
+            const duration = Math.floor((Date.now() - startTime) / 1000)
+            supabase
+              .from('video_dates')
+              .update({
+                status: 'completed',
+                ended_at: new Date().toISOString(),
+                duration_seconds: duration
+              })
+              .eq('id', videoDateId)
+          }
           setShowPostModal(true)
           return 0
         }
@@ -93,7 +408,7 @@ export default function VideoDate() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [countdownComplete])
+  }, [countdownComplete, videoDateId, supabase])
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -101,39 +416,198 @@ export default function VideoDate() {
     return `${m}:${s < 10 ? "0" + s : s}`
   }
 
-  const handleEndDate = () => {
+  const handleEndDate = async () => {
     setIsEnding(true)
+    
+    // Calculate duration
+    const startTime = countdownComplete ? Date.now() - ((300 - timeLeft) * 1000) : Date.now()
+    const duration = Math.floor((Date.now() - startTime) / 1000)
+    
+    // Disconnect from LiveKit room
+    if (room) {
+      await room.disconnect()
+    }
+
+    // Update video date status
+    if (videoDateId) {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        await supabase
+          .from('video_dates')
+          .update({
+            status: 'ended_early',
+            ended_by_user_id: authUser.id,
+            ended_at: new Date().toISOString(),
+            duration_seconds: duration
+          })
+          .eq('id', videoDateId)
+      }
+    }
+
     setTimeout(() => {
       setShowPostModal(true)
       setIsEnding(false)
     }, 500)
   }
 
-  const handleYes = () => {
+  const handleYes = async () => {
+    if (!videoDateId || !user || !partner) return
+
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    // Save rating and feedback if provided
     if (rating !== null || feedback.trim()) {
-      console.log("Feedback submitted:", { rating, feedback })
+      await supabase
+        .from('date_ratings')
+        .upsert({
+          video_date_id: videoDateId,
+          rater_id: authUser.id,
+          rated_user_id: partner.id,
+          rating: rating || 5,
+          feedback: feedback || null
+        })
     }
-    
+
+    // Update video date outcome
+    await supabase
+      .from('video_dates')
+      .update({
+        outcome: 'yes'
+      })
+      .eq('id', videoDateId)
+
     setShowPostModal(false)
-    // Always show contact details form (both said yes)
+    // Show contact details form (both said yes)
     setShowContactModal(true)
   }
 
-  const handleSubmitContactDetails = () => {
-    // In a real app, this would send contact details to backend
-    console.log("Contact details submitted:", userContactDetails)
-    
-    // Simulate receiving partner's contact details
-    setPartnerContactDetails({
-      email: "alex@example.com",
-      phone: "+1 (555) 123-4567",
-      facebook: "alex.smith",
-      instagram: "@alexsmith"
+  const handleSubmitContactDetails = async () => {
+    if (!videoDateId || !user || !partner) return
+
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    try {
+      // Encrypt and save user's contact details
+      const contactDetailsToSave: any = {}
+      if (shareContactDetails.email && userContactDetails.email) {
+        contactDetailsToSave.email_encrypted = await encryptContact(userContactDetails.email)
+        contactDetailsToSave.share_email = true
+      }
+      if (shareContactDetails.phone && userContactDetails.phone) {
+        contactDetailsToSave.phone_encrypted = await encryptContact(userContactDetails.phone)
+        contactDetailsToSave.share_phone = true
+      }
+      if (shareContactDetails.instagram && userContactDetails.instagram) {
+        contactDetailsToSave.instagram_encrypted = await encryptContact(userContactDetails.instagram)
+        contactDetailsToSave.share_instagram = true
+      }
+      if (shareContactDetails.whatsapp && userContactDetails.whatsapp) {
+        contactDetailsToSave.whatsapp_encrypted = await encryptContact(userContactDetails.whatsapp)
+        contactDetailsToSave.share_whatsapp = true
+      }
+
+      if (Object.keys(contactDetailsToSave).length > 0) {
+        await supabase
+          .from('contact_details')
+          .upsert({
+            user_id: authUser.id,
+            ...contactDetailsToSave,
+            updated_at: new Date().toISOString()
+          })
+      }
+
+      // Update contact exchange
+      const isUser1 = authUser.id < partner.id
+      const exchangeUpdate: any = {
+        video_date_id: videoDateId,
+        user1_id: isUser1 ? authUser.id : partner.id,
+        user2_id: isUser1 ? partner.id : authUser.id
+      }
+
+      if (isUser1) {
+        exchangeUpdate.user1_shared = true
+      } else {
+        exchangeUpdate.user2_shared = true
+      }
+
+      const { data: exchange } = await supabase
+        .from('contact_exchanges')
+        .upsert(exchangeUpdate)
+        .select()
+        .single()
+
+      // Check if both users have shared
+      if (exchange) {
+        const bothShared = (isUser1 && exchange.user2_shared) || (!isUser1 && exchange.user1_shared)
+        
+        if (bothShared) {
+          // Both shared - exchange contacts
+          await supabase
+            .from('contact_exchanges')
+            .update({
+              exchanged_at: new Date().toISOString()
+            })
+            .eq('id', exchange.id)
+
+          // Fetch partner's contact details (decrypted)
+          const { data: partnerContacts } = await supabase
+            .from('contact_details')
+            .select('*')
+            .eq('user_id', partner.id)
+            .single()
+
+          if (partnerContacts) {
+            const decrypted: any = {}
+            if (partnerContacts.share_email && partnerContacts.email_encrypted) {
+              decrypted.email = await decryptContact(partnerContacts.email_encrypted)
+            }
+            if (partnerContacts.share_phone && partnerContacts.phone_encrypted) {
+              decrypted.phone = await decryptContact(partnerContacts.phone_encrypted)
+            }
+            if (partnerContacts.share_instagram && partnerContacts.instagram_encrypted) {
+              decrypted.instagram = await decryptContact(partnerContacts.instagram_encrypted)
+            }
+            if (partnerContacts.share_whatsapp && partnerContacts.whatsapp_encrypted) {
+              decrypted.whatsapp = await decryptContact(partnerContacts.whatsapp_encrypted)
+            }
+
+            setPartnerContactDetails(decrypted)
+            setShowContactModal(false)
+            setShowMatchModal(true)
+          } else {
+            setShowContactModal(false)
+            router.push('/spin')
+          }
+        } else {
+          // Waiting for partner to share
+          setShowContactModal(false)
+          // Show waiting message or redirect
+          router.push('/spin')
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting contact details:', error)
+      alert('Failed to submit contact details. Please try again.')
+    }
+  }
+
+  // Helper functions for encryption (using pgcrypto via Supabase RPC)
+  const encryptContact = async (value: string): Promise<string> => {
+    const { data, error } = await supabase.rpc('encrypt_contact', {
+      plaintext: value
     })
-    
-    setShowContactModal(false)
-    setShowMatchModal(true)
-    // No timeout - user controls when to continue
+    if (error) throw error
+    return data
+  }
+
+  const decryptContact = async (encrypted: any): Promise<string> => {
+    const { data, error } = await supabase.rpc('decrypt_contact', {
+      encrypted_value: encrypted
+    })
+    if (error) throw error
+    return data
   }
 
   const handleContinueFromMatch = () => {
@@ -141,11 +615,35 @@ export default function VideoDate() {
     router.push("/spin")
   }
 
-  const handlePass = () => {
+  const handlePass = async () => {
+    if (!videoDateId || !partner) return
+
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    // Save rating and feedback if provided
     if (rating !== null || feedback.trim()) {
-      console.log("Feedback submitted:", { rating, feedback })
+      await supabase
+        .from('date_ratings')
+        .upsert({
+          video_date_id: videoDateId,
+          rater_id: authUser.id,
+          rated_user_id: partner.id,
+          rating: rating || 3,
+          feedback: feedback || null
+        })
     }
-    
+
+    // Update video date outcome
+    await supabase
+      .from('video_dates')
+      .update({
+        status: 'completed',
+        ended_at: new Date().toISOString(),
+        outcome: 'pass'
+      })
+      .eq('id', videoDateId)
+
     setShowPostModal(false)
     setShowPassModal(true)
     setTimeout(() => {
@@ -158,13 +656,68 @@ export default function VideoDate() {
     setShowReportModal(true)
   }
 
-  const handleSubmitReport = () => {
-    console.log("Report submitted:", { reportReason })
+  const handleSubmitReport = async () => {
+    if (!videoDateId || !partner) return
+
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    // Save report
+    await supabase
+      .from('reports')
+      .insert({
+        reporter_id: authUser.id,
+        reported_user_id: partner.id,
+        video_date_id: videoDateId,
+        category: reportCategory || 'inappropriate_behaviour',
+        details: reportReason
+      })
+
     setShowReportModal(false)
     setShowPassModal(true)
     setTimeout(() => {
       router.push("/spin")
     }, 2000)
+  }
+
+  // Update mute/video state based on room
+  useEffect(() => {
+    if (!room) return
+
+    const updateMediaState = async () => {
+      const localParticipant = room.localParticipant
+      const isMicEnabled = localParticipant.isMicrophoneEnabled
+      const isCamEnabled = localParticipant.isCameraEnabled
+
+      setIsMuted(!isMicEnabled)
+      setIsVideoOff(!isCamEnabled)
+    }
+
+    updateMediaState()
+  }, [room, isMuted, isVideoOff])
+
+  // Handle mute toggle
+  const toggleMute = async () => {
+    if (!room) return
+    const newMutedState = !isMuted
+    await room.localParticipant.setMicrophoneEnabled(!newMutedState)
+    setIsMuted(newMutedState)
+  }
+
+  // Handle video toggle
+  const toggleVideo = async () => {
+    if (!room) return
+    const newVideoOffState = !isVideoOff
+    await room.localParticipant.setCameraEnabled(!newVideoOffState)
+    setIsVideoOff(newVideoOffState)
+  }
+
+  if (loading || !user || !partner) {
+    return (
+      <div className="min-h-screen w-full bg-[#050810] text-white flex items-center justify-center">
+        <div className="text-teal-300 text-xl">Loading...</div>
+      </div>
+    )
   }
 
   const progressPercentage = countdownComplete ? ((300 - timeLeft) / 300) * 100 : 0
@@ -316,7 +869,9 @@ export default function VideoDate() {
                       <motion.button
                         onClick={() => {
                           setCountdownMuted(!countdownMuted)
-                          setIsMuted(!countdownMuted)
+                          if (room) {
+                            room.localParticipant.setMicrophoneEnabled(countdownMuted)
+                          }
                         }}
                         className={`p-1.5 sm:p-2 rounded-lg backdrop-blur-sm border transition-all duration-300 ${
                           countdownMuted
@@ -333,7 +888,9 @@ export default function VideoDate() {
                       <motion.button
                         onClick={() => {
                           setCountdownVideoOff(!countdownVideoOff)
-                          setIsVideoOff(!countdownVideoOff)
+                          if (room) {
+                            room.localParticipant.setCameraEnabled(countdownVideoOff)
+                          }
                         }}
                         className={`p-1.5 sm:p-2 rounded-lg backdrop-blur-sm border transition-all duration-300 ${
                           countdownVideoOff
@@ -625,7 +1182,9 @@ export default function VideoDate() {
                         <motion.button
                           onClick={() => {
                             setCountdownMuted(!countdownMuted)
-                            setIsMuted(!countdownMuted)
+                            if (room) {
+                              room.localParticipant.setMicrophoneEnabled(countdownMuted)
+                            }
                           }}
                           className={`p-2.5 sm:p-3.5 rounded-xl backdrop-blur-sm border-2 transition-all duration-300 ${
                             countdownMuted
@@ -642,7 +1201,9 @@ export default function VideoDate() {
                         <motion.button
                           onClick={() => {
                             setCountdownVideoOff(!countdownVideoOff)
-                            setIsVideoOff(!countdownVideoOff)
+                            if (room) {
+                              room.localParticipant.setCameraEnabled(countdownVideoOff)
+                            }
                           }}
                           className={`p-2.5 sm:p-3.5 rounded-xl backdrop-blur-sm border-2 transition-all duration-300 ${
                             countdownVideoOff
@@ -950,23 +1511,22 @@ export default function VideoDate() {
                   whileHover={{ scale: 1.01 }}
                 >
                   <div className="relative aspect-video rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-teal-300/50 transition-all duration-300 shadow-2xl">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <motion.div
-                          animate={{
-                            scale: [1, 1.1, 1],
-                            opacity: [0.5, 0.8, 0.5],
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                          }}
-                        >
-                          <Video className="w-20 h-20 text-white/30 mx-auto mb-2" />
-                        </motion.div>
-                        <p className="text-sm opacity-60 font-medium">your video</p>
+                    {isVideoOff ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <VideoOff className="w-20 h-20 text-white/30 mx-auto mb-2" />
+                          <p className="text-sm opacity-60 font-medium">video off</p>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                      />
+                    )}
 
                     <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 flex items-center gap-2 sm:gap-3">
                       <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
@@ -1013,24 +1573,22 @@ export default function VideoDate() {
                   whileHover={{ scale: 1.01 }}
                 >
                   <div className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-blue-400/50 transition-all duration-300 shadow-2xl">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <motion.div
-                          animate={{
-                            scale: [1, 1.1, 1],
-                            opacity: [0.5, 0.8, 0.5],
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            delay: 0.5,
-                          }}
-                        >
-                          <Video className="w-20 h-20 text-white/30 mx-auto mb-2" />
-                        </motion.div>
-                        <p className="text-sm opacity-60 font-medium">partner video</p>
+                    {isPartnerVideoOff || !remoteVideoTrack ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <VideoOff className="w-20 h-20 text-white/30 mx-auto mb-2" />
+                          <p className="text-sm opacity-60 font-medium">partner video off</p>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <video
+                        ref={remoteVideoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <audio ref={remoteAudioRef} autoPlay />
 
                     <div className="absolute bottom-4 left-4 flex items-center gap-3">
                       <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-blue-400/50 bg-white/10 backdrop-blur-sm">
@@ -1077,7 +1635,7 @@ export default function VideoDate() {
                 transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
               >
                 <motion.button
-                  onClick={() => setIsMuted(!isMuted)}
+                  onClick={toggleMute}
                   className={`p-3.5 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg touch-manipulation ${
                     isMuted
                       ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20 active:scale-95"
@@ -1092,7 +1650,7 @@ export default function VideoDate() {
                 </motion.button>
 
                 <motion.button
-                  onClick={() => setIsVideoOff(!isVideoOff)}
+                  onClick={toggleVideo}
                   className={`p-3.5 sm:p-4 rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg touch-manipulation ${
                     isVideoOff
                       ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20 active:scale-95"
@@ -1283,12 +1841,33 @@ export default function VideoDate() {
 
           <div className="flex flex-col gap-3">
             <label className="text-sm font-medium opacity-80">
-              what happened?
+              category
+            </label>
+            <select
+              value={reportCategory}
+              onChange={(e) => setReportCategory(e.target.value)}
+              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:outline-none text-white transition-all duration-300"
+            >
+              <option value="">select a category</option>
+              <option value="inappropriate_behaviour">inappropriate behaviour</option>
+              <option value="harassment">harassment</option>
+              <option value="sexual_content">sexual content</option>
+              <option value="camera_refusal">camera refusal</option>
+              <option value="fake_profile">fake profile</option>
+              <option value="underage_suspicion">underage suspicion</option>
+              <option value="scam_attempts">scam attempts</option>
+              <option value="hate_speech">hate speech</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-medium opacity-80">
+              details
             </label>
             <textarea
               value={reportReason}
               onChange={(e) => setReportReason(e.target.value)}
-              placeholder="describe the inappropriate behavior..."
+              placeholder="describe what happened..."
               className="w-full p-4 rounded-xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 resize-none min-h-[120px]"
               rows={5}
             />
@@ -1305,14 +1884,14 @@ export default function VideoDate() {
             </motion.button>
             <motion.button
               onClick={handleSubmitReport}
-              disabled={!reportReason.trim()}
+              disabled={!reportCategory || !reportReason.trim()}
               className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                reportReason.trim()
+                reportCategory && reportReason.trim()
                   ? "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/30"
                   : "bg-white/5 border border-white/10 text-white/40 cursor-not-allowed"
               }`}
-              whileHover={reportReason.trim() ? { scale: 1.05 } : {}}
-              whileTap={reportReason.trim() ? { scale: 0.95 } : {}}
+              whileHover={reportCategory && reportReason.trim() ? { scale: 1.05 } : {}}
+              whileTap={reportCategory && reportReason.trim() ? { scale: 0.95 } : {}}
             >
               submit report
             </motion.button>
@@ -1399,15 +1978,23 @@ export default function VideoDate() {
               <label className="text-[11px] sm:text-xs font-medium opacity-80 flex items-center gap-1">
                 <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 flex-shrink-0" />
                 <span>email (optional)</span>
+                <input
+                  type="checkbox"
+                  checked={shareContactDetails.email}
+                  onChange={(e) => setShareContactDetails(prev => ({ ...prev, email: e.target.checked }))}
+                  className="ml-auto w-4 h-4 rounded border-white/20 bg-white/5 text-teal-300 focus:ring-teal-300"
+                />
               </label>
-              <input
-                type="email"
-                value={userContactDetails.email}
-                onChange={(e) => setUserContactDetails(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="your@email.com"
-                className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
-                style={{ minHeight: '36px' }}
-              />
+              {shareContactDetails.email && (
+                <input
+                  type="email"
+                  value={userContactDetails.email}
+                  onChange={(e) => setUserContactDetails(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="your@email.com"
+                  className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
+                  style={{ minHeight: '36px' }}
+                />
+              )}
             </motion.div>
 
             <motion.div
@@ -1419,15 +2006,23 @@ export default function VideoDate() {
               <label className="text-[11px] sm:text-xs font-medium opacity-80 flex items-center gap-1">
                 <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 flex-shrink-0" />
                 <span>phone number (optional)</span>
+                <input
+                  type="checkbox"
+                  checked={shareContactDetails.phone}
+                  onChange={(e) => setShareContactDetails(prev => ({ ...prev, phone: e.target.checked }))}
+                  className="ml-auto w-4 h-4 rounded border-white/20 bg-white/5 text-teal-300 focus:ring-teal-300"
+                />
               </label>
-              <input
-                type="tel"
-                value={userContactDetails.phone}
-                onChange={(e) => setUserContactDetails(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+1 (555) 123-4567"
-                className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
-                style={{ minHeight: '36px' }}
-              />
+              {shareContactDetails.phone && (
+                <input
+                  type="tel"
+                  value={userContactDetails.phone}
+                  onChange={(e) => setUserContactDetails(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+1 (555) 123-4567"
+                  className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
+                  style={{ minHeight: '36px' }}
+                />
+              )}
             </motion.div>
 
             <motion.div
@@ -1437,14 +2032,14 @@ export default function VideoDate() {
               transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
             >
               <label className="text-[11px] sm:text-xs font-medium opacity-80 flex items-center gap-1">
-                <Facebook className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 flex-shrink-0" />
+                <Instagram className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 flex-shrink-0" />
                 <span>facebook (optional)</span>
               </label>
               <input
                 type="text"
-                value={userContactDetails.facebook}
-                onChange={(e) => setUserContactDetails(prev => ({ ...prev, facebook: e.target.value }))}
-                placeholder="your.facebook.username"
+                value={shareContactDetails.instagram ? userContactDetails.instagram : ""}
+                onChange={(e) => setUserContactDetails(prev => ({ ...prev, instagram: e.target.value }))}
+                placeholder="@yourusername"
                 className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
                 style={{ minHeight: '36px' }}
               />
@@ -1459,15 +2054,23 @@ export default function VideoDate() {
               <label className="text-[11px] sm:text-xs font-medium opacity-80 flex items-center gap-1">
                 <Instagram className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 flex-shrink-0" />
                 <span>instagram (optional)</span>
+                <input
+                  type="checkbox"
+                  checked={shareContactDetails.instagram}
+                  onChange={(e) => setShareContactDetails(prev => ({ ...prev, instagram: e.target.checked }))}
+                  className="ml-auto w-4 h-4 rounded border-white/20 bg-white/5 text-teal-300 focus:ring-teal-300"
+                />
               </label>
-              <input
-                type="text"
-                value={userContactDetails.instagram}
-                onChange={(e) => setUserContactDetails(prev => ({ ...prev, instagram: e.target.value }))}
-                placeholder="@yourusername"
-                className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
-                style={{ minHeight: '36px' }}
-              />
+              {shareContactDetails.instagram && (
+                <input
+                  type="text"
+                  value={userContactDetails.instagram}
+                  onChange={(e) => setUserContactDetails(prev => ({ ...prev, instagram: e.target.value }))}
+                  placeholder="@yourusername"
+                  className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
+                  style={{ minHeight: '36px' }}
+                />
+              )}
             </motion.div>
 
             <motion.div
@@ -1477,17 +2080,25 @@ export default function VideoDate() {
               transition={{ delay: 0.6, type: "spring", stiffness: 300 }}
             >
               <label className="text-[11px] sm:text-xs font-medium opacity-80 flex items-center gap-1">
-                <LinkIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 flex-shrink-0" />
-                <span>other (optional)</span>
+                <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-300 flex-shrink-0" />
+                <span>whatsapp (optional)</span>
+                <input
+                  type="checkbox"
+                  checked={shareContactDetails.whatsapp}
+                  onChange={(e) => setShareContactDetails(prev => ({ ...prev, whatsapp: e.target.checked }))}
+                  className="ml-auto w-4 h-4 rounded border-white/20 bg-white/5 text-teal-300 focus:ring-teal-300"
+                />
               </label>
-              <input
-                type="text"
-                value={userContactDetails.other}
-                onChange={(e) => setUserContactDetails(prev => ({ ...prev, other: e.target.value }))}
-                placeholder="snapchat, discord, etc."
-                className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
-                style={{ minHeight: '36px' }}
-              />
+              {shareContactDetails.whatsapp && (
+                <input
+                  type="tel"
+                  value={userContactDetails.whatsapp}
+                  onChange={(e) => setUserContactDetails(prev => ({ ...prev, whatsapp: e.target.value }))}
+                  placeholder="+1 (555) 123-4567"
+                  className="w-full p-2 sm:p-2.5 rounded-lg bg-white/5 border border-white/10 focus:border-teal-300/50 focus:outline-none text-white placeholder-white/40 transition-all duration-300 text-xs sm:text-sm touch-manipulation"
+                  style={{ minHeight: '36px' }}
+                />
+              )}
             </motion.div>
           </div>
 
@@ -1600,12 +2211,6 @@ export default function VideoDate() {
                     <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 w-full max-w-xs justify-center">
                       <Phone className="w-5 h-5 text-teal-300 flex-shrink-0" />
                       <span className="text-sm">{partnerContactDetails.phone}</span>
-                    </div>
-                  )}
-                  {partnerContactDetails.facebook && (
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 w-full max-w-xs justify-center">
-                      <Facebook className="w-5 h-5 text-teal-300 flex-shrink-0" />
-                      <span className="text-sm">{partnerContactDetails.facebook}</span>
                     </div>
                   )}
                   {partnerContactDetails.instagram && (
