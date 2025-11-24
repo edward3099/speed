@@ -216,7 +216,7 @@ class TimeManager {
     };
     
     if (!this.isPaused) {
-      timer.handle = setInterval(async () => {
+      timer.handle = (typeof window !== 'undefined' ? window : global).setInterval(async () => {
         await this.executeTimer(timer);
       }, adjustedInterval);
     }
@@ -292,7 +292,7 @@ class TimeManager {
     if (timer.interval) {
       // For intervals, just restart
       const adjustedInterval = timer.interval / this.speedMultiplier;
-      timer.handle = setInterval(async () => {
+      timer.handle = (typeof window !== 'undefined' ? window : global).setInterval(async () => {
         await this.executeTimer(timer);
       }, adjustedInterval);
     } else if (timer.timeout && timer.expiresAt) {
@@ -338,12 +338,16 @@ class TimeManager {
    */
   private startTimeSync() {
     // Update current time regularly
-    setInterval(() => {
-      if (!this.isPaused) {
-        this.currentTime = this.getTime();
-        this.checkExpiredTimers();
-      }
-    }, 1000);
+    // Use global setInterval to avoid conflict with exported method
+    if (typeof window !== 'undefined' || typeof global !== 'undefined') {
+      const globalSetInterval = (typeof window !== 'undefined' ? window : global).setInterval;
+      globalSetInterval(() => {
+        if (!this.isPaused) {
+          this.currentTime = this.getTime();
+          this.checkExpiredTimers();
+        }
+      }, 1000);
+    }
   }
   
   /**

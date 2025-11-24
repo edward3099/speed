@@ -4,8 +4,6 @@
  */
 
 import { debugState } from './state';
-import * as fs from 'fs';
-import * as path from 'path';
 
 export interface LogEntry {
   id: string;
@@ -26,15 +24,13 @@ class LoggingEngine {
   private logs: LogEntry[] = [];
   private maxMemoryLogs: number = 10000;
   private logFile: string | null = null;
-  private writeStream: fs.WriteStream | null = null;
+  private writeStream: any = null;
   private enableFileLogging: boolean = false;
   
   private constructor() {
-    // Initialize file logging if in Node environment
-    if (typeof window === 'undefined') {
-      this.enableFileLogging = true;
-      this.initFileLogging();
-    }
+    // File logging disabled for client-side compatibility
+    // Can be enabled server-side if needed
+    this.enableFileLogging = false;
   }
   
   static getInstance(): LoggingEngine {
@@ -45,21 +41,8 @@ class LoggingEngine {
   }
   
   private initFileLogging() {
-    try {
-      const logsDir = path.join(process.cwd(), 'logs');
-      if (!fs.existsSync(logsDir)) {
-        fs.mkdirSync(logsDir, { recursive: true });
-      }
-      
-      this.logFile = path.join(logsDir, 'event_log.jsonl');
-      this.writeStream = fs.createWriteStream(this.logFile, {
-        flags: 'a',
-        encoding: 'utf8'
-      });
-    } catch (err) {
-      console.error('Failed to initialize file logging:', err);
-      this.enableFileLogging = false;
-    }
+    // File logging disabled for client-side compatibility
+    // This would be implemented server-side if needed
   }
   
   private createLogEntry(
@@ -79,13 +62,8 @@ class LoggingEngine {
   }
   
   private writeToFile(entry: LogEntry) {
-    if (this.enableFileLogging && this.writeStream) {
-      try {
-        this.writeStream.write(JSON.stringify(entry) + '\n');
-      } catch (err) {
-        console.error('Failed to write log to file:', err);
-      }
-    }
+    // File logging disabled for client-side compatibility
+    // Logs are stored in memory only
   }
   
   private addLog(entry: LogEntry) {
@@ -101,7 +79,7 @@ class LoggingEngine {
     this.writeToFile(entry);
     
     // Console output in development
-    if (process.env.NODE_ENV === 'development') {
+    if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || true)) {
       const output = {
         type: entry.type,
         level: entry.level,
