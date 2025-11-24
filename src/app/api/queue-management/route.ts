@@ -19,7 +19,7 @@ import { NextResponse } from 'next/server';
  * - Or call it manually for testing
  */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     // Call the master queue management function
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
  * GET endpoint for health check and manual triggering
  */
 export async function GET(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     // Get current queue health
