@@ -30,6 +30,24 @@ import {
   isSparkWrapper,
   getMatchingConfig
 } from "@/lib/constants/locked-state"
+// 🔍 DEBUG TOOLKIT: Import all 9 debugging modules
+import {
+  debugState,
+  logEvent,
+  logError,
+  logDebug,
+  captureEvent,
+  validateAfterEvent,
+  addToQueue,
+  createPair,
+  recordVote,
+  updateHeartbeat,
+  getDebugFeed,
+  getTime,
+  setHeartbeatTimer,
+  freezeState,
+  rollbackTo,
+} from "@/lib/debug"
 
 interface Profile {
   id: string
@@ -296,6 +314,20 @@ export default function spin() {
       // DO NOT call process_matching here - it should only be called when user explicitly presses spin
       // This prevents automatic matching when users are just viewing the page
     }, 5000) // Update every 5 seconds
+    
+    // 🔍 MODULE 7: Periodic heartbeat update
+    const heartbeatInterval = setInterval(async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser && isInQueue) {
+        updateHeartbeat(authUser.id)
+        // 🔍 MODULE 2: Log heartbeat
+        logDebug({
+          type: 'heartbeat',
+          user: authUser.id,
+          metadata: { timestamp: getTime() }
+        })
+      }
+    }, 10000) // Every 10 seconds
 
     // Clean up stale matches periodically (every 30 seconds)
     // This prevents users from getting stuck in vote_active
@@ -314,6 +346,7 @@ export default function spin() {
       clearInterval(interval)
       clearInterval(cleanupInterval)
       clearInterval(cleanupQueueInterval)
+      if (heartbeatInterval) clearInterval(heartbeatInterval)
     }
   }, [spinning, isInQueue, user, supabase])
 
@@ -595,12 +628,34 @@ export default function spin() {
       const handleMatch = async (match: any) => {
         const { data: { user: currentAuthUser } } = await supabase.auth.getUser()
         if (!currentAuthUser) {
+          // 🔍 MODULE 2: Log error
+          logError({
+            type: 'handleMatchNoAuth',
+            error: new Error('No authenticated user'),
+            metadata: { matchId: match.id }
+          })
           console.error('❌ No authenticated user when handling match')
           return
         }
 
+        // 🔍 MODULE 1 & 3: Capture before state
+        const beforeState = debugState()
+        
         // CRITICAL: Verify this match actually belongs to the current authenticated user
         if (match.user1_id !== currentAuthUser.id && match.user2_id !== currentAuthUser.id) {
+          // 🔍 MODULE 2 & 4: Log error and validate
+          logError({
+            type: 'handleMatchInvalidUser',
+            error: new Error('Match does not belong to current user'),
+            user: currentAuthUser.id,
+            beforeState,
+            metadata: {
+              matchUser1: match.user1_id,
+              matchUser2: match.user2_id,
+              currentUserId: currentAuthUser.id
+            }
+          })
+          validateAfterEvent('handleMatchInvalidUser', debugState())
           console.error('❌ Match does not belong to current user!', {
             matchUser1: match.user1_id,
             matchUser2: match.user2_id,
@@ -608,6 +663,14 @@ export default function spin() {
           })
           return
         }
+
+        // 🔍 MODULE 2: Log match found via real-time
+        logEvent({
+          type: 'matchFoundRealtime',
+          user: currentAuthUser.id,
+          beforeState,
+          metadata: { matchId: match.id }
+        })
 
         console.log('✅ Match verified for current user:', currentAuthUser.id)
 
@@ -1226,6 +1289,21 @@ export default function spin() {
       })
 
       if (matchError) {
+        // 🔍 MODULE 2 & 4: Log error and validate
+        const errorState = debugState()
+        logError({
+          type: 'periodicMatchingError',
+          error: matchError,
+          user: authUser.id,
+          afterState: errorState,
+          metadata: {
+            message: matchError?.message,
+            code: matchError?.code,
+            details: matchError?.details
+          }
+        })
+        validateAfterEvent('periodicMatchingError', errorState)
+        
         console.error('Error in periodic matching attempt:', matchError)
         // Log the error
         await supabase.rpc('log_frontend_error', {
@@ -1243,6 +1321,14 @@ export default function spin() {
       }
 
       if (matchId) {
+        // 🔍 MODULE 2: Log periodic match found
+        logEvent({
+          type: 'periodicMatchFound',
+          user: authUser.id,
+          afterState: debugState(),
+          metadata: { matchId }
+        })
+        
         console.log('✅ Periodic matching attempt found match:', matchId)
         // Check queue status to see if we're in vote_active
         const { data: queueStatus } = await supabase
@@ -1422,6 +1508,17 @@ export default function spin() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser || !user) return
 
+    // 🔍 MODULE 1 & 3: Capture before state snapshot
+    const beforeState = debugState()
+    
+    // 🔍 MODULE 2: Log spin start event
+    logEvent({
+      type: 'spinStart',
+      user: authUser.id,
+      beforeState,
+      metadata: { userId: authUser.id, userName: user.name }
+    })
+
     // Fetch compatible photos for spinning animation (opposite gender)
     const photos = await fetchSpinningPhotos()
     setSpinningPhotos(photos.length > 0 ? photos : [])
@@ -1447,16 +1544,46 @@ export default function spin() {
       // 🔒 LOCKED: Must use SPARK wrapper for join_queue
       // CRITICAL: Must use spark_join_queue, never join_queue directly
       // See: /LOCKED_STATE.md - Critical RPC Functions
-      const { data: queueId, error: queueError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, {
-        p_user_id: authUser.id,
-        p_fairness_boost: 0
-      })
+      
+      // 🔍 MODULE 3: Capture event with snapshots
+      const { result: queueResult, snapshot: queueSnapshot } = await captureEvent(
+        'joinQueue',
+        authUser.id,
+        async () => {
+          const { data: queueId, error: queueError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, {
+            p_user_id: authUser.id,
+            p_fairness_boost: 0
+          })
+          return { queueId, queueError }
+        }
+      )
+      
+      const { queueId, queueError } = queueResult
       
       // CRITICAL: Small delay to ensure join_queue completes and other user is reset
       // This prevents race condition where process_matching runs before the other user is reset
       await new Promise(resolve => setTimeout(resolve, 100))
 
       if (queueError) {
+        // 🔍 MODULE 2 & 4: Log error and validate state
+        const errorState = debugState()
+        logError({
+          type: 'joinQueueError',
+          error: queueError,
+          user: authUser.id,
+          beforeState: queueSnapshot.beforeState,
+          afterState: errorState,
+          metadata: {
+            message: queueError?.message,
+            code: queueError?.code,
+            details: queueError?.details,
+            hint: queueError?.hint
+          }
+        })
+        
+        // 🔍 MODULE 4: Validate state after error
+        validateAfterEvent('joinQueueError', errorState)
+        
         console.error('Error joining queue:', queueError)
         console.error('Error details:', {
           message: queueError?.message,
@@ -1483,6 +1610,20 @@ export default function spin() {
         return
       }
 
+      // 🔍 MODULE 1: Update debug state
+      addToQueue(authUser.id, {})
+      
+      // 🔍 MODULE 2: Log successful queue join
+      logEvent({
+        type: 'queueJoined',
+        user: authUser.id,
+        afterState: debugState(),
+        metadata: { queueId }
+      })
+      
+      // 🔍 MODULE 4: Validate state after queue join
+      validateAfterEvent('queueJoined', debugState())
+
       setIsInQueue(true)
 
       // CRITICAL: Small delay to ensure join_queue completes and other user is reset
@@ -1493,10 +1634,21 @@ export default function spin() {
       // Note: This initial attempt may find no match if other user hasn't joined yet
       // The polling interval (every 2 seconds) will keep trying until match is found
       let matchId: string | null = null
-      // 🔒 LOCKED: Must use SPARK wrapper
-      const { data: matchIdResult, error: matchError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING, {
-        p_user_id: authUser.id
-      })
+      
+      // 🔍 MODULE 3: Capture matching attempt with snapshots
+      const { result: matchResult, snapshot: matchSnapshot } = await captureEvent(
+        'processMatching',
+        authUser.id,
+        async () => {
+          // 🔒 LOCKED: Must use SPARK wrapper
+          const { data: matchIdResult, error: matchError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING, {
+            p_user_id: authUser.id
+          })
+          return { matchIdResult, matchError }
+        }
+      )
+      
+      const { matchIdResult, matchError } = matchResult
 
       if (matchError) {
         console.error('❌ Error processing matching:', matchError)
@@ -1878,6 +2030,27 @@ export default function spin() {
             .single()
 
           if (partnerProfile) {
+            // 🔍 MODULE 1: Update debug state - create pair
+            createPair(authUser.id, partnerId)
+            
+            // 🔍 MODULE 2: Log match success
+            logEvent({
+              type: 'matchCreated',
+              user: authUser.id,
+              afterState: debugState(),
+              metadata: { 
+                matchId: match.id, 
+                partnerId,
+                partnerName: partnerProfile.name 
+              }
+            })
+            
+            // 🔍 MODULE 4: Validate state after match creation
+            validateAfterEvent('matchCreated', debugState())
+            
+            // 🔍 MODULE 7: Set heartbeat timer
+            setHeartbeatTimer(authUser.id) // Heartbeat every 10s (configured in timeManager)
+            
             setSpinning(false)
             setCurrentMatchId(match.id)
             setMatchedPartner({
@@ -1906,9 +2079,23 @@ export default function spin() {
       // If no immediate match, keep spinning and wait for real-time match notification
       // The real-time subscription will handle match detection
     } catch (error: any) {
+      // 🔍 MODULE 2 & 4: Log error and validate state
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const errorState = debugState()
+      logError({
+        type: 'startSpinError',
+        error: error,
+        user: authUser?.id,
+        afterState: errorState,
+        metadata: {
+          message: error?.message,
+          stack: error?.stack
+        }
+      })
+      validateAfterEvent('startSpinError', errorState)
+      
       console.error('Error in startSpin:', error)
       // Log frontend error
-      const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
         await supabase.rpc('log_frontend_error', {
           p_error_type: 'frontend',
