@@ -15,7 +15,7 @@ import { NextResponse } from 'next/server';
  * Use this for manual triggering or as a backup if pg_cron is unavailable.
  */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     const { data, error } = await supabase.rpc('guardian_orchestrator');
