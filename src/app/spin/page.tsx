@@ -30,6 +30,24 @@ import {
   isSparkWrapper,
   getMatchingConfig
 } from "@/lib/constants/locked-state"
+// 🔍 DEBUG TOOLKIT: Import all 9 debugging modules
+import {
+  debugState,
+  logEvent,
+  logError,
+  logDebug,
+  captureEvent,
+  validateAfterEvent,
+  addToQueue,
+  createPair,
+  recordVote,
+  updateHeartbeat,
+  getDebugFeed,
+  getTime,
+  setHeartbeatTimer,
+  freezeState,
+  rollbackTo,
+} from "@/lib/debug"
 
 interface Profile {
   id: string
@@ -296,6 +314,20 @@ export default function spin() {
       // DO NOT call process_matching here - it should only be called when user explicitly presses spin
       // This prevents automatic matching when users are just viewing the page
     }, 5000) // Update every 5 seconds
+    
+    // 🔍 MODULE 7: Periodic heartbeat update
+    const heartbeatInterval = setInterval(async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser && isInQueue) {
+        updateHeartbeat(authUser.id)
+        // 🔍 MODULE 2: Log heartbeat
+        logDebug({
+          type: 'heartbeat',
+          user: authUser.id,
+          metadata: { timestamp: getTime() }
+        })
+      }
+    }, 10000) // Every 10 seconds
 
     // Clean up stale matches periodically (every 30 seconds)
     // This prevents users from getting stuck in vote_active
@@ -314,6 +346,7 @@ export default function spin() {
       clearInterval(interval)
       clearInterval(cleanupInterval)
       clearInterval(cleanupQueueInterval)
+      if (heartbeatInterval) clearInterval(heartbeatInterval)
     }
   }, [spinning, isInQueue, user, supabase])
 
@@ -595,12 +628,34 @@ export default function spin() {
       const handleMatch = async (match: any) => {
         const { data: { user: currentAuthUser } } = await supabase.auth.getUser()
         if (!currentAuthUser) {
+          // 🔍 MODULE 2: Log error
+          logError({
+            type: 'handleMatchNoAuth',
+            error: new Error('No authenticated user'),
+            metadata: { matchId: match.id }
+          })
           console.error('❌ No authenticated user when handling match')
           return
         }
 
+        // 🔍 MODULE 1 & 3: Capture before state
+        const beforeState = debugState()
+        
         // CRITICAL: Verify this match actually belongs to the current authenticated user
         if (match.user1_id !== currentAuthUser.id && match.user2_id !== currentAuthUser.id) {
+          // 🔍 MODULE 2 & 4: Log error and validate
+          logError({
+            type: 'handleMatchInvalidUser',
+            error: new Error('Match does not belong to current user'),
+            user: currentAuthUser.id,
+            beforeState,
+            metadata: {
+              matchUser1: match.user1_id,
+              matchUser2: match.user2_id,
+              currentUserId: currentAuthUser.id
+            }
+          })
+          validateAfterEvent('handleMatchInvalidUser', debugState())
           console.error('❌ Match does not belong to current user!', {
             matchUser1: match.user1_id,
             matchUser2: match.user2_id,
@@ -608,6 +663,14 @@ export default function spin() {
           })
           return
         }
+
+        // 🔍 MODULE 2: Log match found via real-time
+        logEvent({
+          type: 'matchFoundRealtime',
+          user: currentAuthUser.id,
+          beforeState,
+          metadata: { matchId: match.id }
+        })
 
         console.log('✅ Match verified for current user:', currentAuthUser.id)
 
@@ -1226,6 +1289,21 @@ export default function spin() {
       })
 
       if (matchError) {
+        // 🔍 MODULE 2 & 4: Log error and validate
+        const errorState = debugState()
+        logError({
+          type: 'periodicMatchingError',
+          error: matchError,
+          user: authUser.id,
+          afterState: errorState,
+          metadata: {
+            message: matchError?.message,
+            code: matchError?.code,
+            details: matchError?.details
+          }
+        })
+        validateAfterEvent('periodicMatchingError', errorState)
+        
         console.error('Error in periodic matching attempt:', matchError)
         // Log the error
         await supabase.rpc('log_frontend_error', {
@@ -1243,6 +1321,14 @@ export default function spin() {
       }
 
       if (matchId) {
+        // 🔍 MODULE 2: Log periodic match found
+        logEvent({
+          type: 'periodicMatchFound',
+          user: authUser.id,
+          afterState: debugState(),
+          metadata: { matchId }
+        })
+        
         console.log('✅ Periodic matching attempt found match:', matchId)
         // Check queue status to see if we're in vote_active
         const { data: queueStatus } = await supabase
@@ -1422,6 +1508,55 @@ export default function spin() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser || !user) return
 
+    // 🔍 MODULE 1 & 3: Capture before state snapshot (from database)
+    const { data: queueBefore } = await supabase.from('matching_queue').select('*')
+    const { data: matchesBefore } = await supabase.from('matches').select('*').eq('status', 'pending')
+    const beforeState = {
+      queue: queueBefore || [],
+      matches: matchesBefore || [],
+      timestamp: new Date().toISOString(),
+      debugState: debugState()
+    }
+    
+    // 🔍 MODULE 2: Log spin start event (both in-memory and database)
+    try {
+      const logEntry = logEvent({
+        type: 'spinStart',
+        user: authUser.id,
+        beforeState,
+        metadata: { userId: authUser.id, userName: user.name }
+      })
+      console.log('🔍 DEBUG: Spin started - Log entry created', { 
+        userId: authUser.id, 
+        logId: logEntry?.id,
+        logType: logEntry?.type,
+        beforeState 
+      })
+      
+      // Also log to database for persistence across tabs
+      try {
+        await supabase.rpc('spark_log_event', {
+          p_event_type: 'spinStart',
+          p_event_category: 'spin',
+          p_event_message: `User ${user.name} started spinning`,
+          p_event_data: {
+            userId: authUser.id,
+            userName: user.name,
+            beforeState
+          },
+          p_user_id: authUser.id,
+          p_related_table: 'matching_queue',
+          p_source: 'CLIENT',
+          p_severity: 'INFO'
+        })
+        console.log('🔍 DEBUG: Logged to database')
+      } catch (dbLogError: any) {
+        console.log('🔍 DEBUG: Database logging error (non-critical):', dbLogError?.message)
+      }
+    } catch (logError) {
+      console.error('🔍 DEBUG: Failed to log spin start', logError)
+    }
+
     // Fetch compatible photos for spinning animation (opposite gender)
     const photos = await fetchSpinningPhotos()
     setSpinningPhotos(photos.length > 0 ? photos : [])
@@ -1447,16 +1582,79 @@ export default function spin() {
       // 🔒 LOCKED: Must use SPARK wrapper for join_queue
       // CRITICAL: Must use spark_join_queue, never join_queue directly
       // See: /LOCKED_STATE.md - Critical RPC Functions
-      const { data: queueId, error: queueError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, {
-        p_user_id: authUser.id,
-        p_fairness_boost: 0
-      })
+      
+      // 🔍 MODULE 3: Capture event with snapshots
+      const { result: queueResult, snapshot: queueSnapshot } = await captureEvent(
+        'joinQueue',
+        authUser.id,
+        async () => {
+          const { data: queueId, error: queueError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, {
+            p_user_id: authUser.id,
+            p_fairness_boost: 0
+          })
+          return { queueId, queueError }
+        }
+      )
+      
+      const { queueId, queueError } = queueResult
       
       // CRITICAL: Small delay to ensure join_queue completes and other user is reset
       // This prevents race condition where process_matching runs before the other user is reset
       await new Promise(resolve => setTimeout(resolve, 100))
 
       if (queueError) {
+        // 🔍 MODULE 2 & 4: Log error and validate state (from database)
+        const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+        const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+        const errorState = {
+          queue: queueAfter || [],
+          matches: matchesAfter || [],
+          timestamp: new Date().toISOString(),
+          debugState: debugState(),
+          error: queueError
+        }
+        
+        logError({
+          type: 'joinQueueError',
+          error: queueError,
+          user: authUser.id,
+          beforeState: queueSnapshot.beforeState,
+          afterState: errorState,
+          metadata: {
+            message: queueError?.message,
+            code: queueError?.code,
+            details: queueError?.details,
+            hint: queueError?.hint
+          }
+        })
+        
+        // Also log to database
+        try {
+          await supabase.rpc('spark_log_event', {
+            p_event_type: 'joinQueueError',
+            p_event_category: 'error',
+            p_event_message: queueError?.message || 'Failed to join queue',
+            p_event_data: {
+              message: queueError?.message,
+              code: queueError?.code,
+              details: queueError?.details,
+              hint: queueError?.hint,
+              error: queueError?.message || 'Unknown error'
+            },
+            p_user_id: authUser.id,
+            p_related_table: 'matching_queue',
+            p_source: 'CLIENT',
+            p_severity: 'ERROR'
+          })
+        } catch (e: any) {
+          console.log('🔍 DEBUG: Database error logging failed:', e?.message)
+        }
+        
+        // 🔍 MODULE 4: Validate state after error
+        validateAfterEvent('joinQueueError', errorState)
+        
+        console.error('🔍 DEBUG: Join queue error', { userId: authUser.id, error: queueError, errorState })
+        
         console.error('Error joining queue:', queueError)
         console.error('Error details:', {
           message: queueError?.message,
@@ -1483,6 +1681,46 @@ export default function spin() {
         return
       }
 
+      // 🔍 MODULE 1: Update debug state
+      addToQueue(authUser.id, {})
+      
+      // 🔍 MODULE 2: Log successful queue join (capture actual database state)
+      const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+      const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+      const afterState = {
+        queue: queueAfter || [],
+        matches: matchesAfter || [],
+        timestamp: new Date().toISOString(),
+        debugState: debugState()
+      }
+      
+      logEvent({
+        type: 'queueJoined',
+        user: authUser.id,
+        beforeState: queueSnapshot.beforeState,
+        afterState,
+        metadata: { queueId }
+      })
+      
+      // Also log to database
+      try {
+        await supabase.rpc('spark_log_event', {
+          p_event_type: 'queueJoined',
+          p_event_category: 'queue',
+          p_event_message: `User joined queue successfully`,
+          p_event_data: { queueId, userId: authUser.id },
+          p_user_id: authUser.id,
+          p_related_table: 'matching_queue',
+          p_source: 'CLIENT',
+          p_severity: 'INFO'
+        })
+      } catch (e) {}
+      
+      // 🔍 MODULE 4: Validate state after queue join
+      validateAfterEvent('queueJoined', afterState)
+      
+      console.log('🔍 DEBUG: Queue joined', { userId: authUser.id, queueId, afterState })
+
       setIsInQueue(true)
 
       // CRITICAL: Small delay to ensure join_queue completes and other user is reset
@@ -1493,12 +1731,50 @@ export default function spin() {
       // Note: This initial attempt may find no match if other user hasn't joined yet
       // The polling interval (every 2 seconds) will keep trying until match is found
       let matchId: string | null = null
-      // 🔒 LOCKED: Must use SPARK wrapper
-      const { data: matchIdResult, error: matchError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING, {
-        p_user_id: authUser.id
-      })
+      
+      // 🔍 MODULE 3: Capture matching attempt with snapshots
+      const { result: matchResult, snapshot: matchSnapshot } = await captureEvent(
+        'processMatching',
+        authUser.id,
+        async () => {
+          // 🔒 LOCKED: Must use SPARK wrapper
+          const { data: matchIdResult, error: matchError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING, {
+            p_user_id: authUser.id
+          })
+          return { matchIdResult, matchError }
+        }
+      )
+      
+      const { matchIdResult, matchError } = matchResult
 
       if (matchError) {
+        // 🔍 MODULE 2 & 4: Log error with actual database state
+        const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+        const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+        const errorState = {
+          queue: queueAfter || [],
+          matches: matchesAfter || [],
+          timestamp: new Date().toISOString(),
+          debugState: debugState(),
+          error: matchError
+        }
+        
+        logError({
+          type: 'processMatchingError',
+          error: matchError,
+          user: authUser.id,
+          beforeState: matchSnapshot.beforeState,
+          afterState: errorState,
+          metadata: {
+            message: matchError?.message,
+            code: matchError?.code,
+            details: matchError?.details,
+            hint: matchError?.hint
+          }
+        })
+        validateAfterEvent('processMatchingError', errorState)
+        
+        console.error('🔍 DEBUG: Process matching error', { userId: authUser.id, error: matchError, errorState })
         console.error('❌ Error processing matching:', matchError)
         // Log frontend error
         await supabase.rpc('log_frontend_error', {
@@ -1878,6 +2154,57 @@ export default function spin() {
             .single()
 
           if (partnerProfile) {
+            // 🔍 MODULE 1: Update debug state - create pair
+            createPair(authUser.id, partnerId)
+            
+            // 🔍 MODULE 2: Log match success (capture actual database state)
+            const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+            const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+            const afterState = {
+              queue: queueAfter || [],
+              matches: matchesAfter || [],
+              timestamp: new Date().toISOString(),
+              debugState: debugState()
+            }
+            
+            logEvent({
+              type: 'matchCreated',
+              user: authUser.id,
+              afterState,
+              metadata: { 
+                matchId: match.id, 
+                partnerId,
+                partnerName: partnerProfile.name 
+              }
+            })
+            
+            // Also log to database
+            try {
+              await supabase.rpc('spark_log_event', {
+                p_event_type: 'matchCreated',
+                p_event_category: 'match',
+                p_event_message: `Match created between ${authUser.id} and ${partnerId}`,
+                p_event_data: {
+                  matchId: match.id,
+                  partnerId,
+                  partnerName: partnerProfile.name
+                },
+                p_user_id: authUser.id,
+                p_related_user_id: partnerId,
+                p_related_table: 'matches',
+                p_source: 'CLIENT',
+                p_severity: 'INFO'
+              })
+            } catch (e) {}
+            
+            // 🔍 MODULE 4: Validate state after match creation
+            validateAfterEvent('matchCreated', afterState)
+            
+            console.log('🔍 DEBUG: Match created', { userId: authUser.id, matchId: match.id, partnerId, afterState })
+            
+            // 🔍 MODULE 7: Set heartbeat timer
+            setHeartbeatTimer(authUser.id) // Heartbeat every 10s (configured in timeManager)
+            
             setSpinning(false)
             setCurrentMatchId(match.id)
             setMatchedPartner({
@@ -1906,9 +2233,23 @@ export default function spin() {
       // If no immediate match, keep spinning and wait for real-time match notification
       // The real-time subscription will handle match detection
     } catch (error: any) {
+      // 🔍 MODULE 2 & 4: Log error and validate state
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const errorState = debugState()
+      logError({
+        type: 'startSpinError',
+        error: error,
+        user: authUser?.id,
+        afterState: errorState,
+        metadata: {
+          message: error?.message,
+          stack: error?.stack
+        }
+      })
+      validateAfterEvent('startSpinError', errorState)
+      
       console.error('Error in startSpin:', error)
       // Log frontend error
-      const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
         await supabase.rpc('log_frontend_error', {
           p_error_type: 'frontend',
@@ -2665,27 +3006,30 @@ export default function spin() {
                 opacity: 1, 
                 y: 0, 
                 scale: 1,
-              }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ delay: 0, type: "spring", stiffness: 300, damping: 25 }}
-              className="flex items-center justify-center gap-1 sm:gap-3 md:gap-4 px-3 sm:px-8 md:px-10 py-2 sm:py-4 md:py-5 rounded-lg sm:rounded-3xl bg-gradient-to-r from-teal-300/30 via-teal-300/25 to-blue-500/30 backdrop-blur-xl border-2 border-teal-300/60 sm:border-2 relative"
-              style={{
-                visibility: 'visible',
-                display: 'flex',
-                opacity: 1,
-                pointerEvents: 'auto',
-              }}
-              animate={{
                 boxShadow: [
                   "0 0 30px rgba(94,234,212,0.4)",
                   "0 0 50px rgba(94,234,212,0.6)",
                   "0 0 30px rgba(94,234,212,0.4)",
                 ],
               }}
+              exit={{ opacity: 0, y: -20 }}
               transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
+                delay: 0,
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                boxShadow: {
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }
+              }}
+              className="flex items-center justify-center gap-1 sm:gap-3 md:gap-4 px-3 sm:px-8 md:px-10 py-2 sm:py-4 md:py-5 rounded-lg sm:rounded-3xl bg-gradient-to-r from-teal-300/30 via-teal-300/25 to-blue-500/30 backdrop-blur-xl border-2 border-teal-300/60 sm:border-2 relative"
+              style={{
+                visibility: 'visible',
+                display: 'flex',
+                opacity: 1,
+                pointerEvents: 'auto',
               }}
             >
               <motion.span

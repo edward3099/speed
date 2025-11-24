@@ -3,9 +3,6 @@
  * Read log files and replay events to reconstruct state
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import * as readline from 'readline';
 import { engineState, debugState } from '../core/state';
 import { logEvent, logError, LogEntry } from '../core/logging';
 import { SimulationEvent } from '../simulation/simulator';
@@ -439,9 +436,10 @@ class EventReplayEngine {
       
     } finally {
       // Clean up temp file
-      if (fs.existsSync(tempFile)) {
-        fs.unlinkSync(tempFile);
-      }
+      // Client-side: File deletion not supported
+      // if (tempFile && fs.existsSync(tempFile)) {
+      //   fs.unlinkSync(tempFile);
+      // }
     }
   }
   
