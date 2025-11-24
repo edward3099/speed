@@ -1508,8 +1508,15 @@ export default function spin() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser || !user) return
 
-    // 🔍 MODULE 1 & 3: Capture before state snapshot
-    const beforeState = debugState()
+    // 🔍 MODULE 1 & 3: Capture before state snapshot (from database)
+    const { data: queueBefore } = await supabase.from('matching_queue').select('*')
+    const { data: matchesBefore } = await supabase.from('matches').select('*').eq('status', 'pending')
+    const beforeState = {
+      queue: queueBefore || [],
+      matches: matchesBefore || [],
+      timestamp: new Date().toISOString(),
+      debugState: debugState()
+    }
     
     // 🔍 MODULE 2: Log spin start event
     logEvent({
@@ -1518,6 +1525,8 @@ export default function spin() {
       beforeState,
       metadata: { userId: authUser.id, userName: user.name }
     })
+    
+    console.log('🔍 DEBUG: Spin started', { userId: authUser.id, beforeState })
 
     // Fetch compatible photos for spinning animation (opposite gender)
     const photos = await fetchSpinningPhotos()
@@ -1565,8 +1574,17 @@ export default function spin() {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       if (queueError) {
-        // 🔍 MODULE 2 & 4: Log error and validate state
-        const errorState = debugState()
+        // 🔍 MODULE 2 & 4: Log error and validate state (from database)
+        const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+        const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+        const errorState = {
+          queue: queueAfter || [],
+          matches: matchesAfter || [],
+          timestamp: new Date().toISOString(),
+          debugState: debugState(),
+          error: queueError
+        }
+        
         logError({
           type: 'joinQueueError',
           error: queueError,
@@ -1583,6 +1601,8 @@ export default function spin() {
         
         // 🔍 MODULE 4: Validate state after error
         validateAfterEvent('joinQueueError', errorState)
+        
+        console.error('🔍 DEBUG: Join queue error', { userId: authUser.id, error: queueError, errorState })
         
         console.error('Error joining queue:', queueError)
         console.error('Error details:', {
@@ -1613,16 +1633,28 @@ export default function spin() {
       // 🔍 MODULE 1: Update debug state
       addToQueue(authUser.id, {})
       
-      // 🔍 MODULE 2: Log successful queue join
+      // 🔍 MODULE 2: Log successful queue join (capture actual database state)
+      const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+      const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+      const afterState = {
+        queue: queueAfter || [],
+        matches: matchesAfter || [],
+        timestamp: new Date().toISOString(),
+        debugState: debugState()
+      }
+      
       logEvent({
         type: 'queueJoined',
         user: authUser.id,
-        afterState: debugState(),
+        beforeState: queueSnapshot.beforeState,
+        afterState,
         metadata: { queueId }
       })
       
       // 🔍 MODULE 4: Validate state after queue join
-      validateAfterEvent('queueJoined', debugState())
+      validateAfterEvent('queueJoined', afterState)
+      
+      console.log('🔍 DEBUG: Queue joined', { userId: authUser.id, queueId, afterState })
 
       setIsInQueue(true)
 
@@ -1651,6 +1683,33 @@ export default function spin() {
       const { matchIdResult, matchError } = matchResult
 
       if (matchError) {
+        // 🔍 MODULE 2 & 4: Log error with actual database state
+        const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+        const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+        const errorState = {
+          queue: queueAfter || [],
+          matches: matchesAfter || [],
+          timestamp: new Date().toISOString(),
+          debugState: debugState(),
+          error: matchError
+        }
+        
+        logError({
+          type: 'processMatchingError',
+          error: matchError,
+          user: authUser.id,
+          beforeState: matchSnapshot.beforeState,
+          afterState: errorState,
+          metadata: {
+            message: matchError?.message,
+            code: matchError?.code,
+            details: matchError?.details,
+            hint: matchError?.hint
+          }
+        })
+        validateAfterEvent('processMatchingError', errorState)
+        
+        console.error('🔍 DEBUG: Process matching error', { userId: authUser.id, error: matchError, errorState })
         console.error('❌ Error processing matching:', matchError)
         // Log frontend error
         await supabase.rpc('log_frontend_error', {
@@ -2033,11 +2092,20 @@ export default function spin() {
             // 🔍 MODULE 1: Update debug state - create pair
             createPair(authUser.id, partnerId)
             
-            // 🔍 MODULE 2: Log match success
+            // 🔍 MODULE 2: Log match success (capture actual database state)
+            const { data: queueAfter } = await supabase.from('matching_queue').select('*')
+            const { data: matchesAfter } = await supabase.from('matches').select('*').eq('status', 'pending')
+            const afterState = {
+              queue: queueAfter || [],
+              matches: matchesAfter || [],
+              timestamp: new Date().toISOString(),
+              debugState: debugState()
+            }
+            
             logEvent({
               type: 'matchCreated',
               user: authUser.id,
-              afterState: debugState(),
+              afterState,
               metadata: { 
                 matchId: match.id, 
                 partnerId,
@@ -2046,7 +2114,9 @@ export default function spin() {
             })
             
             // 🔍 MODULE 4: Validate state after match creation
-            validateAfterEvent('matchCreated', debugState())
+            validateAfterEvent('matchCreated', afterState)
+            
+            console.log('🔍 DEBUG: Match created', { userId: authUser.id, matchId: match.id, partnerId, afterState })
             
             // 🔍 MODULE 7: Set heartbeat timer
             setHeartbeatTimer(authUser.id) // Heartbeat every 10s (configured in timeManager)

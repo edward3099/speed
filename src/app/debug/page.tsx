@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { 
   debugState, 
   getDebugFeed, 
@@ -14,6 +15,7 @@ import {
 } from "@/lib/debug"
 
 export default function DebugPage() {
+  const supabase = createClient()
   const [feed, setFeed] = useState<any>(null)
   const [state, setState] = useState<any>(null)
   const [logs, setLogs] = useState<any[]>([])
@@ -23,12 +25,33 @@ export default function DebugPage() {
   const [timers, setTimers] = useState<any[]>([])
   const [frozenStates, setFrozenStates] = useState<any[]>([])
   const [activeModule, setActiveModule] = useState<string>("feed")
+  const [dbState, setDbState] = useState<any>(null)
 
   useEffect(() => {
     loadDebugData()
-    const interval = setInterval(loadDebugData, 2000) // Refresh every 2 seconds
+    loadDatabaseState()
+    const interval = setInterval(() => {
+      loadDebugData()
+      loadDatabaseState()
+    }, 2000) // Refresh every 2 seconds
     return () => clearInterval(interval)
   }, [])
+
+  const loadDatabaseState = async () => {
+    try {
+      const { data: queue } = await supabase.from('matching_queue').select('*')
+      const { data: matches } = await supabase.from('matches').select('*').eq('status', 'pending')
+      const { data: votes } = await supabase.from('votes').select('*').order('created_at', { ascending: false }).limit(10)
+      setDbState({
+        queue: queue || [],
+        matches: matches || [],
+        votes: votes || [],
+        timestamp: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Error loading database state:', error)
+    }
+  }
 
   const loadDebugData = () => {
     try {
@@ -70,9 +93,18 @@ export default function DebugPage() {
   const renderModule1 = () => (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Module 1: debugState()</h2>
-      <pre className="bg-gray-900 p-4 rounded overflow-auto max-h-96 text-xs">
-        {JSON.stringify(state, null, 2)}
-      </pre>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold mb-2">In-Memory Debug State</h3>
+        <pre className="bg-gray-900 p-4 rounded overflow-auto max-h-64 text-xs">
+          {JSON.stringify(state, null, 2)}
+        </pre>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Actual Database State</h3>
+        <pre className="bg-gray-900 p-4 rounded overflow-auto max-h-64 text-xs">
+          {JSON.stringify(dbState, null, 2)}
+        </pre>
+      </div>
     </div>
   )
 
@@ -309,8 +341,13 @@ export default function DebugPage() {
       </div>
 
       <div className="mt-4 text-sm text-gray-400">
-        Auto-refreshing every 2 seconds | Last update: {new Date().toLocaleTimeString()}
+        Auto-refreshing every 2 seconds | Last update: <span suppressHydrationWarning>{typeof window !== 'undefined' ? new Date().toLocaleTimeString() : ''}</span>
       </div>
+      {logs.length === 0 && errors.length === 0 && (
+        <div className="mt-4 p-4 bg-yellow-900/30 rounded text-yellow-300">
+          ⚠️ No debug logs captured yet. Make sure you're spinning while this page is open, or check the browser console for "🔍 DEBUG:" messages.
+        </div>
+      )}
     </div>
   )
 }
