@@ -1535,17 +1535,18 @@ export default function spin() {
       
       // Also log to database for persistence across tabs
       try {
-        await supabase.rpc('debug_log_event', {
+        await supabase.rpc('spark_log_event', {
           p_event_type: 'spinStart',
+          p_event_category: 'spin',
+          p_event_message: `User ${user.name} started spinning`,
           p_event_data: {
             userId: authUser.id,
             userName: user.name,
             beforeState
           },
           p_user_id: authUser.id,
-          p_table_name: 'matching_queue',
-          p_operation: 'SPIN_START',
-          p_before_state: beforeState,
+          p_related_table: 'matching_queue',
+          p_source: 'CLIENT',
           p_severity: 'INFO'
         })
         console.log('🔍 DEBUG: Logged to database')
@@ -1629,8 +1630,10 @@ export default function spin() {
         
         // Also log to database
         try {
-          await supabase.rpc('debug_log_event', {
+          await supabase.rpc('spark_log_event', {
             p_event_type: 'joinQueueError',
+            p_event_category: 'error',
+            p_event_message: queueError?.message || 'Failed to join queue',
             p_event_data: {
               message: queueError?.message,
               code: queueError?.code,
@@ -1639,10 +1642,8 @@ export default function spin() {
               error: queueError?.message || 'Unknown error'
             },
             p_user_id: authUser.id,
-            p_table_name: 'matching_queue',
-            p_operation: 'INSERT',
-            p_before_state: queueSnapshot.beforeState,
-            p_after_state: errorState,
+            p_related_table: 'matching_queue',
+            p_source: 'CLIENT',
             p_severity: 'ERROR'
           })
         } catch (e: any) {
@@ -1703,14 +1704,14 @@ export default function spin() {
       
       // Also log to database
       try {
-        await supabase.rpc('debug_log_event', {
+        await supabase.rpc('spark_log_event', {
           p_event_type: 'queueJoined',
+          p_event_category: 'queue',
+          p_event_message: `User joined queue successfully`,
           p_event_data: { queueId, userId: authUser.id },
           p_user_id: authUser.id,
-          p_table_name: 'matching_queue',
-          p_operation: 'INSERT',
-          p_before_state: queueSnapshot.beforeState,
-          p_after_state: afterState,
+          p_related_table: 'matching_queue',
+          p_source: 'CLIENT',
           p_severity: 'INFO'
         })
       } catch (e) {}
@@ -2179,8 +2180,10 @@ export default function spin() {
             
             // Also log to database
             try {
-              await supabase.rpc('debug_log_event', {
+              await supabase.rpc('spark_log_event', {
                 p_event_type: 'matchCreated',
+                p_event_category: 'match',
+                p_event_message: `Match created between ${authUser.id} and ${partnerId}`,
                 p_event_data: {
                   matchId: match.id,
                   partnerId,
@@ -2188,9 +2191,8 @@ export default function spin() {
                 },
                 p_user_id: authUser.id,
                 p_related_user_id: partnerId,
-                p_table_name: 'matches',
-                p_operation: 'INSERT',
-                p_after_state: afterState,
+                p_related_table: 'matches',
+                p_source: 'CLIENT',
                 p_severity: 'INFO'
               })
             } catch (e) {}

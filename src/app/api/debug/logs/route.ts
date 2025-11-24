@@ -19,11 +19,11 @@ export async function GET(request: Request) {
     const eventType = searchParams.get('type');
     const level = searchParams.get('level');
     
-    // Query debug_event_log table for recent events
+    // Query spark_event_log table for recent events (actual table name)
     let query = supabase
-      .from('debug_event_log')
+      .from('spark_event_log')
       .select('*')
-      .order('timestamp', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(limit);
     
     if (eventType) {
@@ -31,7 +31,8 @@ export async function GET(request: Request) {
     }
     
     if (level) {
-      query = query.eq('severity', level.toUpperCase());
+      // Try both severity and log_level columns
+      query = query.or(`severity.eq.${level.toUpperCase()},log_level.eq.${level.toUpperCase()}`);
     }
     
     const { data, error } = await query;

@@ -43,37 +43,58 @@ export default function DebugPage() {
       const { data: matches } = await supabase.from('matches').select('*').eq('status', 'pending')
       const { data: votes } = await supabase.from('votes').select('*').order('created_at', { ascending: false }).limit(10)
       
-      // Try to get events from debug_event_log table
+      // Try to get events from spark_event_log table (actual table name)
       let dbLogs: any[] = []
       let dbErrors: any[] = []
       try {
+        // First try spark_event_log (the actual table)
         const { data: events, error: eventsError } = await supabase
-          .from('debug_event_log')
+          .from('spark_event_log')
           .select('*')
-          .order('timestamp', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(50)
         
         if (eventsError) {
-          console.log('🔍 DEBUG PAGE: Error fetching events:', eventsError)
+          console.log('🔍 DEBUG PAGE: Error fetching events from spark_event_log:', eventsError)
+          // Try alternative column names
+          const { data: eventsAlt, error: eventsAltError } = await supabase
+            .from('spark_event_log')
+            .select('*')
+            .limit(50)
+          
+          if (!eventsAltError && eventsAlt) {
+            dbLogs = eventsAlt || []
+          }
         } else {
           dbLogs = events || []
         }
         
         const { data: errors, error: errorsError } = await supabase
-          .from('debug_event_log')
+          .from('spark_event_log')
           .select('*')
-          .eq('severity', 'ERROR')
-          .order('timestamp', { ascending: false })
+          .or('log_level.eq.ERROR,severity.eq.ERROR')
+          .order('created_at', { ascending: false })
           .limit(20)
         
         if (errorsError) {
-          console.log('🔍 DEBUG PAGE: Error fetching errors:', errorsError)
+          console.log('🔍 DEBUG PAGE: Error fetching errors from spark_event_log:', errorsError)
+          // Try without filter
+          const { data: errorsAlt } = await supabase
+            .from('spark_event_log')
+            .select('*')
+            .limit(20)
+          
+          if (errorsAlt) {
+            // Filter client-side
+            dbErrors = errorsAlt.filter((e: any) => 
+              e.log_level === 'ERROR' || e.severity === 'ERROR' || e.event_type?.includes('error') || e.event_type?.includes('Error')
+            )
+          }
         } else {
           dbErrors = errors || []
         }
       } catch (e: any) {
-        // Table might not exist, that's okay
-        console.log('🔍 DEBUG PAGE: debug_event_log table not available:', e?.message || e)
+        console.log('🔍 DEBUG PAGE: spark_event_log table error:', e?.message || e)
       }
       
       setDbState({
@@ -90,11 +111,11 @@ export default function DebugPage() {
       const allLogs = dbLogs.length > 0 
         ? dbLogs.map(e => ({
             id: e.id,
-            type: e.event_type,
-            timestamp: e.timestamp,
+            type: e.event_type || e.event_category || 'unknown',
+            timestamp: e.created_at || e.timestamp || new Date().toISOString(),
             user: e.user_id,
-            level: e.severity?.toLowerCase() || 'info',
-            metadata: e.event_data,
+            level: (e.severity || e.log_level || 'info')?.toLowerCase(),
+            metadata: e.event_data || {},
             beforeState: e.before_state,
             afterState: e.after_state,
             error: e.error_message ? { message: e.error_message } : undefined
@@ -104,12 +125,12 @@ export default function DebugPage() {
       const allErrors = dbErrors.length > 0
         ? dbErrors.map(e => ({
             id: e.id,
-            type: e.event_type,
-            timestamp: e.timestamp,
+            type: e.event_type || e.event_category || 'unknown',
+            timestamp: e.created_at || e.timestamp || new Date().toISOString(),
             user: e.user_id,
             level: 'error',
-            error: { message: e.error_message || e.event_data?.error || 'Unknown error' },
-            metadata: e.event_data,
+            error: { message: e.error_message || e.event_message || e.event_data?.error || 'Unknown error' },
+            metadata: e.event_data || {},
             beforeState: e.before_state,
             afterState: e.after_state
           }))
@@ -117,6 +138,16 @@ export default function DebugPage() {
       
       setLogs(allLogs)
       setErrors(allErrors)
+      
+      // Log what we found
+      if (dbLogs.length > 0 || dbErrors.length > 0) {
+        console.log('🔍 DEBUG PAGE: Found database logs', {
+          logs: dbLogs.length,
+          errors: dbErrors.length,
+          sampleLog: dbLogs[0],
+          sampleError: dbErrors[0]
+        })
+      }
     } catch (error) {
       console.error('Error loading database state:', error)
     }

@@ -17,12 +17,12 @@ export async function GET(request: Request) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50;
     const userId = searchParams.get('user');
     
-    // Query debug_event_log table for errors
+    // Query spark_event_log table for errors (actual table name)
     let query = supabase
-      .from('debug_event_log')
+      .from('spark_event_log')
       .select('*')
-      .eq('severity', 'ERROR')
-      .order('timestamp', { ascending: false })
+      .or('severity.eq.ERROR,log_level.eq.ERROR')
+      .order('created_at', { ascending: false })
       .limit(limit);
     
     if (userId) {
