@@ -78,29 +78,31 @@ class LoggingEngine {
     // Write to file
     this.writeToFile(entry);
     
-    // Console output in development
-    if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || true)) {
+    // Console output in development - ALWAYS log to help debugging
+    if (typeof window !== 'undefined') {
       const output = {
         type: entry.type,
         level: entry.level,
         timestamp: entry.timestamp,
+        logId: entry.id,
         ...(entry.user && { user: entry.user }),
         ...(entry.metadata && { metadata: entry.metadata }),
         ...(entry.error && { error: entry.error })
       };
       
+      // Always log to console for visibility
       switch (entry.level) {
         case 'error':
-          console.error('[DEBUG]', output);
+          console.error('🔍 [DEBUG LOG]', output, 'Total logs:', this.logs.length);
           break;
         case 'warn':
-          console.warn('[DEBUG]', output);
+          console.warn('🔍 [DEBUG LOG]', output, 'Total logs:', this.logs.length);
           break;
         case 'debug':
-          console.debug('[DEBUG]', output);
+          console.debug('🔍 [DEBUG LOG]', output, 'Total logs:', this.logs.length);
           break;
         default:
-          console.log('[DEBUG]', output);
+          console.log('🔍 [DEBUG LOG]', output, 'Total logs:', this.logs.length);
       }
     }
   }

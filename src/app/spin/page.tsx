@@ -1519,14 +1519,22 @@ export default function spin() {
     }
     
     // 🔍 MODULE 2: Log spin start event
-    logEvent({
-      type: 'spinStart',
-      user: authUser.id,
-      beforeState,
-      metadata: { userId: authUser.id, userName: user.name }
-    })
-    
-    console.log('🔍 DEBUG: Spin started', { userId: authUser.id, beforeState })
+    try {
+      const logEntry = logEvent({
+        type: 'spinStart',
+        user: authUser.id,
+        beforeState,
+        metadata: { userId: authUser.id, userName: user.name }
+      })
+      console.log('🔍 DEBUG: Spin started - Log entry created', { 
+        userId: authUser.id, 
+        logId: logEntry?.id,
+        logType: logEntry?.type,
+        beforeState 
+      })
+    } catch (logError) {
+      console.error('🔍 DEBUG: Failed to log spin start', logError)
+    }
 
     // Fetch compatible photos for spinning animation (opposite gender)
     const photos = await fetchSpinningPhotos()
@@ -2922,27 +2930,30 @@ export default function spin() {
                 opacity: 1, 
                 y: 0, 
                 scale: 1,
-              }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ delay: 0, type: "spring", stiffness: 300, damping: 25 }}
-              className="flex items-center justify-center gap-1 sm:gap-3 md:gap-4 px-3 sm:px-8 md:px-10 py-2 sm:py-4 md:py-5 rounded-lg sm:rounded-3xl bg-gradient-to-r from-teal-300/30 via-teal-300/25 to-blue-500/30 backdrop-blur-xl border-2 border-teal-300/60 sm:border-2 relative"
-              style={{
-                visibility: 'visible',
-                display: 'flex',
-                opacity: 1,
-                pointerEvents: 'auto',
-              }}
-              animate={{
                 boxShadow: [
                   "0 0 30px rgba(94,234,212,0.4)",
                   "0 0 50px rgba(94,234,212,0.6)",
                   "0 0 30px rgba(94,234,212,0.4)",
                 ],
               }}
+              exit={{ opacity: 0, y: -20 }}
               transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
+                delay: 0,
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                boxShadow: {
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }
+              }}
+              className="flex items-center justify-center gap-1 sm:gap-3 md:gap-4 px-3 sm:px-8 md:px-10 py-2 sm:py-4 md:py-5 rounded-lg sm:rounded-3xl bg-gradient-to-r from-teal-300/30 via-teal-300/25 to-blue-500/30 backdrop-blur-xl border-2 border-teal-300/60 sm:border-2 relative"
+              style={{
+                visibility: 'visible',
+                display: 'flex',
+                opacity: 1,
+                pointerEvents: 'auto',
               }}
             >
               <motion.span

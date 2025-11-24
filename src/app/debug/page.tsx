@@ -65,10 +65,10 @@ export default function DebugPage() {
 
       // Module 2: Structured Logging
       const recentLogs = getLogs(50)
-      setLogs(recentLogs)
+      setLogs(recentLogs || [])
 
       const recentErrors = getErrors(20)
-      setErrors(recentErrors)
+      setErrors(recentErrors || [])
 
       // Module 3: State Snapshots
       const recentSnapshots = getSnapshots(20)
@@ -85,6 +85,24 @@ export default function DebugPage() {
       // Module 9: Freeze & Rollback
       const frozen = listFrozenStates()
       setFrozenStates(frozen)
+      
+      // Debug: Log to console what we found
+      console.log('🔍 DEBUG PAGE: Loading data', {
+        logsCount: recentLogs?.length || 0,
+        errorsCount: recentErrors?.length || 0,
+        snapshotsCount: recentSnapshots?.length || 0,
+        validationsCount: validationHistory?.length || 0,
+        timersCount: activeTimersList?.length || 0,
+        frozenStatesCount: frozen?.length || 0
+      })
+      
+      // Show first log if available
+      if (recentLogs && recentLogs.length > 0) {
+        console.log('🔍 DEBUG PAGE: First log', recentLogs[0])
+      }
+      if (recentErrors && recentErrors.length > 0) {
+        console.log('🔍 DEBUG PAGE: First error', recentErrors[0])
+      }
     } catch (error) {
       console.error("Error loading debug data:", error)
     }
@@ -345,7 +363,19 @@ export default function DebugPage() {
       </div>
       {logs.length === 0 && errors.length === 0 && (
         <div className="mt-4 p-4 bg-yellow-900/30 rounded text-yellow-300">
-          ⚠️ No debug logs captured yet. Make sure you're spinning while this page is open, or check the browser console for "🔍 DEBUG:" messages.
+          <div className="font-semibold mb-2">⚠️ No debug logs captured yet</div>
+          <div className="text-sm space-y-1">
+            <div>• Make sure you're spinning while this page is open (or in another tab)</div>
+            <div>• Check the browser console (F12) for "🔍 DEBUG:" messages</div>
+            <div>• The debug toolkit stores logs in memory - refresh will clear them</div>
+            <div>• Try spinning now and watch this page update automatically</div>
+          </div>
+          <div className="mt-3 text-xs">
+            <div>Debug State: {state ? 'Loaded' : 'Not loaded'}</div>
+            <div>Database State: {dbState ? 'Loaded' : 'Not loaded'}</div>
+            <div>Logs Array Length: {logs.length}</div>
+            <div>Errors Array Length: {errors.length}</div>
+          </div>
         </div>
       )}
     </div>
