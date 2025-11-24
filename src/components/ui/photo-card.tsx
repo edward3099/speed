@@ -5,7 +5,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface PhotoCardProps {
-  src: string
+  src?: string | null
   alt: string
   className?: string
   delay?: number
@@ -59,18 +59,24 @@ export function PhotoCard({ src, alt, className, delay = 0 }: PhotoCardProps) {
             : "none",
         }}
       >
-        <motion.img
-          src={src}
-          alt={alt}
-          className="w-full h-full object-cover rounded-2xl"
-          animate={{
-            scale: isHovered ? 1.1 : 1,
-          }}
-          transition={{
-            duration: 0.4,
-            ease: "easeOut",
-          }}
-        />
+        {src ? (
+          <motion.img
+            src={src}
+            alt={alt}
+            className="w-full h-full object-cover rounded-2xl"
+            animate={{
+              scale: isHovered ? 1.1 : 1,
+            }}
+            transition={{
+              duration: 0.4,
+              ease: "easeOut",
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-transparent flex items-center justify-center">
+            {/* No placeholder - empty state */}
+          </div>
+        )}
       </motion.div>
     </motion.div>
   )

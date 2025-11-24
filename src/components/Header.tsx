@@ -2,22 +2,28 @@
 
 import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
+import { User } from "lucide-react"
 
 interface HeaderProps {
   title?: string
   showProfile?: boolean
-  profileImage?: string
+  profileImage?: string | null
   onProfileClick?: () => void
 }
 
 export default function Header({ 
   title = "speed date", 
   showProfile = true,
-  profileImage = "https://i.pravatar.cc/150?img=15",
+  profileImage,
   onProfileClick
 }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
+
+  // Check if profileImage is valid (not null, empty, or pravatar demo image)
+  const hasValidProfileImage = profileImage && 
+    profileImage.trim() !== '' && 
+    !profileImage.includes('pravatar.cc')
 
   return (
     <header className="fixed top-0 left-0 right-0 w-full bg-[#000000] border-b border-white/5 z-50">
@@ -40,15 +46,21 @@ export default function Header({
                 : "hover:bg-white/5"
             }`}
           >
-            <div className="w-full h-full rounded-full overflow-hidden">
-              <Image
-                src={profileImage}
-                alt="profile"
-                width={36}
-                height={36}
-                className="object-cover w-full h-full"
-              />
-            </div>
+            {hasValidProfileImage ? (
+              <div className="w-full h-full rounded-full overflow-hidden">
+                <Image
+                  src={profileImage}
+                  alt="profile"
+                  width={36}
+                  height={36}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+            ) : (
+              <div className="w-full h-full rounded-full bg-transparent border border-white/10 flex items-center justify-center">
+                {/* No placeholder - empty state */}
+              </div>
+            )}
           </button>
         )}
       </div>

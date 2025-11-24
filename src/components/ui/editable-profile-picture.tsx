@@ -7,7 +7,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 interface EditableProfilePictureProps {
-  src: string
+  src?: string | null
   alt: string
   onImageChange?: (file: File) => void
   size?: "sm" | "md" | "lg"
@@ -21,13 +21,31 @@ export function EditableProfilePicture({
   size = "md",
   className,
 }: EditableProfilePictureProps) {
-  const [imageSrc, setImageSrc] = useState(src)
+  // Helper function to check if src is valid (not empty, not pravatar, not just whitespace)
+  const isValidImageSrc = (imgSrc: string | null | undefined): imgSrc is string => {
+    if (!imgSrc || typeof imgSrc !== 'string') return false
+    const trimmed = imgSrc.trim()
+    if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false
+    if (imgSrc.includes('pravatar.cc')) return false
+    // Must be a valid URL or data URL
+    if (!trimmed.startsWith('http') && !trimmed.startsWith('data:image') && !trimmed.startsWith('/')) return false
+    return true
+  }
+
+  // Initialize state - only set if src is valid, otherwise empty string
+  const [imageSrc, setImageSrc] = useState<string>(() => {
+    return isValidImageSrc(src) ? src : ''
+  })
   const [isHovered, setIsHovered] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Sync with parent src prop
+  // Sync with parent src prop - filter out invalid images
   useEffect(() => {
-    setImageSrc(src)
+    if (isValidImageSrc(src)) {
+      setImageSrc(src)
+    } else {
+      setImageSrc('') // Always clear invalid images
+    }
   }, [src])
 
   const sizeClasses = {
@@ -61,12 +79,45 @@ export function EditableProfilePicture({
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
       <div className={cn("relative rounded-full overflow-hidden border-2 border-white/20", sizeClasses[size])}>
-        <Image
-          src={imageSrc}
-          alt={alt}
-          fill
-          className="object-cover"
-        />
+        {isValidImageSrc(imageSrc) ? (
+          <Image
+            key={`img-${Date.now()}-${imageSrc.substring(0, 30)}`} // Force re-render with timestamp (aggressive cache busting)
+            src={imageSrc}
+            alt={alt}
+            fill
+            sizes="(max-width: 640px) 80px, (max-width: 768px) 120px, 160px"
+            className="object-cover"
+            placeholder="empty" // Explicitly disable placeholder per Next.js docs
+            unoptimized={imageSrc.startsWith('data:')} // Disable optimization for data URLs
+            priority={false} // Don't prioritize placeholder images
+            onError={(e) => {
+              // If image fails to load, clear it immediately
+              console.log('❌ Image failed to load, clearing:', imageSrc)
+              const target = e.currentTarget as HTMLImageElement
+              if (target) {
+                target.style.display = 'none' // Hide broken image immediately
+                target.src = '' // Clear src to prevent retry
+              }
+              setImageSrc('')
+            }}
+            onLoad={() => {
+              // Verify loaded image is not a placeholder
+              if (imageSrc.includes('pravatar.cc')) {
+                console.log('⚠️ Detected pravatar image loaded, clearing')
+                setImageSrc('')
+              }
+            }}
+          />
+        ) : (
+          <div 
+            className="w-full h-full bg-transparent flex items-center justify-center cursor-pointer"
+            key="empty-state"
+            onClick={handleClick}
+          >
+            {/* Always show camera icon in empty state */}
+            <Camera className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 text-teal-300/60" />
+          </div>
+        )}
         
         {/* Overlay on hover */}
         <motion.div

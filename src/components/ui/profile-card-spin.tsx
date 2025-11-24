@@ -6,7 +6,7 @@ import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ProfileCardSpinProps {
-  photo: string
+  photo?: string | null
   name: string
   age?: number
   bio: string
@@ -103,12 +103,27 @@ export function ProfileCardSpin({
       )}
 
       <div className="relative w-full h-32 sm:h-56 md:h-64 rounded-md sm:rounded-xl overflow-hidden mb-1.5 sm:mb-3 md:mb-4 border-2 border-white/10">
-        <Image
-          src={photo}
-          alt={name}
-          fill
-          className="object-cover"
-        />
+        {photo && !photo.includes('pravatar.cc') ? (
+          <Image
+            src={photo}
+            alt={name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+            className="object-cover"
+            placeholder="empty"
+            onError={(e) => {
+              // Hide broken images
+              const target = e.currentTarget as HTMLImageElement
+              if (target) {
+                target.style.display = 'none'
+              }
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-transparent flex items-center justify-center">
+            {/* No placeholder - empty state */}
+          </div>
+        )}
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         

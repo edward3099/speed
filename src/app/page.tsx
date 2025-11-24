@@ -38,7 +38,7 @@ export default function landing() {
     gender: "",
     age: 25,
     bio: "",
-    photo: "https://i.pravatar.cc/150?img=15",
+    photo: "",
     country: "",
     city: "",
     location: "",
@@ -168,8 +168,14 @@ export default function landing() {
           photoUrl = publicUrl
         } catch (error: any) {
           console.error('Error uploading image:', error)
-          // Continue with default photo if upload fails
+          // If upload fails, set photoUrl to empty string (no placeholder)
+          photoUrl = ""
         }
+      }
+      
+      // If photo is still the pravatar placeholder, remove it
+      if (photoUrl && photoUrl.includes('pravatar.cc')) {
+        photoUrl = ""
       }
 
       // Save profile to database
@@ -251,12 +257,16 @@ export default function landing() {
       console.log('Profile saved successfully:', profileResult)
 
       // Save preferences to database
+      // Gender preference is automatically set based on user's gender:
+      // Male users prefer Female, Female users prefer Male
+      const genderPreference = onboardingData.gender === 'male' ? 'female' : 'male'
+      
       const preferencesData = {
         user_id: userId,
         min_age: onboardingData.minAge,
         max_age: onboardingData.maxAge,
         max_distance: onboardingData.maxDistance,
-        gender_preference: 'all', // Default to 'all' for now, will add UI later
+        gender_preference: genderPreference,
         updated_at: new Date().toISOString()
       }
       
@@ -384,12 +394,7 @@ export default function landing() {
         >
           <div className="w-full max-w-[300px] sm:max-w-[360px] md:max-w-md lg:max-w-lg">
             <PhotoGrid
-              photos={[
-                { src: "https://i.pravatar.cc/200?img=12", alt: "Profile 1" },
-                { src: "https://i.pravatar.cc/200?img=20", alt: "Profile 2" },
-                { src: "https://i.pravatar.cc/200?img=33", alt: "Profile 3" },
-                { src: "https://i.pravatar.cc/200?img=5", alt: "Profile 4" },
-              ]}
+              photos={[]}
               className="w-full"
             />
           </div>
@@ -525,7 +530,7 @@ export default function landing() {
                         gender: "",
                         age: 25,
                         bio: "",
-                        photo: "https://i.pravatar.cc/150?img=15",
+                        photo: "",
                         country: "",
                         city: "",
                         location: "",
@@ -572,7 +577,7 @@ export default function landing() {
                           gender: "",
                           age: 25,
                           bio: "",
-                          photo: "https://i.pravatar.cc/150?img=15",
+                          photo: "",
                           country: "",
                           city: "",
                           location: "",
@@ -689,9 +694,7 @@ export default function landing() {
                   <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     {[
                       { value: "male", label: "Male" },
-                      { value: "female", label: "Female" },
-                      { value: "non-binary", label: "Non-binary" },
-                      { value: "prefer_not_to_say", label: "Prefer not to say" }
+                      { value: "female", label: "Female" }
                     ].map((option) => (
                       <button
                         key={option.value}
@@ -774,13 +777,20 @@ export default function landing() {
                     <h2 className="text-lg sm:text-xl font-semibold text-teal-300">upload your photo</h2>
                   </div>
                   <EditableProfilePicture
-                    src={onboardingData.photo}
+                    key={`onboarding-photo-${onboardingData.photo || 'empty'}`} // Force re-render to clear cache
+                    src={onboardingData.photo && !onboardingData.photo.includes('pravatar.cc') ? onboardingData.photo : ''}
                     alt="profile"
                     size="lg"
                     onImageChange={(file) => {
                       const reader = new FileReader()
                       reader.onloadend = () => {
-                        setOnboardingData({ ...onboardingData, photo: reader.result as string })
+                        const result = reader.result as string
+                        // Ensure we never save pravatar URLs
+                        if (result && !result.includes('pravatar.cc')) {
+                          setOnboardingData({ ...onboardingData, photo: result })
+                        } else {
+                          setOnboardingData({ ...onboardingData, photo: '' })
+                        }
                       }
                       reader.readAsDataURL(file)
                     }}

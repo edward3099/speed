@@ -16,7 +16,7 @@ export default function dashboard() {
   const router = useRouter()
   const name = "jason"
   const [bio, setBio] = useState("i like good conversations and new experiences")
-  const [profileImage, setProfileImage] = useState("https://i.pravatar.cc/150?img=15")
+  const [profileImage, setProfileImage] = useState("")
 
   const [showMatches, setShowMatches] = useState(false)
   const [showEvents, setShowEvents] = useState(false)

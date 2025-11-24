@@ -13,7 +13,11 @@ export function ShuffleAnimation({
   profiles,
   duration = 5000,
 }: ShuffleAnimationProps) {
-  const duplicatedProfiles = [...profiles, ...profiles]
+  // Filter out empty/null photos
+  const validProfiles = profiles.filter(photo => photo && photo.trim() !== '')
+  // If no valid profiles, use a placeholder
+  const profilesToUse = validProfiles.length > 0 ? validProfiles : []
+  const duplicatedProfiles = [...profilesToUse, ...profilesToUse]
   const [isMobile, setIsMobile] = useState(true)
 
   useEffect(() => {
@@ -62,27 +66,29 @@ export function ShuffleAnimation({
           width: `${containerWidth}px`,
         }}
       >
-        {duplicatedProfiles.map((src, index) => (
-          <motion.div
-            key={index}
-            className="relative flex-shrink-0 w-[70px] h-[100px] sm:w-48 sm:h-64 rounded sm:rounded-xl overflow-hidden border border-white/20 sm:border-2"
-            initial={{ opacity: 0.6 }}
-            animate={{ 
-              opacity: [0.6, 1, 0.6],
-              scale: [0.96, 1, 0.96],
-            }}
-            transition={{
-              duration: 0.4,
-              repeat: Infinity,
-              delay: index * 0.08,
-            }}
-          >
-            <Image
-              src={src}
-              alt={`Profile ${index}`}
-              fill
-              className="object-cover"
-            />
+        {duplicatedProfiles.length > 0 ? (
+          duplicatedProfiles.map((src, index) => (
+            <motion.div
+              key={index}
+              className="relative flex-shrink-0 w-[70px] h-[100px] sm:w-48 sm:h-64 rounded sm:rounded-xl overflow-hidden border border-white/20 sm:border-2"
+              initial={{ opacity: 0.6 }}
+              animate={{ 
+                opacity: [0.6, 1, 0.6],
+                scale: [0.96, 1, 0.96],
+              }}
+              transition={{
+                duration: 0.4,
+                repeat: Infinity,
+                delay: index * 0.08,
+              }}
+            >
+              <Image
+                src={src}
+                alt={`Profile ${index}`}
+                fill
+                sizes="(max-width: 640px) 70px, 192px"
+                className="object-cover"
+              />
             {/* Gradient overlay - lighter on mobile */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent sm:from-black/40" />
             
@@ -99,7 +105,12 @@ export function ShuffleAnimation({
               }}
             />
           </motion.div>
-        ))}
+          ))
+        ) : (
+          <div className="relative flex-shrink-0 w-[70px] h-[100px] sm:w-48 sm:h-64 rounded sm:rounded-xl overflow-hidden border border-white/20 sm:border-2 flex items-center justify-center bg-transparent">
+            {/* No placeholder - empty state */}
+          </div>
+        )}
       </motion.div>
 
       {/* Center indicator with pulsing effect - thinner on mobile */}

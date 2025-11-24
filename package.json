@@ -3,9 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:basic": "playwright test tests/basic-match.spec.ts",
+    "test:load": "playwright test tests/load-test-500-users.spec.ts",
+    "test:load-500": "playwright test tests/load-test-500-concurrent-spins.spec.ts",
+    "test:scenarios": "playwright test tests/run-scenarios.spec.ts",
+    "test:scenarios:high": "playwright test tests/run-scenarios.spec.ts -g 'high-priority'",
+    "test:spin": "playwright test tests/spin-pairing-video-date.spec.ts",
+    "test:spin:comprehensive": "playwright test tests/spin-pairing-comprehensive.spec.ts",
+    "test:spin:realistic": "playwright test tests/spin-pairing-realistic-500-users.spec.ts",
+    "test:spin:critical": "playwright test tests/spin-pairing-critical-scenarios.spec.ts",
+    "test:timer": "playwright test tests/timer-synchronization.spec.ts",
+    "test:matching": "playwright test tests/matching-flow.spec.ts",
+    "test:setup-users": "node tests/setup-users.js",
+    "test:create-load-users": "node tests/create-500-users.js",
+    "test:create-users-playwright": "npx tsx tests/create-500-users-playwright.ts"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.29.0",
@@ -28,13 +46,23 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/ui": "^4.0.13",
     "autoprefixer": "^10.4.22",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "jsdom": "^27.2.0",
     "localtunnel": "^2.0.2",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
-    "typescript": "^5"
+    "tsx": "^4.20.6",
+    "typescript": "^5",
+    "vitest": "^4.0.13"
   }
 }

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import HeaderWrapper from "@/components/HeaderWrapper";
 import { PreventHorizontalScroll } from "@/components/PreventHorizontalScroll";
+import { SuppressDevtoolsErrors } from "@/components/SuppressDevtoolsErrors";
+import { ErrorDebugger } from "@/components/ErrorDebugger";
 
 export const metadata: Metadata = {
   title: "speed date",
@@ -24,6 +26,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="overflow-hidden max-w-full" style={{ touchAction: 'none', overscrollBehavior: 'none', position: 'fixed', width: '100%', height: '100%' }}>
       <body className="bg-black text-white overflow-hidden max-w-full w-full h-full" style={{ touchAction: 'none', overscrollBehavior: 'none', position: 'fixed', width: '100%', height: '100%' }}>
+        <SuppressDevtoolsErrors />
+        <ErrorDebugger />
         <PreventHorizontalScroll />
         <div className="overflow-hidden max-w-full w-full h-full" style={{ touchAction: 'none', overscrollBehavior: 'none' }}>
           <HeaderWrapper />

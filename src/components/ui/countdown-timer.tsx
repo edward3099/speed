@@ -80,10 +80,16 @@ export function CountdownTimer({
           clipPath: 'none',
           WebkitAppearance: 'none',
           appearance: 'none',
+          visibility: 'visible',
+          display: 'block',
         }}
       >
         <motion.span 
           className="text-sm sm:text-3xl md:text-4xl font-extrabold text-teal-300"
+          style={{
+            visibility: 'visible',
+            display: 'inline-block',
+          }}
           animate={{
             textShadow: [
               "0 0 15px rgba(94,234,212,0.7)",
@@ -99,7 +105,15 @@ export function CountdownTimer({
         >
           {seconds}
         </motion.span>
-        <span className="text-sm sm:text-3xl md:text-4xl opacity-70 ml-0.5 sm:ml-1">s</span>
+        <span 
+          className="text-sm sm:text-3xl md:text-4xl opacity-70 ml-0.5 sm:ml-1"
+          style={{
+            visibility: 'visible',
+            display: 'inline-block',
+          }}
+        >
+          s
+        </span>
       </motion.div>
     </div>
   )
