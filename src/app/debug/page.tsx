@@ -47,51 +47,100 @@ export default function DebugPage() {
       let dbLogs: any[] = []
       let dbErrors: any[] = []
       try {
-        // First try spark_event_log (the actual table)
-        const { data: events, error: eventsError } = await supabase
+        // First, try to get all columns without ordering to see what exists
+        const { data: sample, error: sampleError } = await supabase
           .from('spark_event_log')
           .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50)
+          .limit(1)
         
-        if (eventsError) {
-          console.log('🔍 DEBUG PAGE: Error fetching events from spark_event_log:', eventsError)
-          // Try alternative column names
-          const { data: eventsAlt, error: eventsAltError } = await supabase
+        if (sampleError) {
+          console.log('🔍 DEBUG PAGE: Error fetching sample from spark_event_log:', sampleError)
+        } else if (sample && sample.length > 0) {
+          // Inspect the first row to find column names
+          const firstRow = sample[0]
+          console.log('🔍 DEBUG PAGE: Sample row columns:', Object.keys(firstRow))
+          
+          // Find timestamp column (could be created_at, timestamp, or something else)
+          const timestampCol = firstRow.created_at ? 'created_at' : 
+                              firstRow.timestamp ? 'timestamp' :
+                              firstRow.created ? 'created' :
+                              Object.keys(firstRow).find(k => k.toLowerCase().includes('time') || k.toLowerCase().includes('date')) || 'id'
+          
+          // Find severity column (could be severity, log_level, level, etc.)
+          const severityCol = firstRow.severity ? 'severity' :
+                             firstRow.log_level ? 'log_level' :
+                             firstRow.level ? 'level' :
+                             null
+          
+          console.log('🔍 DEBUG PAGE: Using timestamp column:', timestampCol, 'severity column:', severityCol)
+          
+          // Fetch events with correct column names
+          const { data: events, error: eventsError } = await supabase
             .from('spark_event_log')
             .select('*')
+            .order(timestampCol, { ascending: false })
             .limit(50)
           
-          if (!eventsAltError && eventsAlt) {
-            dbLogs = eventsAlt || []
+          if (eventsError) {
+            console.log('🔍 DEBUG PAGE: Error fetching events:', eventsError)
+            // Try without ordering
+            const { data: eventsNoOrder } = await supabase
+              .from('spark_event_log')
+              .select('*')
+              .limit(50)
+            if (eventsNoOrder) {
+              dbLogs = eventsNoOrder || []
+            }
+          } else {
+            dbLogs = events || []
           }
-        } else {
-          dbLogs = events || []
-        }
-        
-        const { data: errors, error: errorsError } = await supabase
-          .from('spark_event_log')
-          .select('*')
-          .or('log_level.eq.ERROR,severity.eq.ERROR')
-          .order('created_at', { ascending: false })
-          .limit(20)
-        
-        if (errorsError) {
-          console.log('🔍 DEBUG PAGE: Error fetching errors from spark_event_log:', errorsError)
-          // Try without filter
-          const { data: errorsAlt } = await supabase
-            .from('spark_event_log')
-            .select('*')
-            .limit(20)
           
-          if (errorsAlt) {
-            // Filter client-side
-            dbErrors = errorsAlt.filter((e: any) => 
-              e.log_level === 'ERROR' || e.severity === 'ERROR' || e.event_type?.includes('error') || e.event_type?.includes('Error')
-            )
+          // Fetch errors
+          if (severityCol) {
+            const { data: errors, error: errorsError } = await supabase
+              .from('spark_event_log')
+              .select('*')
+              .eq(severityCol, 'ERROR')
+              .order(timestampCol, { ascending: false })
+              .limit(20)
+            
+            if (errorsError) {
+              console.log('🔍 DEBUG PAGE: Error fetching errors:', errorsError)
+              // Filter client-side
+              const { data: allEvents } = await supabase
+                .from('spark_event_log')
+                .select('*')
+                .limit(50)
+              
+              if (allEvents) {
+                dbErrors = allEvents.filter((e: any) => 
+                  e[severityCol] === 'ERROR' || 
+                  e.event_type?.toLowerCase().includes('error') ||
+                  e.event_message?.toLowerCase().includes('error')
+                )
+              }
+            } else {
+              dbErrors = errors || []
+            }
+          } else {
+            // No severity column, fetch all and filter client-side
+            const { data: allEvents } = await supabase
+              .from('spark_event_log')
+              .select('*')
+              .limit(50)
+            
+            if (allEvents) {
+              dbErrors = allEvents.filter((e: any) => 
+                e.event_type?.toLowerCase().includes('error') ||
+                e.event_message?.toLowerCase().includes('error') ||
+                e.severity === 'ERROR' ||
+                e.log_level === 'ERROR'
+              )
+            }
           }
         } else {
-          dbErrors = errors || []
+          // No data, table might be empty
+          console.log('🔍 DEBUG PAGE: spark_event_log table is empty')
         }
       } catch (e: any) {
         console.log('🔍 DEBUG PAGE: spark_event_log table error:', e?.message || e)
@@ -108,17 +157,25 @@ export default function DebugPage() {
       
       // ALWAYS use database logs if available (they persist across tabs)
       // Merge with in-memory logs, prioritizing database
+      // Find timestamp column dynamically
+      const timestampCol = dbLogs.length > 0 
+        ? (dbLogs[0].created_at ? 'created_at' : 
+           dbLogs[0].timestamp ? 'timestamp' :
+           dbLogs[0].created ? 'created' :
+           Object.keys(dbLogs[0]).find(k => k.toLowerCase().includes('time') || k.toLowerCase().includes('date')) || 'id')
+        : 'id'
+      
       const allLogs = dbLogs.length > 0 
         ? dbLogs.map(e => ({
             id: e.id,
             type: e.event_type || e.event_category || 'unknown',
-            timestamp: e.created_at || e.timestamp || new Date().toISOString(),
-            user: e.user_id,
-            level: (e.severity || e.log_level || 'info')?.toLowerCase(),
-            metadata: e.event_data || {},
-            beforeState: e.before_state,
-            afterState: e.after_state,
-            error: e.error_message ? { message: e.error_message } : undefined
+            timestamp: e[timestampCol] || e.created_at || e.timestamp || e.created || new Date().toISOString(),
+            user: e.user_id || e.p_user_id,
+            level: (e.severity || e.log_level || e.level || 'info')?.toLowerCase(),
+            metadata: e.event_data || e.p_event_data || {},
+            beforeState: e.before_state || e.p_before_state,
+            afterState: e.after_state || e.p_after_state,
+            error: e.error_message || e.p_error_message ? { message: e.error_message || e.p_error_message } : undefined
           }))
         : (logs.length > 0 ? logs : [])
       
@@ -126,13 +183,13 @@ export default function DebugPage() {
         ? dbErrors.map(e => ({
             id: e.id,
             type: e.event_type || e.event_category || 'unknown',
-            timestamp: e.created_at || e.timestamp || new Date().toISOString(),
-            user: e.user_id,
+            timestamp: e[timestampCol] || e.created_at || e.timestamp || e.created || new Date().toISOString(),
+            user: e.user_id || e.p_user_id,
             level: 'error',
-            error: { message: e.error_message || e.event_message || e.event_data?.error || 'Unknown error' },
-            metadata: e.event_data || {},
-            beforeState: e.before_state,
-            afterState: e.after_state
+            error: { message: e.error_message || e.event_message || e.p_error_message || e.event_data?.error || e.p_event_data?.error || 'Unknown error' },
+            metadata: e.event_data || e.p_event_data || {},
+            beforeState: e.before_state || e.p_before_state,
+            afterState: e.after_state || e.p_after_state
           }))
         : (errors.length > 0 ? errors : [])
       
