@@ -1518,7 +1518,7 @@ export default function spin() {
       debugState: debugState()
     }
     
-    // 🔍 MODULE 2: Log spin start event
+    // 🔍 MODULE 2: Log spin start event (both in-memory and database)
     try {
       const logEntry = logEvent({
         type: 'spinStart',
@@ -1532,6 +1532,26 @@ export default function spin() {
         logType: logEntry?.type,
         beforeState 
       })
+      
+      // Also log to database for persistence across tabs
+      try {
+        await supabase.rpc('debug_log_event', {
+          p_event_type: 'spinStart',
+          p_event_data: {
+            userId: authUser.id,
+            userName: user.name,
+            beforeState
+          },
+          p_user_id: authUser.id,
+          p_table_name: 'matching_queue',
+          p_operation: 'SPIN_START',
+          p_before_state: beforeState,
+          p_severity: 'INFO'
+        })
+        console.log('🔍 DEBUG: Logged to database')
+      } catch (dbLogError: any) {
+        console.log('🔍 DEBUG: Database logging error (non-critical):', dbLogError?.message)
+      }
     } catch (logError) {
       console.error('🔍 DEBUG: Failed to log spin start', logError)
     }
@@ -1607,6 +1627,28 @@ export default function spin() {
           }
         })
         
+        // Also log to database
+        try {
+          await supabase.rpc('debug_log_event', {
+            p_event_type: 'joinQueueError',
+            p_event_data: {
+              message: queueError?.message,
+              code: queueError?.code,
+              details: queueError?.details,
+              hint: queueError?.hint,
+              error: queueError?.message || 'Unknown error'
+            },
+            p_user_id: authUser.id,
+            p_table_name: 'matching_queue',
+            p_operation: 'INSERT',
+            p_before_state: queueSnapshot.beforeState,
+            p_after_state: errorState,
+            p_severity: 'ERROR'
+          })
+        } catch (e: any) {
+          console.log('🔍 DEBUG: Database error logging failed:', e?.message)
+        }
+        
         // 🔍 MODULE 4: Validate state after error
         validateAfterEvent('joinQueueError', errorState)
         
@@ -1658,6 +1700,20 @@ export default function spin() {
         afterState,
         metadata: { queueId }
       })
+      
+      // Also log to database
+      try {
+        await supabase.rpc('debug_log_event', {
+          p_event_type: 'queueJoined',
+          p_event_data: { queueId, userId: authUser.id },
+          p_user_id: authUser.id,
+          p_table_name: 'matching_queue',
+          p_operation: 'INSERT',
+          p_before_state: queueSnapshot.beforeState,
+          p_after_state: afterState,
+          p_severity: 'INFO'
+        })
+      } catch (e) {}
       
       // 🔍 MODULE 4: Validate state after queue join
       validateAfterEvent('queueJoined', afterState)
@@ -2120,6 +2176,24 @@ export default function spin() {
                 partnerName: partnerProfile.name 
               }
             })
+            
+            // Also log to database
+            try {
+              await supabase.rpc('debug_log_event', {
+                p_event_type: 'matchCreated',
+                p_event_data: {
+                  matchId: match.id,
+                  partnerId,
+                  partnerName: partnerProfile.name
+                },
+                p_user_id: authUser.id,
+                p_related_user_id: partnerId,
+                p_table_name: 'matches',
+                p_operation: 'INSERT',
+                p_after_state: afterState,
+                p_severity: 'INFO'
+              })
+            } catch (e) {}
             
             // 🔍 MODULE 4: Validate state after match creation
             validateAfterEvent('matchCreated', afterState)

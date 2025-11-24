@@ -42,12 +42,81 @@ export default function DebugPage() {
       const { data: queue } = await supabase.from('matching_queue').select('*')
       const { data: matches } = await supabase.from('matches').select('*').eq('status', 'pending')
       const { data: votes } = await supabase.from('votes').select('*').order('created_at', { ascending: false }).limit(10)
+      
+      // Try to get events from debug_event_log table
+      let dbLogs: any[] = []
+      let dbErrors: any[] = []
+      try {
+        const { data: events, error: eventsError } = await supabase
+          .from('debug_event_log')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(50)
+        
+        if (eventsError) {
+          console.log('🔍 DEBUG PAGE: Error fetching events:', eventsError)
+        } else {
+          dbLogs = events || []
+        }
+        
+        const { data: errors, error: errorsError } = await supabase
+          .from('debug_event_log')
+          .select('*')
+          .eq('severity', 'ERROR')
+          .order('timestamp', { ascending: false })
+          .limit(20)
+        
+        if (errorsError) {
+          console.log('🔍 DEBUG PAGE: Error fetching errors:', errorsError)
+        } else {
+          dbErrors = errors || []
+        }
+      } catch (e: any) {
+        // Table might not exist, that's okay
+        console.log('🔍 DEBUG PAGE: debug_event_log table not available:', e?.message || e)
+      }
+      
       setDbState({
         queue: queue || [],
         matches: matches || [],
         votes: votes || [],
+        logs: dbLogs,
+        errors: dbErrors,
         timestamp: new Date().toISOString()
       })
+      
+      // ALWAYS use database logs if available (they persist across tabs)
+      // Merge with in-memory logs, prioritizing database
+      const allLogs = dbLogs.length > 0 
+        ? dbLogs.map(e => ({
+            id: e.id,
+            type: e.event_type,
+            timestamp: e.timestamp,
+            user: e.user_id,
+            level: e.severity?.toLowerCase() || 'info',
+            metadata: e.event_data,
+            beforeState: e.before_state,
+            afterState: e.after_state,
+            error: e.error_message ? { message: e.error_message } : undefined
+          }))
+        : (logs.length > 0 ? logs : [])
+      
+      const allErrors = dbErrors.length > 0
+        ? dbErrors.map(e => ({
+            id: e.id,
+            type: e.event_type,
+            timestamp: e.timestamp,
+            user: e.user_id,
+            level: 'error',
+            error: { message: e.error_message || e.event_data?.error || 'Unknown error' },
+            metadata: e.event_data,
+            beforeState: e.before_state,
+            afterState: e.after_state
+          }))
+        : (errors.length > 0 ? errors : [])
+      
+      setLogs(allLogs)
+      setErrors(allErrors)
     } catch (error) {
       console.error('Error loading database state:', error)
     }
@@ -129,39 +198,65 @@ export default function DebugPage() {
   const renderModule2 = () => (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Module 2: Structured Logging</h2>
+      <div className="mb-2 text-sm text-gray-400">
+        Showing {logs.length} logs ({dbState?.logs?.length || 0} from database, {logs.length - (dbState?.logs?.length || 0)} from memory)
+      </div>
       <div className="mb-4">
         <h3 className="text-xl font-semibold mb-2">Recent Logs ({logs.length})</h3>
-        <div className="space-y-2 max-h-64 overflow-auto">
-          {logs.slice(-10).map((log, i) => (
-            <div key={i} className="bg-gray-800 p-2 rounded text-xs">
-              <div className="flex justify-between">
-                <span className="font-semibold">{log.type}</span>
-                <span className="text-gray-400">{log.timestamp}</span>
+        {logs.length === 0 ? (
+          <div className="text-gray-400 text-sm">No logs yet. Try spinning to generate logs.</div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-auto">
+            {logs.slice(-10).reverse().map((log, i) => (
+              <div key={log.id || i} className="bg-gray-800 p-2 rounded text-xs">
+                <div className="flex justify-between">
+                  <span className="font-semibold">{log.type}</span>
+                  <span className="text-gray-400">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                </div>
+                {log.user && <div>User: {log.user}</div>}
+                {log.level && <div>Level: {log.level}</div>}
+                {log.metadata && Object.keys(log.metadata).length > 0 && (
+                  <div className="mt-1 text-gray-300">
+                    <details>
+                      <summary className="cursor-pointer">Metadata</summary>
+                      <pre className="mt-1 text-xs">{JSON.stringify(log.metadata, null, 2)}</pre>
+                    </details>
+                  </div>
+                )}
               </div>
-              {log.user && <div>User: {log.user}</div>}
-              {log.level && <div>Level: {log.level}</div>}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
       <div>
         <h3 className="text-xl font-semibold mb-2 text-red-400">Recent Errors ({errors.length})</h3>
-        <div className="space-y-2 max-h-64 overflow-auto">
-          {errors.slice(-5).map((error, i) => (
-            <div key={i} className="bg-red-900/30 p-2 rounded text-xs">
-              <div className="flex justify-between">
-                <span className="font-semibold text-red-400">{error.type}</span>
-                <span className="text-gray-400">{error.timestamp}</span>
-              </div>
-              {error.user && <div>User: {error.user}</div>}
-              {error.error && (
-                <div className="mt-1">
-                  <pre className="text-red-300">{JSON.stringify(error.error, null, 2)}</pre>
+        {errors.length === 0 ? (
+          <div className="text-gray-400 text-sm">No errors yet.</div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-auto">
+            {errors.slice(-5).reverse().map((error, i) => (
+              <div key={error.id || i} className="bg-red-900/30 p-2 rounded text-xs">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-red-400">{error.type}</span>
+                  <span className="text-gray-400">{new Date(error.timestamp).toLocaleTimeString()}</span>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+                {error.user && <div>User: {error.user}</div>}
+                {error.error && (
+                  <div className="mt-1">
+                    <div className="text-red-300 font-semibold">Error:</div>
+                    <pre className="text-red-300 text-xs">{JSON.stringify(error.error, null, 2)}</pre>
+                  </div>
+                )}
+                {error.metadata && Object.keys(error.metadata).length > 0 && (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-red-300">Details</summary>
+                    <pre className="mt-1 text-xs text-red-200">{JSON.stringify(error.metadata, null, 2)}</pre>
+                  </details>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -367,14 +462,18 @@ export default function DebugPage() {
           <div className="text-sm space-y-1">
             <div>• Make sure you're spinning while this page is open (or in another tab)</div>
             <div>• Check the browser console (F12) for "🔍 DEBUG:" messages</div>
-            <div>• The debug toolkit stores logs in memory - refresh will clear them</div>
-            <div>• Try spinning now and watch this page update automatically</div>
+            <div>• The debug page reads from database - logs persist across tabs</div>
+            <div>• Try spinning now and watch this page update automatically (refreshes every 2 seconds)</div>
           </div>
-          <div className="mt-3 text-xs">
-            <div>Debug State: {state ? 'Loaded' : 'Not loaded'}</div>
-            <div>Database State: {dbState ? 'Loaded' : 'Not loaded'}</div>
-            <div>Logs Array Length: {logs.length}</div>
-            <div>Errors Array Length: {errors.length}</div>
+          <div className="mt-3 text-xs space-y-1">
+            <div>Debug State: {state ? '✓ Loaded' : '✗ Not loaded'}</div>
+            <div>Database State: {dbState ? '✓ Loaded' : '✗ Not loaded'}</div>
+            <div>Database Logs: {dbState?.logs?.length || 0}</div>
+            <div>Database Errors: {dbState?.errors?.length || 0}</div>
+            <div>In-Memory Logs: {logs.length}</div>
+            <div>In-Memory Errors: {errors.length}</div>
+            <div>Queue Entries: {dbState?.queue?.length || 0}</div>
+            <div>Pending Matches: {dbState?.matches?.length || 0}</div>
           </div>
         </div>
       )}
