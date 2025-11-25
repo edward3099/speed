@@ -65,7 +65,7 @@ class SnapshotManager {
       metadata
     };
     
-    return this.currentSnapshot.id;
+    return this.currentSnapshot.id || '';
   }
   
   /**

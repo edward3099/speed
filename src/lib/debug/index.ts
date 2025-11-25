@@ -4,6 +4,7 @@
  */
 
 // Module 1: Core State Management
+import { debugState, engineState } from './core/state';
 export {
   debugState,
   engineState,
@@ -19,6 +20,7 @@ export {
 } from './core/state';
 
 // Module 2: Structured Logging
+import { getLogs, clearLogs } from './core/logging';
 export {
   logEvent,
   logError,
@@ -35,6 +37,7 @@ export {
 } from './core/logging';
 
 // Module 3: State Snapshots
+import { getSnapshots, clearSnapshots } from './core/snapshots';
 export {
   captureBeforeState,
   captureAfterState,
@@ -51,6 +54,7 @@ export {
 } from './core/snapshots';
 
 // Module 4: Validators
+import { validateState, getValidationHistory, clearValidationHistory } from './core/validators';
 export {
   validateState,
   getValidationHistory,
@@ -64,6 +68,7 @@ export {
 } from './core/validators';
 
 // Module 5: Simulation
+import { simulate, type SimulationEvent } from './simulation/simulator';
 export {
   simulate,
   runScenario,
@@ -79,6 +84,7 @@ export {
 } from './simulation/simulator';
 
 // Module 6: Event Replay
+import { replay, type ReplayOptions } from './replay/replay';
 export {
   replay,
   replayFromMemory,
@@ -93,6 +99,7 @@ export {
 } from './replay/replay';
 
 // Module 7: Time Management
+import { clearAllTimers } from './timing/timeManager';
 export {
   getTime,
   getTimestamp,
@@ -122,6 +129,7 @@ export {
 } from './timing/timeManager';
 
 // Module 8: Dashboard Data
+import { getDebugFeed, clearFeedHistory } from './dashboard/dataFeeder';
 export {
   getDebugFeed,
   getFeedHistory,
@@ -143,6 +151,7 @@ export {
 } from './dashboard/dataFeeder';
 
 // Module 9: Freeze & Rollback
+import { createCheckpoint, rollbackToLastCheckpoint, exportFrozenStates, clearAllFrozenStates, clearRollbackHistory } from './freeze/freezeRollback';
 export {
   freezeState,
   rollbackTo,

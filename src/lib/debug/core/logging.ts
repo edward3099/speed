@@ -4,8 +4,11 @@
  */
 
 import { debugState } from './state';
-import * as fs from 'fs';
-import * as path from 'path';
+
+// Type definitions for Node.js modules (only used server-side)
+type NodeFS = typeof import('fs');
+type NodePath = typeof import('path');
+type WriteStream = ReturnType<NodeFS['createWriteStream']>;
 
 export interface LogEntry {
   id: string;
@@ -26,14 +29,20 @@ class LoggingEngine {
   private logs: LogEntry[] = [];
   private maxMemoryLogs: number = 10000;
   private logFile: string | null = null;
-  private writeStream: fs.WriteStream | null = null;
+  private writeStream: WriteStream | null = null;
   private enableFileLogging: boolean = false;
+  private fs: NodeFS | null = null;
+  private path: NodePath | null = null;
   
   private constructor() {
-    // Initialize file logging if in Node environment
+    // Initialize file logging if in Node environment (lazy initialization)
     if (typeof window === 'undefined') {
       this.enableFileLogging = true;
-      this.initFileLogging();
+      // Initialize asynchronously to avoid blocking constructor
+      this.initFileLogging().catch(err => {
+        console.error('Failed to initialize file logging:', err);
+        this.enableFileLogging = false;
+      });
     }
   }
   
@@ -44,15 +53,30 @@ class LoggingEngine {
     return LoggingEngine.instance;
   }
   
-  private initFileLogging() {
+  private async initFileLogging() {
+    // Only run on server-side
+    if (typeof window !== 'undefined') {
+      this.enableFileLogging = false;
+      return;
+    }
+    
     try {
-      const logsDir = path.join(process.cwd(), 'logs');
-      if (!fs.existsSync(logsDir)) {
-        fs.mkdirSync(logsDir, { recursive: true });
+      // Dynamic import of Node.js modules (only available server-side)
+      this.fs = await import('fs');
+      this.path = await import('path');
+      
+      if (!this.fs || !this.path) {
+        this.enableFileLogging = false;
+        return;
       }
       
-      this.logFile = path.join(logsDir, 'event_log.jsonl');
-      this.writeStream = fs.createWriteStream(this.logFile, {
+      const logsDir = this.path.join(process.cwd(), 'logs');
+      if (!this.fs.existsSync(logsDir)) {
+        this.fs.mkdirSync(logsDir, { recursive: true });
+      }
+      
+      this.logFile = this.path.join(logsDir, 'event_log.jsonl');
+      this.writeStream = this.fs.createWriteStream(this.logFile, {
         flags: 'a',
         encoding: 'utf8'
       });
@@ -79,7 +103,9 @@ class LoggingEngine {
   }
   
   private writeToFile(entry: LogEntry) {
-    if (this.enableFileLogging && this.writeStream) {
+    // Only write to file if file logging is enabled and writeStream is ready
+    // File logging is only available server-side
+    if (this.enableFileLogging && this.writeStream && typeof window === 'undefined') {
       try {
         this.writeStream.write(JSON.stringify(entry) + '\n');
       } catch (err) {

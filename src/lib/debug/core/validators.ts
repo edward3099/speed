@@ -93,12 +93,12 @@ class StateValidator {
    * Validator: User cannot be in queue and in pair
    */
   private validateUserNotInQueueAndPair(state: any, errors: ValidationError[]) {
-    const queueUsers = new Set(state.queue.map((q: any) => q.userId || q.id));
-    const pairedUsers = new Set();
+    const queueUsers = new Set<string>(state.queue.map((q: any) => q.userId || q.id));
+    const pairedUsers = new Set<string>();
     
     Object.values(state.pairs).forEach((pair: any) => {
-      pairedUsers.add(pair.user1);
-      pairedUsers.add(pair.user2);
+      if (pair.user1) pairedUsers.add(String(pair.user1));
+      if (pair.user2) pairedUsers.add(String(pair.user2));
     });
     
     for (const userId of queueUsers) {
@@ -106,7 +106,7 @@ class StateValidator {
         errors.push({
           rule: 'user_not_in_queue_and_pair',
           message: `User ${userId} is both in queue and in a pair`,
-          userId,
+          userId: String(userId),
           details: {
             inQueue: true,
             inPair: true

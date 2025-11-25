@@ -429,8 +429,8 @@ class EventReplayEngine {
       stream.end();
       
       // Wait for stream to finish
-      await new Promise((resolve, reject) => {
-        stream.on('finish', resolve);
+      await new Promise<void>((resolve, reject) => {
+        stream.on('finish', () => resolve());
         stream.on('error', reject);
       });
       

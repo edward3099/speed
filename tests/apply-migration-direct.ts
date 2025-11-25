@@ -37,7 +37,7 @@ async function applyMigration() {
   });
 
   const migrationPath = path.join(__dirname, '..', 'supabase', 'migrations', '20250108_create_load_test_users.sql');
-  const migrationSQL = fs.readFileSync(migrationSQL, 'utf8');
+  const migrationSQL: string = fs.readFileSync(migrationPath, 'utf8');
 
   console.log('📊 Applying migration...\n');
   console.log(`   SQL length: ${migrationSQL.length} characters\n`);

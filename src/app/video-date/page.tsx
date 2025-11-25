@@ -105,8 +105,8 @@ function VideoDateContent() {
   // See: /LOCKED_STATE.md - Video Date Countdown Defaults
   // These defaults ensure user privacy during countdown
   const videoDefaults = getVideoDateDefaults()
-  const [countdownMuted, setCountdownMuted] = useState(videoDefaults.muted) // Default to muted during countdown
-  const [countdownVideoOff, setCountdownVideoOff] = useState(videoDefaults.videoOff) // Default to video off during countdown
+  const [countdownMuted, setCountdownMuted] = useState<boolean>(videoDefaults.muted) // Default to muted during countdown
+  const [countdownVideoOff, setCountdownVideoOff] = useState<boolean>(videoDefaults.videoOff) // Default to video off during countdown
 
   // Video SPARK logging helpers
   const logVideoEvent = async (
@@ -309,34 +309,34 @@ function VideoDateContent() {
               })
             } else {
               // Some other error occurred
-              console.error('Error creating video date:', {
-                error: videoDateError,
-                message: videoDateError.message,
-                code: videoDateError.code,
-                details: videoDateError.details,
-                hint: videoDateError.hint,
-                matchId,
-                user1_id: match.user1_id,
-                user2_id: match.user2_id,
-                authUserId: authUser.id
-              })
-              await logVideoError('api_error', 'Failed to create video date', {
-                error: videoDateError,
-                matchId,
-                user1_id: match.user1_id,
-                user2_id: match.user2_id
-              })
-              router.push('/spin')
-              return
-            }
+            console.error('Error creating video date:', {
+              error: videoDateError,
+              message: videoDateError.message,
+              code: videoDateError.code,
+              details: videoDateError.details,
+              hint: videoDateError.hint,
+              matchId,
+              user1_id: match.user1_id,
+              user2_id: match.user2_id,
+              authUserId: authUser.id
+            })
+            await logVideoError('api_error', 'Failed to create video date', {
+              error: videoDateError,
+              matchId,
+              user1_id: match.user1_id,
+              user2_id: match.user2_id
+            })
+            router.push('/spin')
+            return
+          }
           } else {
             // Successfully created new record
-            videoDateRecord = newVideoDate
-            setVideoDateId(newVideoDate.id)
-            await logVideoEvent('initialization', 'connection', 'Video date created', {
-              videoDateId: newVideoDate.id,
-              status: 'countdown'
-            })
+          videoDateRecord = newVideoDate
+          setVideoDateId(newVideoDate.id)
+          await logVideoEvent('initialization', 'connection', 'Video date created', {
+            videoDateId: newVideoDate.id,
+            status: 'countdown'
+          })
           }
         }
         
@@ -486,19 +486,20 @@ function VideoDateContent() {
                 // If already subscribed and has track, set it in state immediately
                 if (publication.isSubscribed && publication.track) {
                   console.log(`✅ ${publication.kind} track already subscribed, setting in state`)
+                  const track = publication.track
                   if (publication.kind === 'video') {
                     setRemoteVideoTrack((current) => {
-                      if (current && current.id === publication.track.mediaStreamTrack.id) {
+                      if (current && current.id === track.mediaStreamTrack.id) {
                         return current // Keep existing reference
                       }
-                      return publication.track.mediaStreamTrack
+                      return track.mediaStreamTrack
                     })
                   } else if (publication.kind === 'audio') {
                     setRemoteAudioTrack((current) => {
-                      if (current && current.id === publication.track.mediaStreamTrack.id) {
+                      if (current && current.id === track.mediaStreamTrack.id) {
                         return current
                       }
-                      return publication.track.mediaStreamTrack
+                      return track.mediaStreamTrack
                     })
                   }
                 }
@@ -508,13 +509,11 @@ function VideoDateContent() {
                   try {
                     // setSubscribed might return a Promise or be synchronous
                     if (typeof publication.setSubscribed === 'function') {
-                      const result = publication.setSubscribed(true)
-                      if (result && typeof result.catch === 'function') {
-                        result.catch((err: any) => {
+                      try {
+                        publication.setSubscribed(true)
+                        console.log(`✅ setSubscribed called for ${publication.kind}`)
+                      } catch (err: any) {
                           console.error(`Error subscribing to ${publication.kind} track:`, err)
-                        })
-                      } else {
-                        console.log(`✅ setSubscribed called for ${publication.kind} (sync)`)
                       }
                     }
                   } catch (err) {
@@ -559,20 +558,23 @@ function VideoDateContent() {
               // If already subscribed and has track, set it in state immediately
               if (publication.isSubscribed && publication.track) {
                 console.log('✅ Track already subscribed on connect, setting in state:', publication.kind)
+                const track = publication.track
+                if (track) {
                 if (publication.kind === 'video') {
                   setRemoteVideoTrack((current) => {
-                    if (current && current.id === publication.track.mediaStreamTrack.id) {
+                      if (current && current.id === track.mediaStreamTrack.id) {
                       return current
                     }
-                    return publication.track.mediaStreamTrack
+                      return track.mediaStreamTrack
                   })
                 } else if (publication.kind === 'audio') {
                   setRemoteAudioTrack((current) => {
-                    if (current && current.id === publication.track.mediaStreamTrack.id) {
+                      if (current && current.id === track.mediaStreamTrack.id) {
                       return current
                     }
-                    return publication.track.mediaStreamTrack
+                      return track.mediaStreamTrack
                   })
+                  }
                 }
               }
               // If not subscribed, subscribe to it
@@ -581,11 +583,11 @@ function VideoDateContent() {
                 try {
                   // setSubscribed might return a Promise or be synchronous
                   if (typeof publication.setSubscribed === 'function') {
-                    const result = publication.setSubscribed(true)
-                    if (result && typeof result.catch === 'function') {
-                      result.catch((err: any) => {
+                    try {
+                      publication.setSubscribed(true)
+                      console.log('✅ setSubscribed called for existing remote track')
+                    } catch (err: any) {
                         console.error('Error subscribing to existing remote track:', err)
-                      })
                     }
                   }
                 } catch (err) {
@@ -646,7 +648,9 @@ function VideoDateContent() {
                       if (!remoteVideoStreamRef.current) {
                         remoteVideoStreamRef.current = new MediaStream()
                       }
+                      if (remoteVideoStreamRef.current) {
                       remoteVideoStreamRef.current.addTrack(mediaTrack)
+                      }
                       if (remoteVideoRef.current) {
                         remoteVideoRef.current.srcObject = remoteVideoStreamRef.current
                         remoteVideoRef.current.play().catch(() => {})
@@ -670,7 +674,9 @@ function VideoDateContent() {
                       if (!remoteVideoStreamRef.current) {
                         remoteVideoStreamRef.current = new MediaStream()
                       }
+                      if (remoteVideoStreamRef.current) {
                       remoteVideoStreamRef.current.addTrack(mediaTrack)
+                      }
                       if (remoteVideoRef.current) {
                         remoteVideoRef.current.srcObject = remoteVideoStreamRef.current
                         remoteVideoRef.current.play().catch(() => {})
@@ -740,10 +746,11 @@ function VideoDateContent() {
                 }
                 
                 // Remove any existing video tracks from the stream
+                if (remoteVideoStreamRef.current) {
                 const existingVideoTracks = remoteVideoStreamRef.current.getVideoTracks()
                 existingVideoTracks.forEach(t => {
                   console.log('🗑️ Removing old video track from stream:', t.id)
-                  remoteVideoStreamRef.current.removeTrack(t)
+                    remoteVideoStreamRef.current?.removeTrack(t)
                 })
                 
                 // Ensure track is enabled
@@ -755,6 +762,7 @@ function VideoDateContent() {
                 // Add the new track immediately (don't wait for 'live' state)
                 console.log('➕ Adding new video track to stream:', mediaTrack.id, 'readyState:', mediaTrack.readyState, 'enabled:', mediaTrack.enabled)
                 remoteVideoStreamRef.current.addTrack(mediaTrack)
+                }
                 
                 // Listen for track state changes
                 const handleTrackStarted = () => {
@@ -893,14 +901,16 @@ function VideoDateContent() {
                   remoteAudioStreamRef.current = new MediaStream()
                 }
                 
+                if (remoteAudioStreamRef.current) {
                 const existingAudioTracks = remoteAudioStreamRef.current.getAudioTracks()
                 existingAudioTracks.forEach(t => {
                   console.log('🗑️ Removing old audio track from stream:', t.id)
-                  remoteAudioStreamRef.current.removeTrack(t)
+                    remoteAudioStreamRef.current?.removeTrack(t)
                 })
                 
                 console.log('➕ Adding new audio track to stream:', track.mediaStreamTrack.id)
                 remoteAudioStreamRef.current.addTrack(track.mediaStreamTrack)
+                }
                 
                 if (remoteAudioRef.current && !remoteAudioRef.current.srcObject) {
                   console.log('🔊 Setting srcObject for remote audio (first time)')
@@ -1032,18 +1042,15 @@ function VideoDateContent() {
                 try {
                   // Try multiple subscription methods for compatibility
                   if (typeof publication.setSubscribed === 'function') {
-                    const result = publication.setSubscribed(true)
-                    if (result && typeof result.catch === 'function') {
-                      result.catch(async (err: any) => {
+                    try {
+                      publication.setSubscribed(true)
+                      console.log('✅ Subscription call completed (sync)')
+                    } catch (err: any) {
                         console.error(`Error subscribing to remote track (attempt ${attempt}):`, err)
                         // Retry up to 3 times
                         if (attempt < 3) {
                           setTimeout(() => subscribeToTrack(attempt + 1), 1000 * attempt)
                         }
-                      })
-                    } else {
-                      // Synchronous call succeeded
-                      console.log('✅ Subscription call completed (sync)')
                     }
                   } else if (typeof (publication as any).subscribe === 'function') {
                     // Alternative subscription method
@@ -1070,20 +1077,21 @@ function VideoDateContent() {
             } else {
               console.log('✅ Remote track already subscribed:', publication.kind)
               // Even if subscribed, ensure track is in state if it has a track
-              if (publication.track && publication.track.mediaStreamTrack) {
+              const track = publication.track
+              if (track && track.mediaStreamTrack) {
                 if (publication.kind === 'video') {
                   setRemoteVideoTrack((current) => {
-                    if (current && current.id === publication.track.mediaStreamTrack.id) {
+                    if (current && current.id === track.mediaStreamTrack.id) {
                       return current
                     }
-                    return publication.track.mediaStreamTrack
+                    return track.mediaStreamTrack
                   })
                 } else if (publication.kind === 'audio') {
                   setRemoteAudioTrack((current) => {
-                    if (current && current.id === publication.track.mediaStreamTrack.id) {
+                    if (current && current.id === track.mediaStreamTrack.id) {
                       return current
                     }
-                    return publication.track.mediaStreamTrack
+                    return track.mediaStreamTrack
                   })
                 }
               }
@@ -1135,12 +1143,6 @@ function VideoDateContent() {
           await livekitRoom.connect(wsUrl, token, {
             autoSubscribe: true,
             // Ensure we subscribe to all tracks
-            publishDefaults: {
-              videoCodec: 'vp8',
-              audioPreset: {
-                maxBitrate: 16000,
-              },
-            },
           })
           setRoom(livekitRoom)
           
@@ -1342,8 +1344,8 @@ function VideoDateContent() {
 
       return () => {
         console.log('🧹 Cleaning up real-time subscription')
-        supabase.removeChannel(channel)
-      }
+      supabase.removeChannel(channel)
+    }
   }, [videoDateId, countdownComplete, countdownStartedAt, dateStartedAt, supabase])
 
   // Periodic check as fallback to detect if partner ended the date (in case real-time fails)
@@ -1755,49 +1757,49 @@ function VideoDateContent() {
       
       setCountdown(remaining)
       console.log('⏱️ Initial countdown from database:', remaining, 'seconds')
-      
-      // If countdown already completed, mark as complete
+
+    // If countdown already completed, mark as complete
       if (remaining <= 0) {
-        setCountdownComplete(true)
-        logVideoEvent('countdown_completed', 'countdown', 'Countdown already completed on initialization', {
-          videoDateId
+      setCountdownComplete(true)
+      logVideoEvent('countdown_completed', 'countdown', 'Countdown already completed on initialization', {
+        videoDateId
+      })
+      // Update video date status to active if not already - trigger will set started_at
+      supabase
+        .from('video_dates')
+        .update({
+          status: 'active'
+          // started_at will be set automatically by database trigger
         })
-        // Update video date status to active if not already - trigger will set started_at
-        supabase
-          .from('video_dates')
-          .update({
-            status: 'active'
-            // started_at will be set automatically by database trigger
-          })
-          .eq('id', videoDateId)
-          .eq('status', 'countdown')
-          .select('started_at')
-          .single()
-          .then(({ data, error }) => {
-            if (error) {
-              console.error('❌ Error updating video date status:', error)
-              return
-            }
-            // Set the synchronized start time from database (set by trigger)
-            if (data?.started_at) {
-              console.log('✅ started_at set by database trigger:', data.started_at)
-              setDateStartedAt(data.started_at)
-            } else {
-              // Fetch the updated record to get started_at
-              supabase
-                .from('video_dates')
-                .select('started_at')
-                .eq('id', videoDateId)
-                .single()
-                .then(({ data: updatedData }) => {
-                  if (updatedData?.started_at) {
-                    setDateStartedAt(updatedData.started_at)
-                  }
-                })
-            }
-          })
-        return
-      }
+        .eq('id', videoDateId)
+        .eq('status', 'countdown')
+        .select('started_at')
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('❌ Error updating video date status:', error)
+            return
+          }
+          // Set the synchronized start time from database (set by trigger)
+          if (data?.started_at) {
+            console.log('✅ started_at set by database trigger:', data.started_at)
+            setDateStartedAt(data.started_at)
+          } else {
+            // Fetch the updated record to get started_at
+            supabase
+              .from('video_dates')
+              .select('started_at')
+              .eq('id', videoDateId)
+              .single()
+              .then(({ data: updatedData }) => {
+                if (updatedData?.started_at) {
+                  setDateStartedAt(updatedData.started_at)
+                }
+              })
+          }
+        })
+      return
+    }
     })
 
     // Update countdown every 100ms using database RPC for perfect synchronization
@@ -1816,67 +1818,67 @@ function VideoDateContent() {
       console.log('⏱️ Countdown from database:', remaining, 'seconds')
       
       if (remaining <= 0) {
-        clearInterval(timer)
+          clearInterval(timer)
         setCountdown(0)
-        setCountdownComplete(true)
-        logVideoEvent('countdown_completed', 'countdown', 'Countdown completed', {
-          videoDateId
-        })
-        // Update video date status to active - trigger will automatically set started_at
-        // CRITICAL: Remove status condition to make update idempotent (both users can update)
-        // CRITICAL: Always fetch started_at from database after countdown completes, regardless of update success
-        supabase
-          .from('video_dates')
-          .update({
-            status: 'active'
-            // started_at will be set automatically by database trigger
+          setCountdownComplete(true)
+          logVideoEvent('countdown_completed', 'countdown', 'Countdown completed', {
+            videoDateId
           })
-          .eq('id', videoDateId)
-          // REMOVED .eq('status', 'countdown') to make update idempotent
-          // This ensures both users can update successfully, even if one completes first
-          .then(async ({ error }) => {
-            // Even if update fails (e.g., status already 'active'), still fetch started_at
-            // This ensures both users get the same value regardless of who updates first
-            
-            // ALWAYS fetch started_at from database (don't rely on update response)
-            // This ensures both users get the exact same value, even if they update at slightly different times
-            console.log('🔄 Fetching started_at from database after countdown completion...')
-            
-            // Use a retry loop to ensure we get started_at (trigger might need time to fire)
-            let retries = 0
-            const maxRetries = 5
-            const fetchStartedAt = async (): Promise<void> => {
-              const { data: updatedData, error: fetchError } = await supabase
-                .from('video_dates')
-                .select('started_at, status')
-                .eq('id', videoDateId)
-                .single()
+          // Update video date status to active - trigger will automatically set started_at
+          // CRITICAL: Remove status condition to make update idempotent (both users can update)
+          // CRITICAL: Always fetch started_at from database after countdown completes, regardless of update success
+          supabase
+            .from('video_dates')
+            .update({
+              status: 'active'
+              // started_at will be set automatically by database trigger
+            })
+            .eq('id', videoDateId)
+            // REMOVED .eq('status', 'countdown') to make update idempotent
+            // This ensures both users can update successfully, even if one completes first
+            .then(async ({ error }) => {
+              // Even if update fails (e.g., status already 'active'), still fetch started_at
+              // This ensures both users get the same value regardless of who updates first
               
-              if (fetchError) {
-                console.error('❌ Error fetching started_at:', fetchError)
-                if (retries < maxRetries) {
-                  retries++
-                  setTimeout(fetchStartedAt, 200 * retries) // Exponential backoff
+              // ALWAYS fetch started_at from database (don't rely on update response)
+              // This ensures both users get the exact same value, even if they update at slightly different times
+              console.log('🔄 Fetching started_at from database after countdown completion...')
+              
+              // Use a retry loop to ensure we get started_at (trigger might need time to fire)
+              let retries = 0
+              const maxRetries = 5
+              const fetchStartedAt = async (): Promise<void> => {
+                const { data: updatedData, error: fetchError } = await supabase
+                  .from('video_dates')
+                  .select('started_at, status')
+                  .eq('id', videoDateId)
+                  .single()
+                
+                if (fetchError) {
+                  console.error('❌ Error fetching started_at:', fetchError)
+                  if (retries < maxRetries) {
+                    retries++
+                    setTimeout(fetchStartedAt, 200 * retries) // Exponential backoff
+                  }
+                  return
                 }
-                return
+                
+                if (updatedData?.started_at) {
+                  console.log('✅ started_at fetched from database:', updatedData.started_at)
+                  setDateStartedAt(updatedData.started_at)
+                } else if (updatedData?.status === 'active' && retries < maxRetries) {
+                  // Status is active but started_at not set yet - trigger might need more time
+                  console.log(`⚠️ started_at not set yet (attempt ${retries + 1}/${maxRetries}), retrying...`)
+                  retries++
+                  setTimeout(fetchStartedAt, 200 * retries)
+                } else {
+                  console.error('❌ started_at still missing after all retries')
+                }
               }
               
-              if (updatedData?.started_at) {
-                console.log('✅ started_at fetched from database:', updatedData.started_at)
-                setDateStartedAt(updatedData.started_at)
-              } else if (updatedData?.status === 'active' && retries < maxRetries) {
-                // Status is active but started_at not set yet - trigger might need more time
-                console.log(`⚠️ started_at not set yet (attempt ${retries + 1}/${maxRetries}), retrying...`)
-                retries++
-                setTimeout(fetchStartedAt, 200 * retries)
-              } else {
-                console.error('❌ started_at still missing after all retries')
-              }
-            }
-            
-            // Start fetching immediately
-            await fetchStartedAt()
-          })
+              // Start fetching immediately
+              await fetchStartedAt()
+            })
       }
     }, 100) // Update every 100ms from database for smooth display and perfect sync
 
@@ -2168,13 +2170,11 @@ function VideoDateContent() {
             try {
               // Try setSubscribed
               if (typeof publication.setSubscribed === 'function') {
-                const result = publication.setSubscribed(true)
-                if (result && typeof result.catch === 'function') {
-                  result.catch((err: any) => {
-                    console.error(`Error subscribing to ${publication.kind} track in checkTracks:`, err)
-                  })
-                } else {
+                try {
+                  publication.setSubscribed(true)
                   console.log(`✅ setSubscribed called for ${publication.kind} track (sync)`)
+                } catch (err: any) {
+                  console.error(`Error subscribing to ${publication.kind} track in checkTracks:`, err)
                 }
               }
               // Also try alternative methods
@@ -2657,19 +2657,19 @@ function VideoDateContent() {
           .from('contact_exchanges')
           .update(updateData)
           .eq('id', existingExchange.id)
-          .select()
-          .single()
-        
+        .select()
+        .single()
+
         if (updateError) {
-          const exchangeErrorInfo = {
+        const exchangeErrorInfo = {
             message: updateError?.message || 'Unknown error',
             code: updateError?.code || null,
             details: updateError?.details || null
           }
           console.error('❌ Error updating existing contact exchange:', JSON.stringify(exchangeErrorInfo, null, 2))
           await logVideoError('api_error', 'Failed to update existing contact exchange', exchangeErrorInfo)
-          alert(`Failed to update contact exchange: ${exchangeErrorInfo.message}. Please try again.`)
-          return
+        alert(`Failed to update contact exchange: ${exchangeErrorInfo.message}. Please try again.`)
+        return
         }
         
         exchange = updatedExchange
@@ -2733,10 +2733,10 @@ function VideoDateContent() {
             // Only log as error if it's not a "no rows" error (PGRST116)
             // PGRST116 means no rows found, which is expected if partner hasn't saved contacts yet
             if (partnerError.code !== 'PGRST116') {
-              console.error('❌ Error fetching partner contacts:', JSON.stringify({
-                message: partnerError?.message || 'Unknown error',
-                code: partnerError?.code || null
-              }, null, 2))
+            console.error('❌ Error fetching partner contacts:', JSON.stringify({
+              message: partnerError?.message || 'Unknown error',
+              code: partnerError?.code || null
+            }, null, 2))
             } else {
               console.log('ℹ️ Partner has not saved contact details yet')
             }
@@ -2810,13 +2810,13 @@ function VideoDateContent() {
                     // Only treat as error if it's not a "no rows" error (PGRST116)
                     // PGRST116 means no rows found, which is expected if partner hasn't saved contacts yet
                     if (partnerError.code !== 'PGRST116') {
-                      console.error('❌ Error fetching partner contacts:', JSON.stringify({
-                        message: partnerError?.message || 'Unknown error',
-                        code: partnerError?.code || null
-                      }, null, 2))
-                      setWaitingForPartner(false)
-                      router.push('/spin')
-                      return
+                    console.error('❌ Error fetching partner contacts:', JSON.stringify({
+                      message: partnerError?.message || 'Unknown error',
+                      code: partnerError?.code || null
+                    }, null, 2))
+                    setWaitingForPartner(false)
+          router.push('/spin')
+                    return
                     } else {
                       console.log('ℹ️ Partner has not saved contact details yet')
                       // Partner hasn't saved contacts - this is okay, just means they haven't shared yet
@@ -2930,18 +2930,18 @@ function VideoDateContent() {
       
       console.log('✅ Encryption successful, data type:', typeof data, 'isBuffer:', Buffer.isBuffer(data), 'isArrayBuffer:', data instanceof ArrayBuffer, 'length:', data?.length || 'N/A')
       
-      // Ensure we return the data in a format Supabase can handle
-      // Supabase should handle bytea automatically, but let's make sure
+      // Ensure we return the data as a string (function signature requires Promise<string>)
+      // Convert Buffer/ArrayBuffer to base64 string for Supabase
       if (Buffer.isBuffer(data)) {
-    return data
+        return data.toString('base64')
       } else if (data instanceof ArrayBuffer) {
-        return Buffer.from(data)
+        return Buffer.from(data).toString('base64')
       } else if (typeof data === 'string') {
-        // If it's a string, it might be base64 encoded
-        return Buffer.from(data, 'base64')
+        // If it's already a string, return as is
+        return data
       } else {
-        // Try to convert to Buffer
-        return Buffer.from(data as any)
+        // Try to convert to Buffer then to base64 string
+        return Buffer.from(data as any).toString('base64')
       }
       } catch (err: any) {
         const errorDetails = {
@@ -3050,7 +3050,9 @@ function VideoDateContent() {
   // Enable camera and microphone (called on user interaction - required for iPhone)
   // Helper function to safely check room connection state
   const isRoomConnected = (): boolean => {
-    return room !== null && room.state !== 'disconnected' && room.state !== 'disconnecting'
+    if (!room) return false
+    // ConnectionState enum: Disconnected, Connecting, Connected, Reconnecting, SignalReconnecting
+    return room.state !== 'disconnected'
   }
 
   // Helper function to publish track with retry logic for engine connection errors
@@ -3172,7 +3174,7 @@ function VideoDateContent() {
       const enableWithRetry = async (attempt: number = 1): Promise<void> => {
         try {
           // Check connection state before operation
-          if (!isRoomConnected()) {
+          if (!room || !isRoomConnected()) {
             console.warn('⚠️ Room disconnected before enabling camera/mic')
             return
           }
@@ -3226,6 +3228,11 @@ function VideoDateContent() {
         }
         
         console.log(`🔍 Checking for tracks (attempt ${attempt})...`)
+        
+        if (!room) {
+          console.warn('⚠️ Room is null, cannot check tracks')
+          return
+        }
         
         // Get video track
         const videoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
@@ -3301,7 +3308,7 @@ function VideoDateContent() {
 
   // Handle mute toggle
   const toggleMute = async () => {
-    if (!isRoomConnected()) return
+    if (!isRoomConnected() || !room) return
     
     const newMutedState = !isMuted
     const localParticipant = room.localParticipant
@@ -3389,7 +3396,7 @@ function VideoDateContent() {
 
   // Handle video toggle
   const toggleVideo = async () => {
-    if (!isRoomConnected()) return
+    if (!isRoomConnected() || !room) return
     
     const newVideoOffState = !isVideoOff
     const localParticipant = room.localParticipant
@@ -3584,14 +3591,14 @@ function VideoDateContent() {
                           <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 flex items-center gap-1 sm:gap-2">
                             <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden border border-teal-300/50 bg-white/10 backdrop-blur-sm">
                               {user.photo && user.photo.trim() !== '' && !user.photo.includes('pravatar.cc') ? (
-                                <Image
-                                  src={user.photo}
-                                  alt={user.name}
-                                  fill
-                                  sizes="(max-width: 640px) 32px, 40px"
-                                  className="object-cover"
+                              <Image
+                                src={user.photo}
+                                alt={user.name}
+                                fill
+                                sizes="(max-width: 640px) 32px, 40px"
+                                className="object-cover"
                                   placeholder="empty"
-                                />
+                              />
                               ) : null}
                             </div>
                             <div>
@@ -3645,7 +3652,7 @@ function VideoDateContent() {
                           const newMutedState = !countdownMuted
                           setCountdownMuted(newMutedState)
                           
-                          if (!isRoomConnected()) {
+                          if (!isRoomConnected() || !room) {
                             return
                           }
 
@@ -3927,14 +3934,14 @@ function VideoDateContent() {
                   >
                     <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl overflow-hidden border-2 border-teal-300/50 shadow-[0_0_20px_rgba(94,234,212,0.3)]">
                       {user.photo && user.photo.trim() !== '' && !user.photo.includes('pravatar.cc') ? (
-                        <Image
-                          src={user.photo}
-                          alt={user.name}
-                          fill
-                          sizes="(max-width: 640px) 64px, 80px"
-                          className="object-cover"
+                      <Image
+                        src={user.photo}
+                        alt={user.name}
+                        fill
+                        sizes="(max-width: 640px) 64px, 80px"
+                        className="object-cover"
                           placeholder="empty"
-                        />
+                      />
                       ) : null}
                     </div>
                     <div className="text-center w-full max-w-[120px] sm:max-w-[140px]">
@@ -3952,14 +3959,14 @@ function VideoDateContent() {
                   >
                     <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl overflow-hidden border-2 border-blue-400/50 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                       {partner.photo && partner.photo.trim() !== '' && !partner.photo.includes('pravatar.cc') ? (
-                        <Image
-                          src={partner.photo}
-                          alt={partner.name}
-                          fill
-                          sizes="(max-width: 640px) 64px, 80px"
-                          className="object-cover"
+                      <Image
+                        src={partner.photo}
+                        alt={partner.name}
+                        fill
+                        sizes="(max-width: 640px) 64px, 80px"
+                        className="object-cover"
                           placeholder="empty"
-                        />
+                      />
                       ) : null}
                     </div>
                     <div className="text-center w-full max-w-[120px] sm:max-w-[140px]">
@@ -4042,14 +4049,14 @@ function VideoDateContent() {
                             <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 flex items-center gap-2 sm:gap-3">
                               <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
                                 {user.photo && user.photo.trim() !== '' && !user.photo.includes('pravatar.cc') ? (
-                                  <Image
-                                    src={user.photo}
-                                    alt={user.name}
-                                    fill
-                                    sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
-                                    className="object-cover"
+                                <Image
+                                  src={user.photo}
+                                  alt={user.name}
+                                  fill
+                                  sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
+                                  className="object-cover"
                                     placeholder="empty"
-                                  />
+                                />
                                 ) : null}
                               </div>
                               <div>
@@ -4103,7 +4110,7 @@ function VideoDateContent() {
                             const newMutedState = !countdownMuted
                             setCountdownMuted(newMutedState)
                             
-                            if (!isRoomConnected()) {
+                            if (!isRoomConnected() || !room) {
                               return
                             }
 
@@ -4176,7 +4183,7 @@ function VideoDateContent() {
                             const newVideoOffState = !countdownVideoOff
                             setCountdownVideoOff(newVideoOffState)
                             
-                            if (!isRoomConnected()) {
+                            if (!isRoomConnected() || !room) {
                               return
                             }
 
@@ -4381,14 +4388,14 @@ function VideoDateContent() {
                   >
                     <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-4 border-teal-300/50 shadow-[0_0_40px_rgba(94,234,212,0.4)]">
                       {user.photo && user.photo.trim() !== '' && !user.photo.includes('pravatar.cc') ? (
-                        <Image
-                          src={user.photo}
-                          alt={user.name}
-                          fill
-                          sizes="128px"
-                          className="object-cover"
+                      <Image
+                        src={user.photo}
+                        alt={user.name}
+                        fill
+                        sizes="128px"
+                        className="object-cover"
                           placeholder="empty"
-                        />
+                      />
                       ) : null}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     </div>
@@ -4627,14 +4634,14 @@ function VideoDateContent() {
                     <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 flex items-center gap-2 sm:gap-3">
                       <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
                         {user.photo && user.photo.trim() !== '' && !user.photo.includes('pravatar.cc') ? (
-                          <Image
-                            src={user.photo}
-                            alt={user.name}
-                            fill
-                            sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
-                            className="object-cover"
+                        <Image
+                          src={user.photo}
+                          alt={user.name}
+                          fill
+                          sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
+                          className="object-cover"
                             placeholder="empty"
-                          />
+                        />
                         ) : null}
                       </div>
                       <div>
@@ -4793,14 +4800,14 @@ function VideoDateContent() {
                     <div className="absolute bottom-4 left-4 flex items-center gap-3">
                       <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-blue-400/50 bg-white/10 backdrop-blur-sm">
                         {partner.photo && partner.photo.trim() !== '' && !partner.photo.includes('pravatar.cc') ? (
-                          <Image
-                            src={partner.photo}
-                            alt={partner.name}
-                            fill
-                            sizes="56px"
-                            className="object-cover"
+                        <Image
+                          src={partner.photo}
+                          alt={partner.name}
+                          fill
+                          sizes="56px"
+                          className="object-cover"
                             placeholder="empty"
-                          />
+                        />
                         ) : null}
                       </div>
                       <div>
@@ -4857,14 +4864,14 @@ function VideoDateContent() {
           >
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl overflow-hidden border-2 border-teal-300/50 shadow-[0_0_20px_rgba(94,234,212,0.3)] mb-2 sm:mb-3">
               {partner.photo && partner.photo.trim() !== '' && !partner.photo.includes('pravatar.cc') ? (
-                <Image
-                  src={partner.photo}
-                  alt={partner.name}
-                  fill
-                  sizes="(max-width: 640px) 64px, 80px"
-                  className="object-cover"
+              <Image
+                src={partner.photo}
+                alt={partner.name}
+                fill
+                sizes="(max-width: 640px) 64px, 80px"
+                className="object-cover"
                   placeholder="empty"
-                />
+              />
               ) : null}
             </div>
             <h3 className="text-base sm:text-lg font-semibold mb-0.5 sm:mb-1">{partner.name}</h3>

@@ -30,6 +30,70 @@ import {
   isSparkWrapper,
   getMatchingConfig
 } from "@/lib/constants/locked-state"
+// Debugging Toolkit: Import logging functions for real-time debugging
+import { logEvent, logError, logDebug, getLogs } from "@/lib/debug/core/logging"
+
+/**
+ * Comprehensive logging helper for spinning architecture
+ * Logs to both in-memory debugging toolkit and database for complete observability
+ * This ensures all events are captured for debugging and monitoring rule compliance
+ */
+const logSpinEvent = async (
+  supabase: any,
+  eventType: string,
+  eventMessage: string,
+  userId: string | null,
+  metadata: any = {},
+  severity: 'INFO' | 'WARNING' | 'ERROR' = 'INFO',
+  success: boolean = true,
+  functionName: string = 'spin_page'
+) => {
+  try {
+    // Log to in-memory debugging toolkit
+    if (severity === 'ERROR') {
+      logError({
+        type: eventType,
+        error: new Error(eventMessage),
+        user: userId || undefined,
+        metadata: {
+          ...metadata,
+          timestamp: new Date().toISOString()
+        }
+      })
+    } else {
+      logEvent({
+        type: eventType,
+        user: userId || undefined,
+        metadata: {
+          message: eventMessage,
+          ...metadata,
+          timestamp: new Date().toISOString()
+        }
+      })
+    }
+
+    // Log to database immediately for persistence and monitoring
+    if (userId) {
+      await supabase.rpc('spark_log_event', {
+        p_event_type: eventType,
+        p_event_category: 'spin_page', // Required parameter
+        p_event_message: eventMessage,
+        p_event_data: {
+          ...metadata,
+          timestamp: new Date().toISOString()
+        },
+        p_user_id: userId,
+        p_severity: severity,
+        p_function_name: functionName,
+        p_success: success,
+        p_source: 'frontend' // Indicate this is from frontend
+      })
+    }
+  } catch (err) {
+    // Don't break the app if logging fails - just log to console
+    console.error('Failed to log spin event:', err)
+  }
+}
 
 interface Profile {
   id: string
@@ -208,6 +272,22 @@ export default function spin() {
           // Only delete matches and disconnect if user is in spin_active status
           // If user is in vote_active, they're matched - don't disconnect them!
           if (queueEntry && queueEntry.status === 'spin_active') {
+            // Log: User disconnected while in queue - DISCONNECTION EVENT
+            await logSpinEvent(
+              supabase,
+              'userDisconnected',
+              `User disconnected while in queue (spin_active)`,
+              authUser.id,
+              {
+                queueStatus: queueEntry.status,
+                reason: 'page_hidden',
+                stateTransition: 'spin_active -> disconnected'
+              },
+              'WARNING',
+              true,
+              'handleVisibilityChange'
+            )
+            
             // Delete any pending matches for this user
             await supabase
               .from('matches')
@@ -221,6 +301,23 @@ export default function spin() {
               .update({ is_online: false })
               .eq('id', authUser.id)
             setIsInQueue(false)
+          } else if (queueEntry && queueEntry.status === 'vote_active') {
+            // Log: User disconnected while in voting window - DISCONNECTION EVENT
+            await logSpinEvent(
+              supabase,
+              'userDisconnectedVoting',
+              `User disconnected while in voting window (vote_active)`,
+              authUser.id,
+              {
+                queueStatus: queueEntry.status,
+                reason: 'page_hidden',
+                stateTransition: 'vote_active -> disconnected',
+                warning: 'User disconnected during voting - match may be affected'
+              },
+              'WARNING',
+              true,
+              'handleVisibilityChange'
+            )
           }
           // If user is in vote_active, do nothing - they're matched and should stay connected
         }
@@ -521,6 +618,26 @@ export default function spin() {
 
           if (partnerProfile) {
             console.log('🎯 Loading existing match with partner:', partnerProfile.name)
+            
+            // Log: Existing match loaded on page load - STATE TRANSITION: idle -> vote_active
+            await logSpinEvent(
+              supabase,
+              'matchLoaded',
+              `Existing match loaded with partner ${partnerProfile.name}`,
+              authUser.id,
+              {
+                matchId: existingMatch.id,
+                partnerId: partnerProfile.id,
+                partnerName: partnerProfile.name,
+                source: 'existing',
+                stateTransition: 'idle -> vote_active',
+                voteStartedAt: existingMatch.vote_started_at || existingMatch.matched_at
+              },
+              'INFO',
+              true,
+              'checkExistingMatch'
+            )
+            
             setStarted(true)
             setSpinning(false)
             setCurrentMatchId(existingMatch.id)
@@ -540,6 +657,23 @@ export default function spin() {
               // Fallback to matched_at if vote_started_at is missing
               setVoteStartedAt(existingMatch.matched_at)
             }
+            
+            // Log: Voting window started (existing match)
+            await logSpinEvent(
+              supabase,
+              'votingWindowStarted',
+              `Voting window started for existing match ${existingMatch.id}`,
+              authUser.id,
+              {
+                matchId: existingMatch.id,
+                partnerId: partnerProfile.id,
+                voteStartedAt: existingMatch.vote_started_at || existingMatch.matched_at
+              },
+              'INFO',
+              true,
+              'checkExistingMatch_voting_window'
+            )
+            
             setRevealed(true)
           }
         }
@@ -554,6 +688,43 @@ export default function spin() {
 
     checkExistingMatch()
   }, [user, supabase])
+
+  // Periodically send client-side debug logs to server
+  useEffect(() => {
+    if (!user) return
+
+    const sendLogsToServer = async () => {
+      try {
+        const logs = getLogs(100) // Get recent logs
+        if (logs.length > 0) {
+          await fetch('/api/debug/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logs })
+          })
+        }
+      } catch (err) {
+        // Silently fail - logging shouldn't break the app
+        console.debug('Failed to send debug logs to server:', err)
+      }
+    }
+
+    // Send logs every 5 seconds
+    const interval = setInterval(sendLogsToServer, 5000)
+    
+    // Also send on page unload
+    const handleBeforeUnload = () => {
+      sendLogsToServer()
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      // Send final logs on cleanup
+      sendLogsToServer()
+    }
+  }, [user])
 
   // Set up real-time match detection and queue status updates
   useEffect(() => {
@@ -594,6 +765,28 @@ export default function spin() {
       // Handler for when a match is found
       const handleMatch = async (match: any) => {
         const { data: { user: currentAuthUser } } = await supabase.auth.getUser()
+        if (!currentAuthUser) {
+          return
+        }
+        
+        // Log: Match detected via realtime - PAIRING EVENT
+        await logSpinEvent(
+          supabase,
+          'matchDetected',
+          `Match detected via realtime for user ${currentAuthUser.id}`,
+          currentAuthUser.id,
+          {
+            matchId: match.id || match.match_id,
+            user1Id: match.user1_id,
+            user2Id: match.user2_id,
+            source: 'realtime',
+            stateTransition: 'queue_waiting -> paired'
+          },
+          'INFO',
+          true,
+          'handleMatch_realtime'
+        )
+        
         if (!currentAuthUser) {
           console.error('❌ No authenticated user when handling match')
           return
@@ -865,6 +1058,41 @@ export default function spin() {
 
         if (partnerProfile) {
           console.log('🎯 Match detected! Partner:', partnerProfile.name)
+          
+          // Log: Match loaded via realtime - STATE TRANSITION: paired -> vote_active
+          await logSpinEvent(
+            supabase,
+            'matchLoaded',
+            `Match loaded with partner ${partnerProfile.name} via realtime`,
+            currentAuthUser.id,
+            {
+              matchId: match.id,
+              partnerId: partnerProfile.id,
+              partnerName: partnerProfile.name,
+              source: 'realtime',
+              stateTransition: 'paired -> vote_active'
+            },
+            'INFO',
+            true,
+            'handleMatch_realtime'
+          )
+          
+          // Log: Voting window started (realtime match)
+          await logSpinEvent(
+            supabase,
+            'votingWindowStarted',
+            `Voting window started for realtime match ${match.id}`,
+            currentAuthUser.id,
+            {
+              matchId: match.id,
+              partnerId: partnerProfile.id,
+              votingWindowDuration: '10 seconds'
+            },
+            'INFO',
+            true,
+            'handleMatch_realtime_voting_window'
+          )
+          
           // Stop spinning and reveal
           setSpinning(false)
           
@@ -1189,6 +1417,20 @@ export default function spin() {
 
         if (partnerProfile) {
           console.log('🎯 Loading existing match with partner:', partnerProfile.name)
+          
+          // Debug: Log existing match loaded
+          logEvent({
+            type: 'matchLoaded',
+            user: authUser.id,
+            metadata: {
+              matchId: existingMatch.id,
+              partnerId: partnerProfile.id,
+              partnerName: partnerProfile.name,
+              source: 'periodic_check',
+              timestamp: new Date().toISOString()
+            }
+          })
+          
           setSpinning(false)
           setCurrentMatchId(existingMatch.id)
           setMatchedPartner({
@@ -1422,6 +1664,28 @@ export default function spin() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser || !user) return
 
+    // Log: User pressed spin button - STATE TRANSITION: idle -> spin_active
+    await logSpinEvent(
+      supabase,
+      'spinStart',
+      `User ${user.name} pressed spin button`,
+      authUser.id,
+      {
+        userName: user.name,
+        preferences: {
+          minAge: preferences.minAge,
+          maxAge: preferences.maxAge,
+          maxDistance: preferences.maxDistance,
+          genderPreference: preferences.genderPreference,
+          location: user.location
+        },
+        stateTransition: 'idle -> spin_active'
+      },
+      'INFO',
+      true,
+      'startSpin'
+    )
+
     // Fetch compatible photos for spinning animation (opposite gender)
     const photos = await fetchSpinningPhotos()
     setSpinningPhotos(photos.length > 0 ? photos : [])
@@ -1465,23 +1729,45 @@ export default function spin() {
           hint: queueError?.hint,
           fullError: JSON.stringify(queueError, Object.getOwnPropertyNames(queueError))
         })
-        // Log frontend error
-        await supabase.rpc('log_frontend_error', {
-          p_error_type: 'frontend',
-          p_error_message: queueError.message || 'Unknown error',
-          p_function_name: 'startSpin_join_queue',
-          p_user_id: authUser.id,
-          p_error_details: {
+        
+        // Log: Queue join failed - RULE VIOLATION: User should always be able to join queue
+        await logSpinEvent(
+          supabase,
+          'queue_join_failed',
+          `Failed to join queue: ${queueError.message || 'Unknown error'}`,
+          authUser.id,
+          {
             error_code: queueError.code,
             error_details: queueError.details,
-            error_hint: queueError.hint
+            error_hint: queueError.hint,
+            ruleViolation: 'User should always be able to join queue when pressing spin',
+            stateTransition: 'spin_active -> failed'
           },
-          p_severity: 'ERROR'
-        })
+          'ERROR',
+          false,
+          'startSpin_join_queue'
+        )
         setSpinning(false)
         setStarted(false)
         return
       }
+
+      // Log: User joined queue successfully - STATE TRANSITION: spin_active -> queue_waiting
+      await logSpinEvent(
+        supabase,
+        'queueJoined',
+        `User ${user.name} joined queue successfully`,
+        authUser.id,
+        {
+          queueId: queueId,
+          userName: user.name,
+          stateTransition: 'spin_active -> queue_waiting',
+          fairnessBoost: 0
+        },
+        'INFO',
+        true,
+        'startSpin_join_queue'
+      )
 
       setIsInQueue(true)
 
@@ -1500,19 +1786,24 @@ export default function spin() {
 
       if (matchError) {
         console.error('❌ Error processing matching:', matchError)
-        // Log frontend error
-        await supabase.rpc('log_frontend_error', {
-          p_error_type: 'frontend',
-          p_error_message: matchError.message || 'Unknown error',
-          p_function_name: 'startSpin',
-          p_user_id: authUser.id,
-          p_error_details: {
+        
+        // Log: Matching process failed - RULE VIOLATION: Matching should always work
+        await logSpinEvent(
+          supabase,
+          'matching_failed',
+          `Matching process failed: ${matchError.message || 'Unknown error'}`,
+          authUser.id,
+          {
             error_code: matchError.code,
             error_details: matchError.details,
-            error_hint: matchError.hint
+            error_hint: matchError.hint,
+            ruleViolation: 'Matching process should always work - no spin should fail',
+            stateTransition: 'queue_waiting -> error'
           },
-          p_severity: 'ERROR'
-        })
+          'ERROR',
+          false,
+          'startSpin_process_matching'
+        )
       } else {
         matchId = matchIdResult
       }
@@ -1525,6 +1816,8 @@ export default function spin() {
       
       if (!matchId) {
         console.log('⚠️ No match found on initial attempt. Polling will continue every 2 seconds until match is found...')
+        
+        // Get queue status first before logging
         const { data: queueStatus } = await supabase
           .from('matching_queue')
           .select('status, fairness_score, joined_at')
@@ -1564,6 +1857,22 @@ export default function spin() {
 
       if (matchId) {
         console.log('Match found immediately:', matchId)
+        
+        // Log: Match found immediately - PAIRING EVENT
+        await logSpinEvent(
+          supabase,
+          'matchFound',
+          `Match found immediately for user ${user.name}`,
+          authUser.id,
+          {
+            matchId: matchId,
+            source: 'immediate',
+            stateTransition: 'queue_waiting -> paired'
+          },
+          'INFO',
+          true,
+          'startSpin_process_matching'
+        )
         // Match found immediately - check if it was created
         const { data: match } = await supabase
           .from('matches')
@@ -1878,6 +2187,25 @@ export default function spin() {
             .single()
 
           if (partnerProfile) {
+            // Log: Match loaded and partner profile fetched - STATE TRANSITION: paired -> vote_active
+            await logSpinEvent(
+              supabase,
+              'matchLoaded',
+              `Match loaded with partner ${partnerProfile.name}`,
+              authUser.id,
+              {
+                matchId: match.id,
+                partnerId: partnerProfile.id,
+                partnerName: partnerProfile.name,
+                source: 'immediate_match',
+                stateTransition: 'paired -> vote_active',
+                voteStartedAt: match.vote_started_at || match.matched_at
+              },
+              'INFO',
+              true,
+              'startSpin_load_match'
+            )
+            
             setSpinning(false)
             setCurrentMatchId(match.id)
             setMatchedPartner({
@@ -1895,6 +2223,24 @@ export default function spin() {
             } else if (match.matched_at) {
               setVoteStartedAt(match.matched_at)
             }
+            
+            // Log: Voting window started
+            await logSpinEvent(
+              supabase,
+              'votingWindowStarted',
+              `Voting window started for match ${match.id}`,
+              authUser.id,
+              {
+                matchId: match.id,
+                partnerId: partnerProfile.id,
+                voteStartedAt: match.vote_started_at || match.matched_at,
+                votingWindowDuration: '10 seconds'
+              },
+              'INFO',
+              true,
+              'startSpin_voting_window'
+            )
+            
             setTimeout(() => {
               setRevealed(true)
             }, 300)
@@ -2073,6 +2419,24 @@ export default function spin() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser) return
 
+    // Log: User cast vote - VOTING EVENT
+    await logSpinEvent(
+      supabase,
+      'voteCast',
+      `User ${user.name} cast ${voteType} vote`,
+      authUser.id,
+      {
+        voteType: voteType,
+        matchId: currentMatchId,
+        partnerId: matchedPartner.id,
+        partnerName: matchedPartner.name,
+        stateTransition: voteType === 'yes' ? 'vote_active -> waiting_for_match' : 'vote_active -> respin'
+      },
+      'INFO',
+      true,
+      'handleVote'
+    )
+
     setUserVote(voteType)
 
     // Save vote to database
@@ -2100,6 +2464,26 @@ export default function spin() {
         profile_id: matchedPartner.id,
         vote_type: voteType
       })
+      
+      // Log: Vote save failed - RULE VIOLATION: Votes should always be saved
+      await logSpinEvent(
+        supabase,
+        'vote_save_failed',
+        `Failed to save ${voteType} vote: ${voteError.message || 'Unknown error'}`,
+        authUser.id,
+        {
+          voteType: voteType,
+          matchId: currentMatchId,
+          partnerId: matchedPartner.id,
+          error_code: voteError.code,
+          error_details: voteError.details,
+          error_hint: voteError.hint,
+          ruleViolation: 'Votes should always be saved successfully'
+        },
+        'ERROR',
+        false,
+        'handleVote'
+      )
       // Try alternative: delete and insert
       try {
         await supabase
@@ -2135,6 +2519,23 @@ export default function spin() {
       })
 
     if (voteType === "yes") {
+      // Log: User voted yes - waiting for partner's vote
+      await logSpinEvent(
+        supabase,
+        'voteYes',
+        `User ${user.name} voted yes - waiting for partner's vote`,
+        authUser.id,
+        {
+          matchId: currentMatchId,
+          partnerId: matchedPartner.id,
+          partnerName: matchedPartner.name,
+          stateTransition: 'vote_active -> waiting_for_match'
+        },
+        'INFO',
+        true,
+        'handleVote'
+      )
+      
       // CRITICAL: Set waiting for match state - user MUST stay in voting window
       // DO NOT perform any checks or redirects here
       // User must see the full countdown timer complete
@@ -2146,6 +2547,23 @@ export default function spin() {
       // The countdown timer will call handleCountdownComplete when it finishes
       // This ensures users stay in the voting window for the full 10 seconds
     } else {
+      // Log: User voted pass/respin
+      await logSpinEvent(
+        supabase,
+        'votePass',
+        `User ${user.name} voted pass/respin`,
+        authUser.id,
+        {
+          matchId: currentMatchId,
+          partnerId: matchedPartner.id,
+          partnerName: matchedPartner.name,
+          stateTransition: 'vote_active -> respin -> spin_active'
+        },
+        'INFO',
+        true,
+        'handleVote'
+      )
+      
       // Pass/Respin vote
       // Check if other user already voted yes
       const { data: otherVote } = await supabase
@@ -2665,27 +3083,30 @@ export default function spin() {
                 opacity: 1, 
                 y: 0, 
                 scale: 1,
-              }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ delay: 0, type: "spring", stiffness: 300, damping: 25 }}
-              className="flex items-center justify-center gap-1 sm:gap-3 md:gap-4 px-3 sm:px-8 md:px-10 py-2 sm:py-4 md:py-5 rounded-lg sm:rounded-3xl bg-gradient-to-r from-teal-300/30 via-teal-300/25 to-blue-500/30 backdrop-blur-xl border-2 border-teal-300/60 sm:border-2 relative"
-              style={{
-                visibility: 'visible',
-                display: 'flex',
-                opacity: 1,
-                pointerEvents: 'auto',
-              }}
-              animate={{
                 boxShadow: [
                   "0 0 30px rgba(94,234,212,0.4)",
                   "0 0 50px rgba(94,234,212,0.6)",
                   "0 0 30px rgba(94,234,212,0.4)",
                 ],
               }}
+              exit={{ opacity: 0, y: -20 }}
               transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
+                delay: 0,
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                boxShadow: {
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }
+              }}
+              className="flex items-center justify-center gap-1 sm:gap-3 md:gap-4 px-3 sm:px-8 md:px-10 py-2 sm:py-4 md:py-5 rounded-lg sm:rounded-3xl bg-gradient-to-r from-teal-300/30 via-teal-300/25 to-blue-500/30 backdrop-blur-xl border-2 border-teal-300/60 sm:border-2 relative"
+              style={{
+                visibility: 'visible',
+                display: 'flex',
+                opacity: 1,
+                pointerEvents: 'auto',
               }}
             >
               <motion.span

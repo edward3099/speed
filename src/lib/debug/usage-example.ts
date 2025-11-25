@@ -282,7 +282,7 @@ export async function exampleEventReplay() {
   
   if (replayResult.divergences.length > 0) {
     console.log('State divergences:');
-    replayResult.divergences.forEach(div => {
+    replayResult.divergences.forEach((div: any) => {
       console.log(`  - Field ${div.field} differs at event ${div.eventIndex}`);
     });
   }

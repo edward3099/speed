@@ -179,7 +179,7 @@ class TimeManager {
     if (!this.isPaused) {
       timer.handle = setTimeout(async () => {
         await this.executeTimer(timer);
-      }, adjustedDelay);
+      }, adjustedDelay) as any;
     }
     
     this.timers.set(id, timer);
@@ -218,7 +218,7 @@ class TimeManager {
     if (!this.isPaused) {
       timer.handle = setInterval(async () => {
         await this.executeTimer(timer);
-      }, adjustedInterval);
+      }, adjustedInterval) as any;
     }
     
     this.timers.set(id, timer);
@@ -294,7 +294,7 @@ class TimeManager {
       const adjustedInterval = timer.interval / this.speedMultiplier;
       timer.handle = setInterval(async () => {
         await this.executeTimer(timer);
-      }, adjustedInterval);
+      }, adjustedInterval) as any;
     } else if (timer.timeout && timer.expiresAt) {
       // For timeouts, calculate remaining time
       const remaining = Math.max(0, timer.expiresAt - this.getTime());
@@ -303,7 +303,7 @@ class TimeManager {
       if (remaining > 0) {
         timer.handle = setTimeout(async () => {
           await this.executeTimer(timer);
-        }, adjustedRemaining);
+        }, adjustedRemaining) as any;
       } else {
         // Timer already expired during pause
         this.executeTimer(timer);

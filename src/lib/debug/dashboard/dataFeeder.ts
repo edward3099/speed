@@ -289,9 +289,9 @@ class DebugDataFeeder {
    */
   private getSystemHealth(state: any): SystemHealth {
     const issues: string[] = [];
-    let queueHealth: SystemHealth['queueHealth'] = 'healthy';
-    let pairHealth: SystemHealth['pairHealth'] = 'healthy';
-    let timerHealth: SystemHealth['timerHealth'] = 'healthy';
+    let queueHealth: 'healthy' | 'warning' | 'critical' = 'healthy';
+    let pairHealth: 'healthy' | 'warning' | 'critical' = 'healthy';
+    let timerHealth: 'healthy' | 'warning' | 'critical' = 'healthy';
     
     // Check queue health
     const queueSize = state.queue.length;
@@ -338,10 +338,14 @@ class DebugDataFeeder {
     }
     
     // Determine overall health
-    let overallHealth: SystemHealth['overallHealth'] = 'healthy';
-    if (queueHealth === 'critical' || pairHealth === 'critical' || timerHealth === 'critical') {
+    let overallHealth: 'healthy' | 'warning' | 'critical' = 'healthy';
+    const qh = queueHealth as 'healthy' | 'warning' | 'critical';
+    const ph = pairHealth as 'healthy' | 'warning' | 'critical';
+    const th = timerHealth as 'healthy' | 'warning' | 'critical';
+    
+    if (qh === 'critical' || ph === 'critical' || th === 'critical') {
       overallHealth = 'critical';
-    } else if (queueHealth === 'warning' || pairHealth === 'warning' || timerHealth === 'warning') {
+    } else if (qh === 'warning' || ph === 'warning' || th === 'warning') {
       overallHealth = 'warning';
     }
     
