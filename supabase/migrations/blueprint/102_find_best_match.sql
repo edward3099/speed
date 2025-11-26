@@ -87,11 +87,15 @@ BEGIN
       END as compatibility_score
     FROM queue q
     INNER JOIN profiles u ON u.id = q.user_id
-    LEFT JOIN user_preferences up ON up.user_id = q.user_id
+    INNER JOIN user_status us ON us.user_id = q.user_id
+    INNER JOIN user_preferences up ON up.user_id = q.user_id
     WHERE q.user_id != p_user_id
       AND u.online = TRUE
       AND (u.cooldown_until IS NULL OR u.cooldown_until < NOW())
+      AND us.state IN ('spin_active', 'queue_waiting')
       AND u.gender != user_gender -- Opposite gender only
+      AND up.gender_preference = user_gender -- Candidate must want user's gender
+      AND user_prefs.gender_preference = u.gender -- User must want candidate's gender
       AND NOT EXISTS (
         SELECT 1 FROM never_pair_again npa
         WHERE (npa.user1 = p_user_id AND npa.user2 = q.user_id)
