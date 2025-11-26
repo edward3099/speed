@@ -127,7 +127,8 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
   const [recentVotes, setRecentVotes] = useState<VoteInfo[]>([])
   const [neverPairEntries, setNeverPairEntries] = useState<NeverPairEntry[]>([])
   const [matchingMetrics, setMatchingMetrics] = useState<MatchingMetrics | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'votes' | 'queue' | 'metrics'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'votes' | 'queue' | 'metrics' | 'matching-logs'>('overview')
+  const [matchingLogs, setMatchingLogs] = useState<any[]>([])
 
   // Capture console logs
   useEffect(() => {
@@ -573,6 +574,58 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     }
   }, [supabase])
 
+  // Fetch matching logs specifically
+  const fetchMatchingLogs = useCallback(async () => {
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      
+      const { data, error } = await supabase
+        .from('debug_logs')
+        .select('*')
+        .in('event_type', [
+          'matching_process_start',
+          'matching_queue_count',
+          'matching_insufficient_users',
+          'matching_processing_user',
+          'matching_user_already_matched',
+          'matching_preference_stage',
+          'matching_calling_find_best_match',
+          'matching_no_candidate_found',
+          'matching_candidate_found',
+          'matching_calling_create_pair',
+          'matching_create_pair_failed',
+          'matching_pair_created',
+          'matching_match_activated',
+          'matching_create_pair_exception',
+          'matching_process_complete',
+          'find_best_match_start',
+          'find_best_match_candidate_count',
+          'find_best_match_no_candidates',
+          'find_best_match_success',
+          'find_best_match_exception',
+          'find_best_match_user_not_found',
+          'find_best_match_no_preferences',
+          'find_best_match_no_match_found'
+        ])
+        .gte('timestamp', fiveMinutesAgo)
+        .order('timestamp', { ascending: false })
+        .limit(100)
+
+      if (error) {
+        console.error('Error fetching matching logs:', error)
+        return
+      }
+
+      if (data) {
+        startTransition(() => {
+          setMatchingLogs(data)
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching matching logs:', error)
+    }
+  }, [supabase])
+
   // Fetch logs from database
   const fetchDatabaseLogs = useCallback(async () => {
     if (!currentState.userId) return
@@ -647,6 +700,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         fetchRecentVotes()
         fetchNeverPairEntries()
         fetchMatchingMetrics()
+        fetchMatchingLogs()
       }, 0)
     }
     initialFetch()
@@ -661,6 +715,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       fetchRecentVotes()
       fetchNeverPairEntries()
       fetchMatchingMetrics()
+      fetchMatchingLogs()
     }, 2000) // Refresh every 2 seconds
 
     // Defer interval setup to avoid render warnings
@@ -676,7 +731,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         clearInterval(interval)
       }
     }
-  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus, fetchAllQueueUsers, fetchActiveMatches, fetchRecentVotes, fetchNeverPairEntries, fetchMatchingMetrics])
+  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus, fetchAllQueueUsers, fetchActiveMatches, fetchRecentVotes, fetchNeverPairEntries, fetchMatchingMetrics, fetchMatchingLogs])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -812,7 +867,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
               <div className="flex flex-col h-[calc(100%-60px)]">
                 {/* Tabs */}
                 <div className="flex border-b border-teal-500/30 bg-black/50">
-                  {(['overview', 'matches', 'votes', 'queue', 'metrics'] as const).map((tab) => (
+                  {(['overview', 'matches', 'votes', 'queue', 'metrics', 'matching-logs'] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -1009,6 +1064,59 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                                 </div>
                               </div>
                             </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Matching Logs Tab */}
+                {activeTab === 'matching-logs' && (
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-semibold text-green-300">
+                        Matching Engine Logs ({matchingLogs.length})
+                      </div>
+                      <button
+                        onClick={() => fetchMatchingLogs()}
+                        className="text-[9px] px-2 py-1 bg-teal-500/20 text-teal-300 rounded hover:bg-teal-500/30"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                    {matchingLogs.length === 0 ? (
+                      <div className="text-[10px] text-white/50 py-4">No matching logs found</div>
+                    ) : (
+                      matchingLogs.map((log, idx) => {
+                        const severityColor = 
+                          log.severity === 'error' ? 'text-red-400' :
+                          log.severity === 'warning' ? 'text-yellow-400' :
+                          log.severity === 'info' ? 'text-blue-400' :
+                          'text-white/70'
+                        
+                        return (
+                          <div
+                            key={log.id || idx}
+                            className={`p-2 rounded border text-[9px] ${
+                              log.severity === 'error' ? 'bg-red-500/10 border-red-500/30' :
+                              log.severity === 'warning' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                              'bg-white/5 border-white/10'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <span className={`font-semibold ${severityColor}`}>
+                                {log.event_type}
+                              </span>
+                              <span className="text-white/40 text-[8px]">
+                                {new Date(log.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            {log.metadata && (
+                              <pre className="text-[8px] text-white/60 mt-1 overflow-x-auto">
+                                {JSON.stringify(log.metadata, null, 2)}
+                              </pre>
+                            )}
                           </div>
                         )
                       })
