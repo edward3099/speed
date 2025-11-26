@@ -1,4 +1,19 @@
--- Fix process_matching to handle UUID match IDs
+-- Fix process_matching to add vote_started_at column if missing and ensure proper match creation
+-- Also add better error handling
+
+-- First, ensure vote_started_at column exists in matches table
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'matches' AND column_name = 'vote_started_at'
+  ) THEN
+    ALTER TABLE matches ADD COLUMN vote_started_at TIMESTAMPTZ;
+    RAISE NOTICE 'Added vote_started_at column to matches table';
+  END IF;
+END $$;
+
+-- Update process_matching to set vote_started_at
 CREATE OR REPLACE FUNCTION process_matching()
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -8,7 +23,7 @@ DECLARE
   matched_count INTEGER := 0;
   user_record RECORD;
   candidate_id UUID;
-  match_uuid UUID;
+  match_id BIGINT;
   preference_stage INTEGER;
   wait_time_seconds INTEGER;
 BEGIN
@@ -66,57 +81,9 @@ BEGIN
     
     -- If candidate found, create pair atomically
     IF candidate_id IS NOT NULL THEN
-      -- Call create_pair_atomic and get the actual UUID match id
-      -- We need to get the UUID directly, not the BIGINT hash
-      SELECT id INTO match_uuid
-      FROM matches
-      WHERE (user1_id = user_record.user_id AND user2_id = candidate_id)
-         OR (user1_id = candidate_id AND user2_id = user_record.user_id)
-      ORDER BY matched_at DESC
-      LIMIT 1;
+      match_id := create_pair_atomic(user_record.user_id, candidate_id);
       
-      -- If match doesn't exist yet, create it
-      IF match_uuid IS NULL THEN
-        -- Create match directly with proper locking to ensure atomicity
-        -- Use a transaction-safe approach
-        BEGIN
-          -- Lock both users
-          PERFORM 1 FROM profiles WHERE id = LEAST(user_record.user_id, candidate_id) FOR UPDATE SKIP LOCKED;
-          PERFORM 1 FROM profiles WHERE id = GREATEST(user_record.user_id, candidate_id) FOR UPDATE SKIP LOCKED;
-          
-          -- Create match
-          INSERT INTO matches (user1_id, user2_id, status)
-          VALUES (
-            LEAST(user_record.user_id, candidate_id),
-            GREATEST(user_record.user_id, candidate_id),
-            'pending'
-          )
-          RETURNING id INTO match_uuid;
-        EXCEPTION
-          WHEN unique_violation THEN
-            -- Match already exists, get it
-            SELECT id INTO match_uuid
-            FROM matches
-            WHERE (user1_id = LEAST(user_record.user_id, candidate_id) 
-               AND user2_id = GREATEST(user_record.user_id, candidate_id))
-               OR (user1_id = GREATEST(user_record.user_id, candidate_id) 
-               AND user2_id = LEAST(user_record.user_id, candidate_id))
-            LIMIT 1;
-        END;
-        
-        -- Update user_status to paired
-        UPDATE user_status
-        SET state = 'paired',
-            last_state = state,
-            last_state_change = NOW(),
-            updated_at = NOW()
-        WHERE user_id IN (user_record.user_id, candidate_id);
-        
-        -- Remove both from queue
-        DELETE FROM queue WHERE user_id IN (user_record.user_id, candidate_id);
-      END IF;
-      
-      IF match_uuid IS NOT NULL THEN
+      IF match_id IS NOT NULL THEN
         matched_count := matched_count + 1;
         
         -- Transition both to vote_active
@@ -128,11 +95,12 @@ BEGIN
             updated_at = NOW()
         WHERE user_id IN (user_record.user_id, candidate_id);
         
-        -- Update match status
+        -- Update match status with vote_started_at
         UPDATE matches
         SET status = 'vote_active',
+            vote_started_at = NOW(),
             vote_window_expires_at = NOW() + INTERVAL '10 seconds'
-        WHERE id = match_uuid;
+        WHERE id = match_id;
       END IF;
     END IF;
   END LOOP;
