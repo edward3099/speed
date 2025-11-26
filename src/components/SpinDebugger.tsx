@@ -159,20 +159,24 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
 
       consoleLogsRef.current = [...consoleLogsRef.current, logEntry].slice(-500) // Keep last 500
       
-      // Use startTransition to defer state update and avoid render warnings
-      startTransition(() => {
-        setLogs(prev => [...prev, logEntry].slice(-1000)) // Keep last 1000 total
-      })
+      // Defer state update to next tick to avoid render warnings
+      setTimeout(() => {
+        startTransition(() => {
+          setLogs(prev => [...prev, logEntry].slice(-1000)) // Keep last 1000 total
+        })
+      }, 0)
     }
 
     console.log = (...args: any[]) => {
       originalLog.apply(console, args)
-      addLog('log', ...args)
+      // Defer addLog to avoid calling during render
+      setTimeout(() => addLog('log', ...args), 0)
     }
 
     console.error = (...args: any[]) => {
       originalError.apply(console, args)
-      addLog('error', ...args)
+      // Defer addLog to avoid calling during render
+      setTimeout(() => addLog('error', ...args), 0)
     }
 
     console.warn = (...args: any[]) => {
