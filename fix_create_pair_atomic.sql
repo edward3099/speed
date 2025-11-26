@@ -9,7 +9,6 @@ SET statement_timeout TO '10s'
 AS $$
 DECLARE
   match_id BIGINT;
-  match_uuid UUID;
   user1_record RECORD;
   user2_record RECORD;
   locked_user1 BOOLEAN := FALSE;
@@ -111,18 +110,14 @@ BEGIN
   END IF;
   
   -- 3. Create match (ensure user1_id < user2_id for consistency)
-  -- Use matched_at instead of created_at (matches table has matched_at with default NOW())
+  -- Matches table uses BIGSERIAL id (BIGINT), not UUID
   INSERT INTO matches (user1_id, user2_id, status)
   VALUES (
     LEAST(p_user1_id, p_user2_id),
     GREATEST(p_user1_id, p_user2_id),
     'pending'
   )
-  RETURNING id INTO match_uuid;
-  
-  -- Convert UUID to BIGINT for return compatibility
-  -- Use hash function to convert UUID to BIGINT
-  match_id := abs(hashtext(match_uuid::text))::bigint;
+  RETURNING id INTO match_id;
   
   -- 4. Update both user_status to paired
   UPDATE user_status
