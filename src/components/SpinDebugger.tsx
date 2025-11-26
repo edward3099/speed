@@ -574,10 +574,14 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     if (!currentState.userId) return
 
     try {
+      // Only fetch logs from the last 2 hours to avoid showing old logs
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      
       const { data, error } = await supabase
         .from('debug_logs')
         .select('*')
         .eq('user_id', currentState.userId)
+        .gte('timestamp', twoHoursAgo) // Only recent logs
         .order('timestamp', { ascending: false })
         .limit(200)
 
