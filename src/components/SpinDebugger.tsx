@@ -63,6 +63,47 @@ interface QueueUser {
   profile_gender?: string
 }
 
+interface MatchInfo {
+  id: string
+  user1_id: string
+  user2_id: string
+  status: string
+  created_at: string
+  vote_window_expires_at: string | null
+  user1_name?: string
+  user2_name?: string
+  user1_vote?: string
+  user2_vote?: string
+}
+
+interface VoteInfo {
+  match_id: string
+  voter_id: string
+  vote_type: string
+  created_at: string
+  voter_name?: string
+}
+
+interface NeverPairEntry {
+  user1: string
+  user2: string
+  reason: string
+  created_at: string
+  user1_name?: string
+  user2_name?: string
+}
+
+interface MatchingMetrics {
+  total_matches_created: number
+  active_matches: number
+  matches_both_yes: number
+  matches_yes_pass: number
+  matches_both_pass: number
+  fairness_boosts_applied: number
+  preference_expansions: number
+  guardian_cleanups: number
+}
+
 interface SpinDebuggerProps {
   supabase: SupabaseClient
   currentState: CurrentState
@@ -82,6 +123,11 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
   const [userStatusInfo, setUserStatusInfo] = useState<UserStatusInfo | null>(null)
   const [backgroundJobsStatus, setBackgroundJobsStatus] = useState<any>(null)
   const [allQueueUsers, setAllQueueUsers] = useState<QueueUser[]>([])
+  const [activeMatches, setActiveMatches] = useState<MatchInfo[]>([])
+  const [recentVotes, setRecentVotes] = useState<VoteInfo[]>([])
+  const [neverPairEntries, setNeverPairEntries] = useState<NeverPairEntry[]>([])
+  const [matchingMetrics, setMatchingMetrics] = useState<MatchingMetrics | null>(null)
+  const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'votes' | 'queue' | 'metrics'>('overview')
 
   // Capture console logs
   useEffect(() => {
@@ -266,6 +312,249 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     }
   }, [supabase, currentState.userId])
 
+  // Fetch active matches
+  const fetchActiveMatches = useCallback(async () => {
+    try {
+      const { data: matchesData, error } = await supabase
+        .from('matches')
+        .select('id, user1_id, user2_id, status, created_at, vote_window_expires_at')
+        .in('status', ['pending', 'vote_active'])
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) {
+        console.error('Error fetching matches:', error)
+        return
+      }
+
+      if (matchesData && matchesData.length > 0) {
+        // Fetch profiles for user names
+        const userIds = new Set<string>()
+        matchesData.forEach(m => {
+          userIds.add(m.user1_id)
+          userIds.add(m.user2_id)
+        })
+
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', Array.from(userIds))
+
+        const profileMap = new Map((profilesData || []).map(p => [p.id, p.name]))
+
+        // Fetch votes for each match
+        const matchIds = matchesData.map(m => m.id)
+        const { data: votesData } = await supabase
+          .from('votes')
+          .select('match_id, voter_id, vote_type')
+          .in('match_id', matchIds)
+
+        const votesByMatch = new Map<string, Map<string, string>>()
+        votesData?.forEach(v => {
+          if (!votesByMatch.has(v.match_id.toString())) {
+            votesByMatch.set(v.match_id.toString(), new Map())
+          }
+          votesByMatch.get(v.match_id.toString())!.set(v.voter_id, v.vote_type)
+        })
+
+        const matches: MatchInfo[] = matchesData.map(m => {
+          const matchVotes = votesByMatch.get(m.id.toString())
+          return {
+            id: m.id.toString(),
+            user1_id: m.user1_id,
+            user2_id: m.user2_id,
+            status: m.status,
+            created_at: m.created_at,
+            vote_window_expires_at: m.vote_window_expires_at,
+            user1_name: profileMap.get(m.user1_id),
+            user2_name: profileMap.get(m.user2_id),
+            user1_vote: matchVotes?.get(m.user1_id),
+            user2_vote: matchVotes?.get(m.user2_id)
+          }
+        })
+
+        startTransition(() => {
+          setActiveMatches(matches)
+        })
+      } else {
+        startTransition(() => {
+          setActiveMatches([])
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching active matches:', error)
+    }
+  }, [supabase])
+
+  // Fetch recent votes
+  const fetchRecentVotes = useCallback(async () => {
+    try {
+      const { data: votesData, error } = await supabase
+        .from('votes')
+        .select('match_id, voter_id, vote_type, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) {
+        console.error('Error fetching votes:', error)
+        return
+      }
+
+      if (votesData && votesData.length > 0) {
+        const voterIds = new Set(votesData.map(v => v.voter_id))
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', Array.from(voterIds))
+
+        const profileMap = new Map((profilesData || []).map(p => [p.id, p.name]))
+
+        const votes: VoteInfo[] = votesData.map(v => ({
+          match_id: v.match_id.toString(),
+          voter_id: v.voter_id,
+          vote_type: v.vote_type,
+          created_at: v.created_at,
+          voter_name: profileMap.get(v.voter_id)
+        }))
+
+        startTransition(() => {
+          setRecentVotes(votes)
+        })
+      } else {
+        startTransition(() => {
+          setRecentVotes([])
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching recent votes:', error)
+    }
+  }, [supabase])
+
+  // Fetch never_pair_again entries
+  const fetchNeverPairEntries = useCallback(async () => {
+    try {
+      const { data: entriesData, error } = await supabase
+        .from('never_pair_again')
+        .select('user1, user2, reason, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) {
+        console.error('Error fetching never_pair_again:', error)
+        return
+      }
+
+      if (entriesData && entriesData.length > 0) {
+        const userIds = new Set<string>()
+        entriesData.forEach(e => {
+          userIds.add(e.user1)
+          userIds.add(e.user2)
+        })
+
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', Array.from(userIds))
+
+        const profileMap = new Map((profilesData || []).map(p => [p.id, p.name]))
+
+        const entries: NeverPairEntry[] = entriesData.map(e => ({
+          user1: e.user1,
+          user2: e.user2,
+          reason: e.reason || 'unknown',
+          created_at: e.created_at,
+          user1_name: profileMap.get(e.user1),
+          user2_name: profileMap.get(e.user2)
+        }))
+
+        startTransition(() => {
+          setNeverPairEntries(entries)
+        })
+      } else {
+        startTransition(() => {
+          setNeverPairEntries([])
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching never_pair_again:', error)
+    }
+  }, [supabase])
+
+  // Fetch matching metrics
+  const fetchMatchingMetrics = useCallback(async () => {
+    try {
+      // Count total matches
+      const { count: totalMatches } = await supabase
+        .from('matches')
+        .select('*', { count: 'exact', head: true })
+
+      // Count active matches
+      const { count: activeMatchesCount } = await supabase
+        .from('matches')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pending', 'vote_active'])
+
+      // Count matches with both yes votes
+      const { data: matchesData } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('status', 'ended')
+        .limit(1000)
+
+      let matchesBothYes = 0
+      if (matchesData) {
+        for (const match of matchesData) {
+          const { data: votes } = await supabase
+            .from('votes')
+            .select('vote_type')
+            .eq('match_id', match.id)
+          
+          if (votes && votes.length === 2 && votes.every(v => v.vote_type === 'yes')) {
+            matchesBothYes++
+          }
+        }
+      }
+
+      // Count fairness boosts
+      const { count: boostsCount } = await supabase
+        .from('debug_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_type', 'yes_boost_applied')
+        .gte('timestamp', new Date(Date.now() - 3600000).toISOString()) // Last hour
+
+      // Count preference expansions (from debug_logs or calculate from queue)
+      const { data: queueData } = await supabase
+        .from('queue')
+        .select('preference_stage')
+      
+      const expansions = queueData?.filter(q => q.preference_stage > 0).length || 0
+
+      // Count guardian cleanups (from debug_logs)
+      const { count: guardianCleanups } = await supabase
+        .from('debug_logs')
+        .select('*', { count: 'exact', head: true })
+        .in('event_type', ['user_disconnected', 'stale_match_cleaned'])
+        .gte('timestamp', new Date(Date.now() - 3600000).toISOString())
+
+      const metrics: MatchingMetrics = {
+        total_matches_created: totalMatches || 0,
+        active_matches: activeMatchesCount || 0,
+        matches_both_yes: matchesBothYes,
+        matches_yes_pass: 0, // Would need to track this separately
+        matches_both_pass: 0, // Would need to track this separately
+        fairness_boosts_applied: boostsCount || 0,
+        preference_expansions: expansions,
+        guardian_cleanups: guardianCleanups || 0
+      }
+
+      startTransition(() => {
+        setMatchingMetrics(metrics)
+      })
+    } catch (error) {
+      console.error('Error fetching matching metrics:', error)
+    }
+  }, [supabase])
+
   // Fetch logs from database
   const fetchDatabaseLogs = useCallback(async () => {
     if (!currentState.userId) return
@@ -332,6 +621,10 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         fetchDatabaseLogs()
         fetchQueueStatus()
         fetchAllQueueUsers()
+        fetchActiveMatches()
+        fetchRecentVotes()
+        fetchNeverPairEntries()
+        fetchMatchingMetrics()
       }, 0)
     }
     initialFetch()
@@ -342,6 +635,10 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       fetchDatabaseLogs()
       fetchQueueStatus()
       fetchAllQueueUsers()
+      fetchActiveMatches()
+      fetchRecentVotes()
+      fetchNeverPairEntries()
+      fetchMatchingMetrics()
     }, 2000) // Refresh every 2 seconds
 
     // Defer interval setup to avoid render warnings
@@ -357,7 +654,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         clearInterval(interval)
       }
     }
-  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus, fetchAllQueueUsers])
+  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus, fetchAllQueueUsers, fetchActiveMatches, fetchRecentVotes, fetchNeverPairEntries, fetchMatchingMetrics])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -491,6 +788,26 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
 
             {!isMinimized && (
               <div className="flex flex-col h-[calc(100%-60px)]">
+                {/* Tabs */}
+                <div className="flex border-b border-teal-500/30 bg-black/50">
+                  {(['overview', 'matches', 'votes', 'queue', 'metrics'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3 py-1.5 text-[10px] font-medium transition-colors ${
+                        activeTab === tab
+                          ? 'bg-teal-500/20 text-teal-300 border-b-2 border-teal-500'
+                          : 'text-white/60 hover:text-white/80 hover:bg-white/5'
+                      }`}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Overview Tab */}
+                {activeTab === 'overview' && (
+                  <>
                 {/* Current State */}
                 <div className="p-2 border-b border-teal-500/30 bg-teal-500/5">
                   <div className="text-xs font-semibold text-teal-300 mb-1">Current State (New System)</div>
@@ -530,22 +847,119 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                     </div>
                   )}
                 </div>
+                  </>
+                )}
 
-                {/* All Queue Users */}
-                <div className="p-2 border-b border-teal-500/30 bg-purple-500/5">
-                  <div className="text-xs font-semibold text-purple-300 mb-1">
-                    All Users in Queue ({allQueueUsers.length})
+                {/* Matches Tab */}
+                {activeTab === 'matches' && (
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div className="text-xs font-semibold text-purple-300 mb-2">
+                      Active Matches ({activeMatches.length})
+                    </div>
+                    {activeMatches.length === 0 ? (
+                      <div className="text-[10px] text-white/50 py-4">No active matches</div>
+                    ) : (
+                      activeMatches.map((match) => {
+                        const isUserInMatch = match.user1_id === currentState.userId || match.user2_id === currentState.userId
+                        const timeRemaining = match.vote_window_expires_at
+                          ? Math.max(0, Math.floor((new Date(match.vote_window_expires_at).getTime() - Date.now()) / 1000))
+                          : null
+                        
+                        return (
+                          <div
+                            key={match.id}
+                            className={`p-2 rounded border text-[9px] ${
+                              isUserInMatch
+                                ? 'bg-teal-500/20 border-teal-500/50'
+                                : 'bg-white/5 border-white/10'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-1">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <span className={`font-medium ${isUserInMatch ? 'text-teal-300' : 'text-white/80'}`}>
+                                    {match.user1_name || match.user1_id.substring(0, 8)} ↔ {match.user2_name || match.user2_id.substring(0, 8)}
+                                  </span>
+                                  {isUserInMatch && <span className="text-teal-400 text-[8px]">(You)</span>}
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-white/60">
+                                  <div>Status: <span className="text-purple-300">{match.status}</span></div>
+                                  {timeRemaining !== null && (
+                                    <div>Time Left: <span className="text-yellow-300">{timeRemaining}s</span></div>
+                                  )}
+                                  <div>User1 Vote: <span className={match.user1_vote === 'yes' ? 'text-green-300' : match.user1_vote === 'pass' ? 'text-red-300' : 'text-gray-400'}>{match.user1_vote || 'pending'}</span></div>
+                                  <div>User2 Vote: <span className={match.user2_vote === 'yes' ? 'text-green-300' : match.user2_vote === 'pass' ? 'text-red-300' : 'text-gray-400'}>{match.user2_vote || 'pending'}</span></div>
+                                  <div className="col-span-2 text-[8px] text-white/40">
+                                    Created: {new Date(match.created_at).toLocaleTimeString()}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
                   </div>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
+                )}
+
+                {/* Votes Tab */}
+                {activeTab === 'votes' && (
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div className="text-xs font-semibold text-blue-300 mb-2">
+                      Recent Votes ({recentVotes.length})
+                    </div>
+                    {recentVotes.length === 0 ? (
+                      <div className="text-[10px] text-white/50 py-4">No votes recorded</div>
+                    ) : (
+                      recentVotes.map((vote, index) => {
+                        const isUserVote = vote.voter_id === currentState.userId
+                        return (
+                          <div
+                            key={`${vote.match_id}-${vote.voter_id}-${index}`}
+                            className={`p-2 rounded border text-[9px] ${
+                              isUserVote
+                                ? 'bg-teal-500/20 border-teal-500/50'
+                                : 'bg-white/5 border-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className={`font-medium ${isUserVote ? 'text-teal-300' : 'text-white/80'}`}>
+                                  {vote.voter_name || vote.voter_id.substring(0, 8)}
+                                </span>
+                                {isUserVote && <span className="text-teal-400 text-[8px] ml-1">(You)</span>}
+                                <span className={`ml-2 ${
+                                  vote.vote_type === 'yes' ? 'text-green-300' : 'text-red-300'
+                                }`}>
+                                  {vote.vote_type === 'yes' ? '✅ Yes' : '❌ Pass'}
+                                </span>
+                              </div>
+                              <div className="text-[8px] text-white/40">
+                                Match: {vote.match_id.substring(0, 8)}... | {new Date(vote.created_at).toLocaleTimeString()}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Queue Tab */}
+                {activeTab === 'queue' && (
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div className="text-xs font-semibold text-purple-300 mb-2">
+                      All Users in Queue ({allQueueUsers.length})
+                    </div>
                     {allQueueUsers.length === 0 ? (
-                      <div className="text-[10px] text-white/50 py-2">No users in queue</div>
+                      <div className="text-[10px] text-white/50 py-4">No users in queue</div>
                     ) : (
                       allQueueUsers.map((user) => {
                         const isCurrentUser = user.user_id === currentState.userId
                         return (
                           <div
                             key={user.user_id}
-                            className={`p-1.5 rounded border text-[9px] ${
+                            className={`p-2 rounded border text-[9px] ${
                               isCurrentUser
                                 ? 'bg-teal-500/20 border-teal-500/50'
                                 : 'bg-white/5 border-white/10'
@@ -576,9 +990,102 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                       })
                     )}
                   </div>
-                </div>
+                )}
 
-                {/* Filters */}
+                {/* Metrics Tab */}
+                {activeTab === 'metrics' && (
+                  <div className="flex-1 overflow-y-auto p-2 space-y-3">
+                    <div className="text-xs font-semibold text-yellow-300 mb-2">
+                      Matching System Metrics
+                    </div>
+                    
+                    {matchingMetrics ? (
+                      <>
+                        {/* Part 5.2: Atomic Pairing */}
+                        <div className="p-2 bg-white/5 rounded border border-white/10">
+                          <div className="text-[10px] font-semibold text-teal-300 mb-1">Part 5.2: Atomic Pairing</div>
+                          <div className="text-[9px] text-white/70 space-y-0.5">
+                            <div>Total Matches Created: <span className="text-teal-300">{matchingMetrics.total_matches_created}</span></div>
+                            <div>Active Matches: <span className="text-yellow-300">{matchingMetrics.active_matches}</span></div>
+                          </div>
+                        </div>
+
+                        {/* Part 5.3: Matching Engine */}
+                        <div className="p-2 bg-white/5 rounded border border-white/10">
+                          <div className="text-[10px] font-semibold text-blue-300 mb-1">Part 5.3: Matching Engine</div>
+                          <div className="text-[9px] text-white/70">
+                            Processing every 2 seconds via background job
+                          </div>
+                        </div>
+
+                        {/* Part 5.4: Preference Expansion */}
+                        <div className="p-2 bg-white/5 rounded border border-white/10">
+                          <div className="text-[10px] font-semibold text-purple-300 mb-1">Part 5.4: Preference Expansion</div>
+                          <div className="text-[9px] text-white/70 space-y-0.5">
+                            <div>Users in Expanded Stages: <span className="text-purple-300">{matchingMetrics.preference_expansions}</span></div>
+                            <div className="text-[8px] text-white/50 mt-1">
+                              Stage 0: Exact (0-10s) | Stage 1: Age±2 (10-15s) | Stage 2: Age±4, Dist×1.5 (15-20s) | Stage 3: Full (20s+)
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Part 5.6: Fairness Scoring */}
+                        <div className="p-2 bg-white/5 rounded border border-white/10">
+                          <div className="text-[10px] font-semibold text-yellow-300 mb-1">Part 5.6: Fairness Scoring</div>
+                          <div className="text-[9px] text-white/70 space-y-0.5">
+                            <div>Boosts Applied (last hour): <span className="text-yellow-300">{matchingMetrics.fairness_boosts_applied}</span></div>
+                            <div className="text-[8px] text-white/50 mt-1">
+                              Formula: wait_time + (yes_boost_events × 10)
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Part 5.9: Voting Engine */}
+                        <div className="p-2 bg-white/5 rounded border border-white/10">
+                          <div className="text-[10px] font-semibold text-green-300 mb-1">Part 5.9: Voting Engine</div>
+                          <div className="text-[9px] text-white/70 space-y-0.5">
+                            <div>Both Yes Matches: <span className="text-green-300">{matchingMetrics.matches_both_yes}</span></div>
+                            <div className="text-[8px] text-white/50 mt-1">
+                              Outcomes: Both Yes → video_date | Yes+Pass → boost yes voter | Both Pass → idle
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Part 5.10: Guardians */}
+                        <div className="p-2 bg-white/5 rounded border border-white/10">
+                          <div className="text-[10px] font-semibold text-red-300 mb-1">Part 5.10: Guardians</div>
+                          <div className="text-[9px] text-white/70 space-y-0.5">
+                            <div>Cleanups (last hour): <span className="text-red-300">{matchingMetrics.guardian_cleanups}</span></div>
+                            <div className="text-[8px] text-white/50 mt-1">
+                              Guardian 1: Remove offline | Guardian 2: Remove stale matches | Guardian 3: Enforce expansion
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Never Pair Again */}
+                        <div className="p-2 bg-white/5 rounded border border-white/10">
+                          <div className="text-[10px] font-semibold text-orange-300 mb-1">Part 5.1: Never Pair Again</div>
+                          <div className="text-[9px] text-white/70">
+                            Blocked Pairs: <span className="text-orange-300">{neverPairEntries.length}</span>
+                          </div>
+                          {neverPairEntries.length > 0 && (
+                            <div className="mt-1 max-h-20 overflow-y-auto space-y-0.5">
+                              {neverPairEntries.slice(0, 5).map((entry, idx) => (
+                                <div key={idx} className="text-[8px] text-white/50">
+                                  {entry.user1_name || entry.user1.substring(0, 6)} ↔ {entry.user2_name || entry.user2.substring(0, 6)} ({entry.reason})
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-[10px] text-white/50 py-4">Loading metrics...</div>
+                    )}
+                  </div>
+                )}
+
+                {/* Filters - Always visible */}
                 <div className="p-2 border-b border-teal-500/30 bg-black/50">
                   <div className="flex gap-2 mb-2">
                     <div className="flex-1 relative">
