@@ -129,6 +129,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
   const [matchingMetrics, setMatchingMetrics] = useState<MatchingMetrics | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'matches' | 'votes' | 'queue' | 'metrics' | 'matching-logs'>('overview')
   const [matchingLogs, setMatchingLogs] = useState<any[]>([])
+  const [criticalErrors, setCriticalErrors] = useState<any[]>([])
 
   // Capture console logs
   useEffect(() => {
@@ -605,7 +606,10 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
           'find_best_match_exception',
           'find_best_match_user_not_found',
           'find_best_match_no_preferences',
-          'find_best_match_no_match_found'
+          'find_best_match_no_match_found',
+          'matching_stuck',
+          'users_waiting_too_long',
+          'background_job_inactive'
         ])
         .gte('timestamp', fiveMinutesAgo)
         .order('timestamp', { ascending: false })
@@ -699,8 +703,9 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         fetchActiveMatches()
         fetchRecentVotes()
         fetchNeverPairEntries()
-        fetchMatchingMetrics()
-        fetchMatchingLogs()
+      fetchMatchingMetrics()
+      fetchMatchingLogs()
+      fetchCriticalErrors()
       }, 0)
     }
     initialFetch()
@@ -716,6 +721,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       fetchNeverPairEntries()
       fetchMatchingMetrics()
       fetchMatchingLogs()
+      fetchCriticalErrors()
     }, 2000) // Refresh every 2 seconds
 
     // Defer interval setup to avoid render warnings
@@ -731,7 +737,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         clearInterval(interval)
       }
     }
-  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus, fetchAllQueueUsers, fetchActiveMatches, fetchRecentVotes, fetchNeverPairEntries, fetchMatchingMetrics, fetchMatchingLogs])
+  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus, fetchAllQueueUsers, fetchActiveMatches, fetchRecentVotes, fetchNeverPairEntries, fetchMatchingMetrics, fetchMatchingLogs, fetchCriticalErrors])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -842,6 +848,11 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                 <span className="text-sm font-semibold text-white">
                   Spin Debugger ({filteredLogs.length}/{logs.length})
                 </span>
+                {criticalErrors.length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 bg-red-500/80 text-white text-xs font-bold rounded animate-pulse">
+                    ⚠️ {criticalErrors.length} CRITICAL ERROR{criticalErrors.length > 1 ? 'S' : ''}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -882,6 +893,25 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                     </button>
                   ))}
                 </div>
+
+                {/* Critical Errors Banner */}
+                {criticalErrors.length > 0 && (
+                  <div className="bg-red-500/20 border-b-2 border-red-500 p-2">
+                    <div className="text-xs font-bold text-red-300 mb-1">
+                      🚨 CRITICAL ERRORS DETECTED
+                    </div>
+                    {criticalErrors.slice(0, 3).map((error, idx) => (
+                      <div key={idx} className="text-[10px] text-red-200 mb-1">
+                        {error.metadata?.message || error.event_type}
+                      </div>
+                    ))}
+                    {criticalErrors.length > 3 && (
+                      <div className="text-[9px] text-red-300">
+                        +{criticalErrors.length - 3} more errors (check Matching Logs tab)
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Overview Tab */}
                 {activeTab === 'overview' && (
