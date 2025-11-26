@@ -753,7 +753,8 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
   })
 
   const copyAllLogs = async () => {
-    const logText = filteredLogs.map(log => {
+    // Copy ALL logs, not just filtered ones
+    const logText = logs.map(log => {
       const time = log.timestamp.toLocaleTimeString()
       const level = log.level.toUpperCase().padEnd(5)
       const source = log.source === 'console' ? '[CONSOLE]' : '[DB]'
@@ -1334,7 +1335,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                   onClick={copyAllLogs}
                   className="w-full px-2 py-1 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs rounded border border-teal-500/50"
                 >
-                  Copy All ({filteredLogs.length})
+                  Copy All ({logs.length})
                 </button>
               </div>
             )}
