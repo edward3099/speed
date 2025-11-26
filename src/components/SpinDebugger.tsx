@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useEffect, useState, useRef, useCallback, startTransition } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Bug, X, ChevronDown, ChevronUp, Copy, Trash2, RefreshCw, Filter, Search } from "lucide-react"
 import { SupabaseClient } from "@supabase/supabase-js"
@@ -98,7 +98,11 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       }
 
       consoleLogsRef.current = [...consoleLogsRef.current, logEntry].slice(-500) // Keep last 500
-      setLogs(prev => [...prev, logEntry].slice(-1000)) // Keep last 1000 total
+      
+      // Use startTransition to defer state update and avoid render warnings
+      startTransition(() => {
+        setLogs(prev => [...prev, logEntry].slice(-1000)) // Keep last 1000 total
+      })
     }
 
     console.log = (...args: any[]) => {
@@ -147,13 +151,6 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         .eq('user_id', currentState.userId)
         .single()
 
-      // Update state (these are async, so safe from render warnings)
-      if (queueData) {
-        setQueueInfo(queueData)
-      } else {
-        setQueueInfo(null)
-      }
-
       // Fetch user_status info
       const { data: statusData } = await supabase
         .from('user_status')
@@ -161,18 +158,27 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         .eq('user_id', currentState.userId)
         .single()
 
-      if (statusData) {
-        setUserStatusInfo(statusData)
-      } else {
-        setUserStatusInfo(null)
-      }
+      // Use startTransition to defer state updates and avoid render warnings
+      startTransition(() => {
+        if (queueData) {
+          setQueueInfo(queueData)
+        } else {
+          setQueueInfo(null)
+        }
 
-      // Background jobs are configured and running (cron.job table not directly accessible via REST API)
-      // Show configured jobs status
-      setBackgroundJobsStatus([
-        { jobname: 'guardian-job', schedule: '*/10 * * * * *', active: true, description: 'Cleans offline users, stale matches' },
-        { jobname: 'matching-processor', schedule: '*/2 * * * * *', active: true, description: 'Processes queue, creates pairs' }
-      ])
+        if (statusData) {
+          setUserStatusInfo(statusData)
+        } else {
+          setUserStatusInfo(null)
+        }
+
+        // Background jobs are configured and running (cron.job table not directly accessible via REST API)
+        // Show configured jobs status
+        setBackgroundJobsStatus([
+          { jobname: 'guardian-job', schedule: '*/10 * * * * *', active: true, description: 'Cleans offline users, stale matches' },
+          { jobname: 'matching-processor', schedule: '*/2 * * * * *', active: true, description: 'Processes queue, creates pairs' }
+        ])
+      })
     } catch (error) {
       console.error('Error fetching queue status:', error)
     }
@@ -207,13 +213,15 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
           metadata: log.metadata
         }))
 
-        // Merge with console logs, avoiding duplicates
-        setLogs(prev => {
-          const existingIds = new Set(prev.map(l => l.id))
-          const newDbLogs = dbLogs.filter(l => !existingIds.has(l.id))
-          return [...prev, ...newDbLogs]
-            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-            .slice(-1000)
+        // Use startTransition to defer state updates and avoid render warnings
+        startTransition(() => {
+          setLogs(prev => {
+            const existingIds = new Set(prev.map(l => l.id))
+            const newDbLogs = dbLogs.filter(l => !existingIds.has(l.id))
+            return [...prev, ...newDbLogs]
+              .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+              .slice(-1000)
+          })
         })
       }
     } catch (error) {
@@ -234,11 +242,14 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     // Use a flag to prevent multiple simultaneous calls
     let isMounted = true
 
-    // Initial fetch
-    const initialFetch = async () => {
-      if (!isMounted) return
-      await fetchDatabaseLogs()
-      await fetchQueueStatus()
+    // Initial fetch - defer to next tick to avoid render warnings
+    const initialFetch = () => {
+      // Use setTimeout to ensure this runs after render
+      setTimeout(() => {
+        if (!isMounted) return
+        fetchDatabaseLogs()
+        fetchQueueStatus()
+      }, 0)
     }
     initialFetch()
 
@@ -249,7 +260,12 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       fetchQueueStatus()
     }, 2000) // Refresh every 2 seconds
 
-    setRefreshInterval(interval)
+    // Defer interval setup to avoid render warnings
+    setTimeout(() => {
+      if (isMounted) {
+        setRefreshInterval(interval)
+      }
+    }, 0)
 
     return () => {
       isMounted = false

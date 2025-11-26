@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, Sparkles as SparklesIcon, MapPin, Users, User, Calendar, MessageCircle, Bug } from "lucide-react"
@@ -3414,8 +3414,9 @@ export default function spin() {
 
       {/* Spin Debugger */}
       <SpinDebugger
+        key={`debugger-${user?.id || 'anonymous'}`}
         supabase={supabase}
-        currentState={{
+        currentState={useMemo(() => ({
           userId: user?.id || null,
           matchId: currentMatchId,
           partnerId: matchedPartner?.id || null,
@@ -3429,7 +3430,7 @@ export default function spin() {
           started,
           waitingForMatch,
           preferences
-        }}
+        }), [user?.id, currentMatchId, matchedPartner?.id, matchedPartner?.name, isInQueue, userVote, voteStartedAt, spinning, revealed, started, waitingForMatch, preferences])}
       />
 
     </div>
