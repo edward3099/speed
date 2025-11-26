@@ -533,74 +533,73 @@ export default function spin() {
       
       if (existingMatch) {
         // CRITICAL: Verify this match actually belongs to the current authenticated user
-          if (existingMatch.user1_id !== authUser.id && existingMatch.user2_id !== authUser.id) {
-            console.error('❌ Match does not belong to current user!', {
-              matchUser1: existingMatch.user1_id,
-              matchUser2: existingMatch.user2_id,
-              currentUserId: authUser.id
-            })
-            return
-          }
+        if (existingMatch.user1_id !== authUser.id && existingMatch.user2_id !== authUser.id) {
+          console.error('❌ Match does not belong to current user!', {
+            matchUser1: existingMatch.user1_id,
+            matchUser2: existingMatch.user2_id,
+            currentUserId: authUser.id
+          })
+          return
+        }
 
-          console.log('✅ Match verified for current user:', authUser.id)
-          console.log('🎯 Found existing match:', existingMatch.id)
-          const partnerId = existingMatch.user1_id === authUser.id ? existingMatch.user2_id : existingMatch.user1_id
+        console.log('✅ Match verified for current user:', authUser.id)
+        console.log('🎯 Found existing match:', existingMatch.id)
+        const partnerId = existingMatch.user1_id === authUser.id ? existingMatch.user2_id : existingMatch.user1_id
+        
+        const { data: partnerProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', partnerId)
+          .single()
+
+        if (partnerProfile) {
+          console.log('🎯 Loading existing match with partner:', partnerProfile.name)
           
-          const { data: partnerProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', partnerId)
-            .single()
-
-          if (partnerProfile) {
-            console.log('🎯 Loading existing match with partner:', partnerProfile.name)
-            
-            // Log: Existing match loaded on page load - STATE TRANSITION: idle -> vote_active
-            await logMatchReceived(supabase, existingMatch.id, partnerProfile.id, authUser.id)
-            
-            setStarted(true)
-            setSpinning(false)
-            setCurrentMatchId(existingMatch.id)
-            setMatchedPartner({
-              id: partnerProfile.id,
-              name: partnerProfile.name,
-              age: partnerProfile.age,
-              bio: partnerProfile.bio || '',
-              photo: filterValidPhoto(partnerProfile.photo),
-              location: partnerProfile.location || ''
-            })
-            setIsInQueue(false)
-            // Store vote_started_at for synchronized countdown
-            if (existingMatch.vote_started_at) {
-              setVoteStartedAt(existingMatch.vote_started_at)
-            } else if (existingMatch.matched_at) {
-              // Fallback to matched_at if vote_started_at is missing
-              setVoteStartedAt(existingMatch.matched_at)
-            }
-            
-            // Compute remaining seconds and log vote window
-            const remainingSeconds = computeRemainingSeconds(existingMatch.vote_expires_at)
-            let finalRemainingSeconds = remainingSeconds
-            
-            // Check if vote window is invalid
-            if (!existingMatch.vote_expires_at || remainingSeconds < 2) {
-              await logVoteWindowInvalid(supabase, existingMatch.id, remainingSeconds, 10, authUser.id)
-              finalRemainingSeconds = 10 // Fallback for UX
-            }
-            
-            // Log: Voting window started (existing match)
-            await logVoteWindowStart(
-              supabase,
-              existingMatch.id,
-              partnerProfile.id,
-              existingMatch.vote_started_at,
-              existingMatch.vote_expires_at,
-              finalRemainingSeconds,
-              authUser.id
-            )
-            
-            setRevealed(true)
+          // Log: Existing match loaded on page load - STATE TRANSITION: idle -> vote_active
+          await logMatchReceived(supabase, existingMatch.id, partnerProfile.id, authUser.id)
+          
+          setStarted(true)
+          setSpinning(false)
+          setCurrentMatchId(existingMatch.id)
+          setMatchedPartner({
+            id: partnerProfile.id,
+            name: partnerProfile.name,
+            age: partnerProfile.age,
+            bio: partnerProfile.bio || '',
+            photo: filterValidPhoto(partnerProfile.photo),
+            location: partnerProfile.location || ''
+          })
+          setIsInQueue(false)
+          // Store vote_started_at for synchronized countdown
+          if (existingMatch.vote_started_at) {
+            setVoteStartedAt(existingMatch.vote_started_at)
+          } else if (existingMatch.matched_at) {
+            // Fallback to matched_at if vote_started_at is missing
+            setVoteStartedAt(existingMatch.matched_at)
           }
+          
+          // Compute remaining seconds and log vote window
+          const remainingSeconds = computeRemainingSeconds(existingMatch.vote_expires_at)
+          let finalRemainingSeconds = remainingSeconds
+          
+          // Check if vote window is invalid
+          if (!existingMatch.vote_expires_at || remainingSeconds < 2) {
+            await logVoteWindowInvalid(supabase, existingMatch.id, remainingSeconds, 10, authUser.id)
+            finalRemainingSeconds = 10 // Fallback for UX
+          }
+          
+          // Log: Voting window started (existing match)
+          await logVoteWindowStart(
+            supabase,
+            existingMatch.id,
+            partnerProfile.id,
+            existingMatch.vote_started_at,
+            existingMatch.vote_expires_at,
+            finalRemainingSeconds,
+            authUser.id
+          )
+          
+          setRevealed(true)
         }
       } else if (userStatus?.state === 'spin_active' && !spinning) {
         // User is in queue from a previous session, but NOT actively spinning now
