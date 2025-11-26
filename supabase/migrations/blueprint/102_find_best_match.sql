@@ -21,8 +21,8 @@ DECLARE
   candidate_score DECIMAL(10, 2);
   candidate_record RECORD;
 BEGIN
-  -- Get user gender
-  SELECT gender INTO user_gender FROM users WHERE id = p_user_id;
+  -- Get user gender (from profiles table)
+  SELECT gender INTO user_gender FROM profiles WHERE id = p_user_id;
   
   -- Get user preferences
   SELECT * INTO user_prefs
@@ -48,35 +48,37 @@ BEGIN
       CASE
         WHEN p_preference_stage = 0 THEN
           -- Stage 0: exact preferences only
+          -- Check age compatibility (partner's age vs user's preferences)
           CASE 
-            WHEN (up.min_age <= (SELECT age FROM profiles WHERE id = q.user_id) AND 
-                  up.max_age >= (SELECT age FROM profiles WHERE id = q.user_id)) THEN 50
+            WHEN (up.min_age <= get_user_age(q.user_id) AND 
+                  up.max_age >= get_user_age(q.user_id)) THEN 50
             ELSE 0
           END +
+          -- Check distance compatibility (simplified - implement based on your location system)
           CASE
-            WHEN up.max_distance >= COALESCE((SELECT distance_km FROM profiles WHERE id = q.user_id), 999) THEN 50
+            WHEN up.max_distance >= COALESCE(get_user_distance(p_user_id, q.user_id), 999) THEN 50
             ELSE 0
           END
         WHEN p_preference_stage = 1 THEN
           -- Stage 1: age expanded ±2 years
           CASE 
-            WHEN (up.min_age - 2 <= (SELECT age FROM profiles WHERE id = q.user_id) AND 
-                  up.max_age + 2 >= (SELECT age FROM profiles WHERE id = q.user_id)) THEN 20
+            WHEN (up.min_age - 2 <= get_user_age(q.user_id) AND 
+                  up.max_age + 2 >= get_user_age(q.user_id)) THEN 20
             ELSE 0
           END +
           CASE
-            WHEN up.max_distance >= COALESCE((SELECT distance_km FROM profiles WHERE id = q.user_id), 999) THEN 50
+            WHEN up.max_distance >= COALESCE(get_user_distance(p_user_id, q.user_id), 999) THEN 50
             ELSE 0
           END
         WHEN p_preference_stage = 2 THEN
           -- Stage 2: age ±4 years, distance × 1.5
           CASE 
-            WHEN (up.min_age - 4 <= (SELECT age FROM profiles WHERE id = q.user_id) AND 
-                  up.max_age + 4 >= (SELECT age FROM profiles WHERE id = q.user_id)) THEN 20
+            WHEN (up.min_age - 4 <= get_user_age(q.user_id) AND 
+                  up.max_age + 4 >= get_user_age(q.user_id)) THEN 20
             ELSE 0
           END +
           CASE
-            WHEN (up.max_distance * 1.5) >= COALESCE((SELECT distance_km FROM profiles WHERE id = q.user_id), 999) THEN 20
+            WHEN (up.max_distance * 1.5) >= COALESCE(get_user_distance(p_user_id, q.user_id), 999) THEN 20
             ELSE 0
           END
         ELSE
@@ -84,7 +86,7 @@ BEGIN
           0
       END as compatibility_score
     FROM queue q
-    INNER JOIN users u ON u.id = q.user_id
+    INNER JOIN profiles u ON u.id = q.user_id
     LEFT JOIN user_preferences up ON up.user_id = q.user_id
     WHERE q.user_id != p_user_id
       AND u.online = TRUE

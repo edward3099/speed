@@ -25,9 +25,9 @@ BEGIN
     RETURN 0;
   END IF;
   
-  -- Count yes boost events (from debug_logs or separate tracking)
-  -- For now, we'll track this in a separate way or use metadata
-  -- This is a simplified version - you may need to track yes_boost_events separately
+  -- Count yes boost events (from debug_logs)
+  -- Track yes_boost_events in metadata or separate tracking
+  -- For now, count from debug_logs
   SELECT COALESCE(COUNT(*), 0)
   INTO yes_boost_events
   FROM debug_logs

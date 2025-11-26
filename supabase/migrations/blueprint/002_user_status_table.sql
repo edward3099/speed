@@ -5,8 +5,9 @@
 -- ============================================================================
 
 -- User status table: tracks state of each user
+-- NOTE: References profiles(id) since we're using profiles as users
 CREATE TABLE IF NOT EXISTS user_status (
-  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
   state TEXT NOT NULL CHECK (state IN ('idle', 'spin_active', 'queue_waiting', 'paired', 'vote_active', 'cooldown', 'offline')),
   last_state TEXT,
   last_state_change TIMESTAMPTZ NOT NULL DEFAULT NOW(),

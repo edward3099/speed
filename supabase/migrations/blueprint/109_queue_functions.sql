@@ -14,9 +14,9 @@ DECLARE
   user_online BOOLEAN;
   user_cooldown TIMESTAMPTZ;
 BEGIN
-  -- Check user is online
+  -- Check user is online (from profiles table)
   SELECT online, cooldown_until INTO user_online, user_cooldown
-  FROM users
+  FROM profiles
   WHERE id = p_user_id;
   
   IF NOT user_online THEN

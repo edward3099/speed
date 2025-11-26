@@ -12,9 +12,9 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    // Update heartbeat
+    // Update heartbeat (update profiles table)
     const { error } = await supabase
-      .from('users')
+      .from('profiles')
       .update({ 
         online: true,
         updated_at: new Date().toISOString()

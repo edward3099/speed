@@ -11,8 +11,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  -- Set cooldown_until to 5 minutes from now
-  UPDATE users
+  -- Set cooldown_until to 5 minutes from now (update profiles table)
+  UPDATE profiles
   SET cooldown_until = NOW() + INTERVAL '5 minutes',
       updated_at = NOW()
   WHERE id = p_user_id;
@@ -50,7 +50,7 @@ DECLARE
   cooldown_until TIMESTAMPTZ;
 BEGIN
   SELECT cooldown_until INTO cooldown_until
-  FROM users
+  FROM profiles
   WHERE id = p_user_id;
   
   RETURN cooldown_until IS NOT NULL AND cooldown_until > NOW();

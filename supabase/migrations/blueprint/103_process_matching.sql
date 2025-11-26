@@ -26,7 +26,7 @@ BEGIN
       q.preference_stage,
       EXTRACT(EPOCH FROM (NOW() - q.spin_started_at))::INTEGER as wait_time_seconds
     FROM queue q
-    INNER JOIN users u ON u.id = q.user_id
+    INNER JOIN profiles u ON u.id = q.user_id
     INNER JOIN user_status us ON us.user_id = q.user_id
     WHERE u.online = TRUE
       AND (u.cooldown_until IS NULL OR u.cooldown_until < NOW())

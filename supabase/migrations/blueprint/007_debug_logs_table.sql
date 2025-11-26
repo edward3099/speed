@@ -5,9 +5,10 @@
 -- ============================================================================
 
 -- Debug logs table: central debug table for all events
+-- NOTE: References profiles(id) since we're using profiles as users
 CREATE TABLE IF NOT EXISTS debug_logs (
   id BIGSERIAL PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   event_type TEXT NOT NULL,
   state_before JSONB,
   state_after JSONB,

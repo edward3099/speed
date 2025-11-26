@@ -22,10 +22,11 @@ DECLARE
 BEGIN
   -- 1. Lock both users using FOR UPDATE SKIP LOCKED (consistent order to prevent deadlocks)
   -- Always lock lower UUID first
+  -- NOTE: Using profiles table (via users view)
   IF p_user1_id < p_user2_id THEN
     -- Lock user1 first
     SELECT * INTO user1_record
-    FROM users
+    FROM profiles
     WHERE id = p_user1_id
     FOR UPDATE SKIP LOCKED;
     
@@ -37,7 +38,7 @@ BEGIN
     
     -- Lock user2
     SELECT * INTO user2_record
-    FROM users
+    FROM profiles
     WHERE id = p_user2_id
     FOR UPDATE SKIP LOCKED;
     
@@ -49,7 +50,7 @@ BEGIN
   ELSE
     -- Lock user2 first
     SELECT * INTO user2_record
-    FROM users
+    FROM profiles
     WHERE id = p_user2_id
     FOR UPDATE SKIP LOCKED;
     
@@ -61,7 +62,7 @@ BEGIN
     
     -- Lock user1
     SELECT * INTO user1_record
-    FROM users
+    FROM profiles
     WHERE id = p_user1_id
     FOR UPDATE SKIP LOCKED;
     

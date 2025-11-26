@@ -5,10 +5,11 @@
 -- ============================================================================
 
 -- Matches table: stores pairings
+-- NOTE: References profiles(id) since we're using profiles as users
 CREATE TABLE IF NOT EXISTS matches (
   id BIGSERIAL PRIMARY KEY,
-  user1_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  user2_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user1_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user2_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'vote_active', 'cancelled', 'ended')),
   vote_window_expires_at TIMESTAMPTZ,

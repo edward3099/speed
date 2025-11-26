@@ -5,9 +5,10 @@
 -- ============================================================================
 
 -- Votes table: stores yes or pass votes
+-- NOTE: References profiles(id) since we're using profiles as users
 CREATE TABLE IF NOT EXISTS votes (
   match_id BIGINT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
-  voter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  voter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   vote_type TEXT NOT NULL CHECK (vote_type IN ('yes', 'pass')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (match_id, voter_id)
