@@ -641,6 +641,26 @@ export default function spin() {
   // Note: Logging is now handled directly via logClientEvent() calls
   // No need to periodically send logs - they're written directly to debug_logs table
 
+  // Global error handler for unhandled fetch errors
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // Log fetch errors with more context
+      if (event.reason?.message?.includes('fetch') || event.reason?.name === 'TypeError') {
+        console.error('❌ Unhandled fetch error:', {
+          message: event.reason?.message,
+          stack: event.reason?.stack,
+          reason: event.reason
+        })
+      }
+    }
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [])
+
   // Set up real-time match detection and queue status updates
   useEffect(() => {
     if (!user) return
@@ -1562,8 +1582,14 @@ export default function spin() {
     await logSpinPressed(supabase, authUser.id)
 
     // Fetch compatible photos for spinning animation (opposite gender)
-    const photos = await fetchSpinningPhotos()
-    setSpinningPhotos(photos.length > 0 ? photos : [])
+    // Wrap in try-catch to prevent photo fetch errors from blocking queue join
+    try {
+      const photos = await fetchSpinningPhotos()
+      setSpinningPhotos(photos.length > 0 ? photos : [])
+    } catch (photoError: any) {
+      console.warn('⚠️ Failed to fetch spinning photos (non-critical):', photoError?.message || photoError)
+      setSpinningPhotos([]) // Continue without photos
+    }
 
     setUserVote(null)
     setRevealed(false)
@@ -1575,7 +1601,13 @@ export default function spin() {
 
     try {
       // Clean up any stale matches first (handles vote_active stuck users)
-      await supabase.rpc('cleanup_stale_matches')
+      // Wrap in try-catch to prevent RPC errors from blocking queue join
+      try {
+        await supabase.rpc('cleanup_stale_matches')
+      } catch (cleanupError: any) {
+        // Log but don't fail - cleanup is optional
+        console.warn('⚠️ cleanup_stale_matches failed (non-critical):', cleanupError?.message || cleanupError)
+      }
 
       // Join the queue (will update if already exists, or create new)
       // This will automatically:
@@ -1586,6 +1618,16 @@ export default function spin() {
       // New Matching System: Use join_queue RPC
       const { data: joinSuccess, error: queueError } = await supabase.rpc('join_queue', {
         p_user_id: authUser.id
+      }).catch((rpcError: any) => {
+        // Catch and log RPC errors with full context
+        console.error('❌ join_queue RPC failed:', {
+          message: rpcError?.message,
+          code: rpcError?.code,
+          details: rpcError?.details,
+          hint: rpcError?.hint,
+          error: rpcError
+        })
+        return { data: null, error: rpcError }
       })
       
       // CRITICAL: Small delay to ensure join_queue completes and other user is reset
