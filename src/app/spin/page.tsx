@@ -224,47 +224,72 @@ export default function spin() {
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'hidden') {
+        // Don't disconnect users when page is hidden - they might switch tabs
+        // Only disconnect on actual page unload (beforeunload)
+        // Users should stay in queue even if tab is hidden
+        return
+      } else if (document.visibilityState === 'visible') {
+        // Page became visible again - send heartbeat to mark as online
         const { data: { user: authUser } } = await supabase.auth.getUser()
         if (authUser && isInQueue) {
-          // Check user's status before cleaning up
-          // Only clean up if user is in spin_active (not matched)
-          // If user is in vote_active (matched), don't disconnect them
-          const { data: userStatus } = await supabase
-            .from('user_status')
-            .select('state')
-            .eq('user_id', authUser.id)
-            .single()
+          // Update heartbeat to mark user as online
+          try {
+            await supabase
+              .from('user_status')
+              .update({ 
+                online_status: true,
+                last_heartbeat: new Date().toISOString()
+              })
+              .eq('user_id', authUser.id)
+          } catch (error) {
+            console.warn('Failed to update heartbeat on visibility change:', error)
+          }
+        }
+      }
+    }
+
+    const handleBeforeUnload = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser && isInQueue) {
+        // Check user's status before cleaning up
+        // Only clean up if user is in spin_active (not matched)
+        // If user is in vote_active (matched), don't disconnect them
+        const { data: userStatus } = await supabase
+          .from('user_status')
+          .select('state')
+          .eq('user_id', authUser.id)
+          .single()
+        
+        // Only delete matches and disconnect if user is in spin_active state
+        // If user is in vote_active, they're matched - don't disconnect them!
+        if (userStatus && userStatus.state === 'spin_active') {
+          // Log: User disconnected while in queue - DISCONNECTION EVENT
+          await logClientEvent(
+            supabase,
+            'frontend_user_disconnected',
+            {
+              userState: userStatus.state,
+              reason: 'page_unload',
+              stateTransition: 'spin_active -> disconnected'
+            },
+            authUser.id,
+            'warning'
+          )
           
-          // Only delete matches and disconnect if user is in spin_active state
-          // If user is in vote_active, they're matched - don't disconnect them!
-          if (userStatus && userStatus.state === 'spin_active') {
-            // Log: User disconnected while in queue - DISCONNECTION EVENT
-            await logClientEvent(
-              supabase,
-              'frontend_user_disconnected',
-              {
-                userState: userStatus.state,
-                reason: 'page_hidden',
-                stateTransition: 'spin_active -> disconnected'
-              },
-              authUser.id,
-              'warning'
-            )
-            
-            // Delete any pending matches for this user
-            await supabase
-              .from('matches')
-              .delete()
-              .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-              .eq('state', 'pending')
-            
-            await supabase.rpc('remove_from_queue', { p_user_id: authUser.id })
-            await supabase
-              .from('profiles')
-              .update({ is_online: false })
-              .eq('id', authUser.id)
-            setIsInQueue(false)
-          } else if (userStatus && userStatus.state === 'vote_active') {
+          // Delete any pending matches for this user
+          await supabase
+            .from('matches')
+            .delete()
+            .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
+            .eq('state', 'pending')
+          
+          await supabase.rpc('remove_from_queue', { p_user_id: authUser.id })
+          await supabase
+            .from('profiles')
+            .update({ is_online: false })
+            .eq('id', authUser.id)
+          setIsInQueue(false)
+        } else if (userStatus && userStatus.state === 'vote_active') {
             // Log: User disconnected while in voting window - DISCONNECTION EVENT
             await logClientEvent(
               supabase,
@@ -338,7 +363,7 @@ export default function spin() {
     }
   }, [isInQueue, supabase])
 
-  // Periodic fairness score update while actively spinning
+  // Periodic fairness score update and heartbeat while actively spinning
   // NOTE: We do NOT call process_matching here - matching only happens when user presses spin
   useEffect(() => {
     if (!spinning || !isInQueue || !user) return
@@ -349,6 +374,19 @@ export default function spin() {
 
       // Update fairness score (increases over time to help users who wait longer)
       await supabase.rpc('update_fairness_score', { p_user_id: authUser.id })
+      
+      // Update heartbeat to keep user marked as online
+      try {
+        await supabase
+          .from('user_status')
+          .update({ 
+            online_status: true,
+            last_heartbeat: new Date().toISOString()
+          })
+          .eq('user_id', authUser.id)
+      } catch (error) {
+        console.warn('Failed to update heartbeat:', error)
+      }
       
       // DO NOT call process_matching here - it should only be called when user explicitly presses spin
       // This prevents automatic matching when users are just viewing the page
@@ -1635,6 +1673,15 @@ export default function spin() {
         .from('profiles')
         .update({ online: true, cooldown_until: null })
         .eq('id', authUser.id)
+      
+      // Also ensure user_status.online_status is set to true
+      await supabase
+        .from('user_status')
+        .update({ 
+          online_status: true,
+          last_heartbeat: new Date().toISOString()
+        })
+        .eq('user_id', authUser.id)
       
       // New Matching System: Use join_queue RPC
       let joinSuccess: any = null
