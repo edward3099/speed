@@ -7,7 +7,6 @@ AS $$
 DECLARE
   user_online BOOLEAN;
   user_cooldown TIMESTAMPTZ;
-  queue_id UUID;
 BEGIN
   -- Check user is online (from profiles table)
   SELECT online, cooldown_until INTO user_online, user_cooldown
@@ -55,8 +54,7 @@ BEGIN
   -- Insert into queue
   INSERT INTO queue (user_id, fairness_score, spin_started_at, preference_stage)
   VALUES (p_user_id, 0, NOW(), 0)
-  ON CONFLICT (user_id) DO NOTHING
-  RETURNING id INTO queue_id;
+  ON CONFLICT (user_id) DO NOTHING;
   
   -- Ensure user_status exists and update to spin_active
   INSERT INTO user_status (user_id, state, spin_started_at, last_state, last_state_change, updated_at, online_status, last_heartbeat)
@@ -72,8 +70,7 @@ BEGIN
   
   INSERT INTO debug_logs (event_type, metadata, severity)
   VALUES ('join_queue_success', jsonb_build_object(
-    'user_id', p_user_id,
-    'queue_id', queue_id
+    'user_id', p_user_id
   ), 'info');
   
   RETURN TRUE;
