@@ -147,6 +147,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         .eq('user_id', currentState.userId)
         .single()
 
+      // Update state (these are async, so safe from render warnings)
       if (queueData) {
         setQueueInfo(queueData)
       } else {
@@ -222,21 +223,38 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
 
   // Auto-refresh database logs and queue status
   useEffect(() => {
-    if (isOpen && currentState.userId) {
-      fetchDatabaseLogs()
-      fetchQueueStatus()
-      const interval = setInterval(() => {
-        fetchDatabaseLogs()
-        fetchQueueStatus()
-      }, 2000) // Refresh every 2 seconds
-      setRefreshInterval(interval)
-      return () => {
-        if (interval) clearInterval(interval)
-      }
-    } else {
+    if (!isOpen || !currentState.userId) {
       if (refreshInterval) {
         clearInterval(refreshInterval)
         setRefreshInterval(null)
+      }
+      return
+    }
+
+    // Use a flag to prevent multiple simultaneous calls
+    let isMounted = true
+
+    // Initial fetch
+    const initialFetch = async () => {
+      if (!isMounted) return
+      await fetchDatabaseLogs()
+      await fetchQueueStatus()
+    }
+    initialFetch()
+
+    // Set up interval for auto-refresh
+    const interval = setInterval(() => {
+      if (!isMounted) return
+      fetchDatabaseLogs()
+      fetchQueueStatus()
+    }, 2000) // Refresh every 2 seconds
+
+    setRefreshInterval(interval)
+
+    return () => {
+      isMounted = false
+      if (interval) {
+        clearInterval(interval)
       }
     }
   }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus])
