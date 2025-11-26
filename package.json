@@ -24,6 +24,7 @@
     "test:matching-logic": "playwright test tests/matching-logic-scenarios.spec.ts",
     "test:matching-logic-v2": "playwright test tests/matching-logic-scenarios-v2.spec.ts",
     "test:vitest": "vitest run",
+    "test:custom": "tsx tests/matching-logic-custom.test.ts",
     "test:vitest:watch": "vitest",
     "test:vitest:ui": "vitest --ui",
     "test:vitest:matching": "vitest run tests/matching-logic-vitest.test.ts",

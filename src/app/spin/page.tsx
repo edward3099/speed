@@ -21,79 +21,27 @@ import { EditableProfilePicture } from "@/components/ui/editable-profile-picture
 import { EditableBio } from "@/components/ui/editable-bio"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
-// 🔒 LOCKED STATE: Import constants for matching configuration
+// V3 Matching System: Import constants for matching configuration
 import { 
-  CRITICAL_RPC_FUNCTIONS, 
   MATCHING_CONFIG, 
   MATCHING_STATES,
   isValidStateTransition,
-  isSparkWrapper,
   getMatchingConfig
-} from "@/lib/constants/locked-state"
-// Debugging Toolkit: Import logging functions for real-time debugging
-import { logEvent, logError, logDebug, getLogs } from "@/lib/debug/core/logging"
-
-/**
- * Comprehensive logging helper for spinning architecture
- * Logs to both in-memory debugging toolkit and database for complete observability
- * This ensures all events are captured for debugging and monitoring rule compliance
- */
-const logSpinEvent = async (
-  supabase: any,
-  eventType: string,
-  eventMessage: string,
-  userId: string | null,
-  metadata: any = {},
-  severity: 'INFO' | 'WARNING' | 'ERROR' = 'INFO',
-  success: boolean = true,
-  functionName: string = 'spin_page'
-) => {
-  try {
-    // Log to in-memory debugging toolkit
-    if (severity === 'ERROR') {
-      logError({
-        type: eventType,
-        error: new Error(eventMessage),
-        user: userId || undefined,
-        metadata: {
-          ...metadata,
-          timestamp: new Date().toISOString()
-        }
-      })
-    } else {
-      logEvent({
-        type: eventType,
-        user: userId || undefined,
-        metadata: {
-          message: eventMessage,
-          ...metadata,
-          timestamp: new Date().toISOString()
-        }
-      })
-    }
-
-    // Log to database immediately for persistence and monitoring
-    if (userId) {
-      await supabase.rpc('spark_log_event', {
-        p_event_type: eventType,
-        p_event_category: 'spin_page', // Required parameter
-        p_event_message: eventMessage,
-        p_event_data: {
-          ...metadata,
-          timestamp: new Date().toISOString()
-        },
-        p_user_id: userId,
-        p_severity: severity,
-        p_function_name: functionName,
-        p_success: success,
-        p_source: 'frontend' // Indicate this is from frontend
-      })
-    }
-  } catch (err) {
-    // Don't break the app if logging fails - just log to console
-    console.error('Failed to log spin event:', err)
-  }
-}
+} from "@/lib/constants/matching-constants"
+// New Debug Logging System: Import production-grade logging functions
+import { 
+  logSpinPressed,
+  logJoinQueueSuccess,
+  logMatchReceived,
+  logVoteWindowStart,
+  logVoteWindowInvalid,
+  logVote,
+  logIdleTimeout,
+  logRespinTrigger,
+  logVideoDateStart,
+  logClientEvent,
+  computeRemainingSeconds
+} from "@/lib/debug/log"
 
 interface Profile {
   id: string
@@ -273,19 +221,16 @@ export default function spin() {
           // If user is in vote_active, they're matched - don't disconnect them!
           if (queueEntry && queueEntry.status === 'spin_active') {
             // Log: User disconnected while in queue - DISCONNECTION EVENT
-            await logSpinEvent(
+            await logClientEvent(
               supabase,
-              'userDisconnected',
-              `User disconnected while in queue (spin_active)`,
-              authUser.id,
+              'frontend_user_disconnected',
               {
                 queueStatus: queueEntry.status,
                 reason: 'page_hidden',
                 stateTransition: 'spin_active -> disconnected'
               },
-              'WARNING',
-              true,
-              'handleVisibilityChange'
+              authUser.id,
+              'warning'
             )
             
             // Delete any pending matches for this user
@@ -303,20 +248,17 @@ export default function spin() {
             setIsInQueue(false)
           } else if (queueEntry && queueEntry.status === 'vote_active') {
             // Log: User disconnected while in voting window - DISCONNECTION EVENT
-            await logSpinEvent(
+            await logClientEvent(
               supabase,
-              'userDisconnectedVoting',
-              `User disconnected while in voting window (vote_active)`,
-              authUser.id,
+              'frontend_user_disconnected_voting',
               {
                 queueStatus: queueEntry.status,
                 reason: 'page_hidden',
                 stateTransition: 'vote_active -> disconnected',
                 warning: 'User disconnected during voting - match may be affected'
               },
-              'WARNING',
-              true,
-              'handleVisibilityChange'
+              authUser.id,
+              'warning'
             )
           }
           // If user is in vote_active, do nothing - they're matched and should stay connected
@@ -620,23 +562,7 @@ export default function spin() {
             console.log('🎯 Loading existing match with partner:', partnerProfile.name)
             
             // Log: Existing match loaded on page load - STATE TRANSITION: idle -> vote_active
-            await logSpinEvent(
-              supabase,
-              'matchLoaded',
-              `Existing match loaded with partner ${partnerProfile.name}`,
-              authUser.id,
-              {
-                matchId: existingMatch.id,
-                partnerId: partnerProfile.id,
-                partnerName: partnerProfile.name,
-                source: 'existing',
-                stateTransition: 'idle -> vote_active',
-                voteStartedAt: existingMatch.vote_started_at || existingMatch.matched_at
-              },
-              'INFO',
-              true,
-              'checkExistingMatch'
-            )
+            await logMatchReceived(supabase, existingMatch.id, partnerProfile.id, authUser.id)
             
             setStarted(true)
             setSpinning(false)
@@ -658,20 +584,25 @@ export default function spin() {
               setVoteStartedAt(existingMatch.matched_at)
             }
             
+            // Compute remaining seconds and log vote window
+            const remainingSeconds = computeRemainingSeconds(existingMatch.vote_expires_at)
+            let finalRemainingSeconds = remainingSeconds
+            
+            // Check if vote window is invalid
+            if (!existingMatch.vote_expires_at || remainingSeconds < 2) {
+              await logVoteWindowInvalid(supabase, existingMatch.id, remainingSeconds, 10, authUser.id)
+              finalRemainingSeconds = 10 // Fallback for UX
+            }
+            
             // Log: Voting window started (existing match)
-            await logSpinEvent(
+            await logVoteWindowStart(
               supabase,
-              'votingWindowStarted',
-              `Voting window started for existing match ${existingMatch.id}`,
-              authUser.id,
-              {
-                matchId: existingMatch.id,
-                partnerId: partnerProfile.id,
-                voteStartedAt: existingMatch.vote_started_at || existingMatch.matched_at
-              },
-              'INFO',
-              true,
-              'checkExistingMatch_voting_window'
+              existingMatch.id,
+              partnerProfile.id,
+              existingMatch.vote_started_at,
+              existingMatch.vote_expires_at,
+              finalRemainingSeconds,
+              authUser.id
             )
             
             setRevealed(true)
@@ -689,42 +620,8 @@ export default function spin() {
     checkExistingMatch()
   }, [user, supabase])
 
-  // Periodically send client-side debug logs to server
-  useEffect(() => {
-    if (!user) return
-
-    const sendLogsToServer = async () => {
-      try {
-        const logs = getLogs(100) // Get recent logs
-        if (logs.length > 0) {
-          await fetch('/api/debug/logs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ logs })
-          })
-        }
-      } catch (err) {
-        // Silently fail - logging shouldn't break the app
-        console.debug('Failed to send debug logs to server:', err)
-      }
-    }
-
-    // Send logs every 5 seconds
-    const interval = setInterval(sendLogsToServer, 5000)
-    
-    // Also send on page unload
-    const handleBeforeUnload = () => {
-      sendLogsToServer()
-    }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-      // Send final logs on cleanup
-      sendLogsToServer()
-    }
-  }, [user])
+  // Note: Logging is now handled directly via logClientEvent() calls
+  // No need to periodically send logs - they're written directly to debug_logs table
 
   // Set up real-time match detection and queue status updates
   useEffect(() => {
@@ -769,23 +666,7 @@ export default function spin() {
           return
         }
         
-        // Log: Match detected via realtime - PAIRING EVENT
-        await logSpinEvent(
-          supabase,
-          'matchDetected',
-          `Match detected via realtime for user ${currentAuthUser.id}`,
-          currentAuthUser.id,
-          {
-            matchId: match.id || match.match_id,
-            user1Id: match.user1_id,
-            user2Id: match.user2_id,
-            source: 'realtime',
-            stateTransition: 'queue_waiting -> paired'
-          },
-          'INFO',
-          true,
-          'handleMatch_realtime'
-        )
+        // Match detected via realtime - will log when partner is loaded
         
         if (!currentAuthUser) {
           console.error('❌ No authenticated user when handling match')
@@ -1059,39 +940,8 @@ export default function spin() {
         if (partnerProfile) {
           console.log('🎯 Match detected! Partner:', partnerProfile.name)
           
-          // Log: Match loaded via realtime - STATE TRANSITION: paired -> vote_active
-          await logSpinEvent(
-            supabase,
-            'matchLoaded',
-            `Match loaded with partner ${partnerProfile.name} via realtime`,
-            currentAuthUser.id,
-            {
-              matchId: match.id,
-              partnerId: partnerProfile.id,
-              partnerName: partnerProfile.name,
-              source: 'realtime',
-              stateTransition: 'paired -> vote_active'
-            },
-            'INFO',
-            true,
-            'handleMatch_realtime'
-          )
-          
-          // Log: Voting window started (realtime match)
-          await logSpinEvent(
-            supabase,
-            'votingWindowStarted',
-            `Voting window started for realtime match ${match.id}`,
-            currentAuthUser.id,
-            {
-              matchId: match.id,
-              partnerId: partnerProfile.id,
-              votingWindowDuration: '10 seconds'
-            },
-            'INFO',
-            true,
-            'handleMatch_realtime_voting_window'
-          )
+          // Log: Match loaded via realtime
+          await logMatchReceived(supabase, match.id, partnerProfile.id, currentAuthUser.id)
           
           // Stop spinning and reveal
           setSpinning(false)
@@ -1108,28 +958,56 @@ export default function spin() {
             location: partnerProfile.location || ''
           })
 
-          // Fetch match to get vote_started_at for synchronized countdown
+          // Fetch match to get vote_started_at and vote_expires_at for synchronized countdown
           const { data: matchWithTimestamp } = await supabase
             .from('matches')
-            .select('vote_started_at, matched_at')
+            .select('vote_started_at, vote_expires_at, matched_at')
             .eq('id', match.id)
             .single()
           
+          let voteStartedAtValue: string | null = null
+          let voteExpiresAtValue: string | null = null
+          
           if (matchWithTimestamp) {
+            voteExpiresAtValue = matchWithTimestamp.vote_expires_at
             if (matchWithTimestamp.vote_started_at) {
+              voteStartedAtValue = matchWithTimestamp.vote_started_at
               setVoteStartedAt(matchWithTimestamp.vote_started_at)
               console.log('✅ Set voteStartedAt from vote_started_at:', matchWithTimestamp.vote_started_at)
             } else if (matchWithTimestamp.matched_at) {
+              voteStartedAtValue = matchWithTimestamp.matched_at
               setVoteStartedAt(matchWithTimestamp.matched_at)
               console.log('✅ Set voteStartedAt from matched_at:', matchWithTimestamp.matched_at)
             }
           } else {
             // Fallback: use match.matched_at if available
             if (match.matched_at) {
+              voteStartedAtValue = match.matched_at
               setVoteStartedAt(match.matched_at)
               console.log('✅ Set voteStartedAt from match.matched_at (fallback):', match.matched_at)
             }
           }
+          
+          // Compute remaining seconds and log vote window
+          const remainingSeconds = computeRemainingSeconds(voteExpiresAtValue)
+          let finalRemainingSeconds = remainingSeconds
+          
+          // Check if vote window is invalid
+          if (!voteExpiresAtValue || remainingSeconds < 2) {
+            await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 10, currentAuthUser.id)
+            finalRemainingSeconds = 10 // Fallback for UX
+          }
+          
+          // Log: Voting window started (realtime match)
+          await logVoteWindowStart(
+            supabase,
+            match.id,
+            partnerProfile.id,
+            voteStartedAtValue,
+            voteExpiresAtValue,
+            finalRemainingSeconds,
+            currentAuthUser.id
+          )
 
           // Queue status is already set to 'vote_active' by create_pair() function
           // This locks both users so they cannot be matched with others during voting
@@ -1419,17 +1297,7 @@ export default function spin() {
           console.log('🎯 Loading existing match with partner:', partnerProfile.name)
           
           // Debug: Log existing match loaded
-          logEvent({
-            type: 'matchLoaded',
-            user: authUser.id,
-            metadata: {
-              matchId: existingMatch.id,
-              partnerId: partnerProfile.id,
-              partnerName: partnerProfile.name,
-              source: 'periodic_check',
-              timestamp: new Date().toISOString()
-            }
-          })
+          await logMatchReceived(supabase, existingMatch.id, partnerProfile.id, authUser.id)
           
           setSpinning(false)
           setCurrentMatchId(existingMatch.id)
@@ -1455,33 +1323,32 @@ export default function spin() {
         return // Don't try to match if we already have one
       }
 
-      // 🔒 LOCKED: Matching logic - must use SPARK wrapper
-      // According to matching_logic.md: "every spin leads to a pairing. there are no empty results."
-      // We need to keep trying until a match is found
-      // CRITICAL: Must use spark_process_matching, never process_matching directly
-      // See: /LOCKED_STATE.md - Critical RPC Functions
-      if (!isSparkWrapper(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING)) {
-        console.error('❌ CRITICAL: Attempted to use non-SPARK wrapper for process_matching')
-      }
-      const { data: matchId, error: matchError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING, {
-        p_user_id: authUser.id
-      })
-
-      if (matchError) {
-        console.error('Error in periodic matching attempt:', matchError)
-        // Log the error
-        await supabase.rpc('log_frontend_error', {
-          p_error_type: 'frontend',
-          p_error_message: matchError.message || 'Unknown error in periodic matching',
-          p_function_name: 'attemptMatchingAndCheck',
-          p_user_id: authUser.id,
-          p_error_details: {
-            error_code: matchError.code,
-            error_details: matchError.details
-          },
-          p_severity: 'ERROR'
-        })
-        return
+      // V3 Matching System: Matching is automatic via matching_orchestrator() scheduler
+      // No manual matching calls needed - just check if match was created
+      // The orchestrator runs every 5 seconds automatically
+      
+      // Check if user was already matched (could happen if orchestrator ran during polling)
+      let matchId: string | null = null
+      const { data: queueStatus } = await supabase
+        .from('matching_queue')
+        .select('status')
+        .eq('user_id', authUser.id)
+        .single()
+      
+      if (queueStatus?.status === 'paired' || queueStatus?.status === 'vote_active') {
+        // User was matched - find the match
+        const { data: activeMatch } = await supabase
+          .from('matches')
+          .select('*')
+          .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        
+        if (activeMatch) {
+          matchId = activeMatch.id
+        }
       }
 
       if (matchId) {
@@ -1526,6 +1393,28 @@ export default function spin() {
               } else if (match.matched_at) {
                 setVoteStartedAt(match.matched_at)
               }
+              
+              // Compute remaining seconds and log vote window
+              const remainingSeconds = computeRemainingSeconds(match.vote_expires_at)
+              let finalRemainingSeconds = remainingSeconds
+              
+              // Check if vote window is invalid
+              if (!match.vote_expires_at || remainingSeconds < 2) {
+                await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 10, authUser.id)
+                finalRemainingSeconds = 10 // Fallback for UX
+              }
+              
+              // Log: Voting window started
+              await logVoteWindowStart(
+                supabase,
+                match.id,
+                partnerProfile.id,
+                match.vote_started_at,
+                match.vote_expires_at,
+                finalRemainingSeconds,
+                authUser.id
+              )
+              
               setTimeout(() => {
                 setRevealed(true)
               }, 300)
@@ -1664,27 +1553,8 @@ export default function spin() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser || !user) return
 
-    // Log: User pressed spin button - STATE TRANSITION: idle -> spin_active
-    await logSpinEvent(
-      supabase,
-      'spinStart',
-      `User ${user.name} pressed spin button`,
-      authUser.id,
-      {
-        userName: user.name,
-        preferences: {
-          minAge: preferences.minAge,
-          maxAge: preferences.maxAge,
-          maxDistance: preferences.maxDistance,
-          genderPreference: preferences.genderPreference,
-          location: user.location
-        },
-        stateTransition: 'idle -> spin_active'
-      },
-      'INFO',
-      true,
-      'startSpin'
-    )
+    // Log: User pressed spin button
+    await logSpinPressed(supabase, authUser.id)
 
     // Fetch compatible photos for spinning animation (opposite gender)
     const photos = await fetchSpinningPhotos()
@@ -1708,12 +1578,9 @@ export default function spin() {
       // 2. Reset the OTHER user from vote_active to spin_active (if they were in a match together)
       // 3. Reset the current user from vote_active to spin_active
       // 4. Create/update queue entry
-      // 🔒 LOCKED: Must use SPARK wrapper for join_queue
-      // CRITICAL: Must use spark_join_queue, never join_queue directly
-      // See: /LOCKED_STATE.md - Critical RPC Functions
-      const { data: queueId, error: queueError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, {
-        p_user_id: authUser.id,
-        p_fairness_boost: 0
+      // V3 Matching System: Use queue_join RPC
+      const { data: queueId, error: queueError } = await supabase.rpc('queue_join', {
+        p_user_id: authUser.id
       })
       
       // CRITICAL: Small delay to ensure join_queue completes and other user is reset
@@ -1730,44 +1597,27 @@ export default function spin() {
           fullError: JSON.stringify(queueError, Object.getOwnPropertyNames(queueError))
         })
         
-        // Log: Queue join failed - RULE VIOLATION: User should always be able to join queue
-        await logSpinEvent(
+        // Log: Queue join failed
+        await logClientEvent(
           supabase,
-          'queue_join_failed',
-          `Failed to join queue: ${queueError.message || 'Unknown error'}`,
-          authUser.id,
+          'frontend_queue_join_failed',
           {
             error_code: queueError.code,
             error_details: queueError.details,
             error_hint: queueError.hint,
-            ruleViolation: 'User should always be able to join queue when pressing spin',
-            stateTransition: 'spin_active -> failed'
+            error_message: queueError.message,
+            ruleViolation: 'User should always be able to join queue when pressing spin'
           },
-          'ERROR',
-          false,
-          'startSpin_join_queue'
+          authUser.id,
+          'error'
         )
         setSpinning(false)
         setStarted(false)
         return
       }
 
-      // Log: User joined queue successfully - STATE TRANSITION: spin_active -> queue_waiting
-      await logSpinEvent(
-        supabase,
-        'queueJoined',
-        `User ${user.name} joined queue successfully`,
-        authUser.id,
-        {
-          queueId: queueId,
-          userName: user.name,
-          stateTransition: 'spin_active -> queue_waiting',
-          fairnessBoost: 0
-        },
-        'INFO',
-        true,
-        'startSpin_join_queue'
-      )
+      // Log: User joined queue successfully
+      await logJoinQueueSuccess(supabase, queueId, authUser.id)
 
       setIsInQueue(true)
 
@@ -1775,44 +1625,10 @@ export default function spin() {
       // This prevents race condition where process_matching runs before the other user is reset
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // Process matching - find best match (with detailed error logging)
-      // Note: This initial attempt may find no match if other user hasn't joined yet
-      // The polling interval (every 2 seconds) will keep trying until match is found
+      // V3 Matching System: Matching is automatic via matching_orchestrator() scheduler
+      // No manual matching calls needed - just check if match was created
+      // The orchestrator runs every 5 seconds automatically
       let matchId: string | null = null
-      // 🔒 LOCKED: Must use SPARK wrapper
-      const { data: matchIdResult, error: matchError } = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING, {
-        p_user_id: authUser.id
-      })
-
-      if (matchError) {
-        console.error('❌ Error processing matching:', matchError)
-        
-        // Log: Matching process failed - RULE VIOLATION: Matching should always work
-        await logSpinEvent(
-          supabase,
-          'matching_failed',
-          `Matching process failed: ${matchError.message || 'Unknown error'}`,
-          authUser.id,
-          {
-            error_code: matchError.code,
-            error_details: matchError.details,
-            error_hint: matchError.hint,
-            ruleViolation: 'Matching process should always work - no spin should fail',
-            stateTransition: 'queue_waiting -> error'
-          },
-          'ERROR',
-          false,
-          'startSpin_process_matching'
-        )
-      } else {
-        matchId = matchIdResult
-      }
-
-      // Log matching attempt for debugging
-      const { data: matchingLog } = await supabase.rpc('log_matching_attempt', {
-        p_user_id: authUser.id
-      })
-      console.log('🔍 Initial matching attempt log:', matchingLog)
       
       if (!matchId) {
         console.log('⚠️ No match found on initial attempt. Polling will continue every 2 seconds until match is found...')
@@ -1858,21 +1674,8 @@ export default function spin() {
       if (matchId) {
         console.log('Match found immediately:', matchId)
         
-        // Log: Match found immediately - PAIRING EVENT
-        await logSpinEvent(
-          supabase,
-          'matchFound',
-          `Match found immediately for user ${user.name}`,
-          authUser.id,
-          {
-            matchId: matchId,
-            source: 'immediate',
-            stateTransition: 'queue_waiting -> paired'
-          },
-          'INFO',
-          true,
-          'startSpin_process_matching'
-        )
+        // Log: Match found immediately
+        // Will log when partner is loaded below
         // Match found immediately - check if it was created
         const { data: match } = await supabase
           .from('matches')
@@ -2187,24 +1990,8 @@ export default function spin() {
             .single()
 
           if (partnerProfile) {
-            // Log: Match loaded and partner profile fetched - STATE TRANSITION: paired -> vote_active
-            await logSpinEvent(
-              supabase,
-              'matchLoaded',
-              `Match loaded with partner ${partnerProfile.name}`,
-              authUser.id,
-              {
-                matchId: match.id,
-                partnerId: partnerProfile.id,
-                partnerName: partnerProfile.name,
-                source: 'immediate_match',
-                stateTransition: 'paired -> vote_active',
-                voteStartedAt: match.vote_started_at || match.matched_at
-              },
-              'INFO',
-              true,
-              'startSpin_load_match'
-            )
+            // Log: Match loaded and partner profile fetched
+            await logMatchReceived(supabase, match.id, partnerProfile.id, authUser.id)
             
             setSpinning(false)
             setCurrentMatchId(match.id)
@@ -2224,21 +2011,25 @@ export default function spin() {
               setVoteStartedAt(match.matched_at)
             }
             
+            // Compute remaining seconds and log vote window
+            const remainingSeconds = computeRemainingSeconds(match.vote_expires_at)
+            let finalRemainingSeconds = remainingSeconds
+            
+            // Check if vote window is invalid
+            if (!match.vote_expires_at || remainingSeconds < 2) {
+              await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 10, authUser.id)
+              finalRemainingSeconds = 10 // Fallback for UX
+            }
+            
             // Log: Voting window started
-            await logSpinEvent(
+            await logVoteWindowStart(
               supabase,
-              'votingWindowStarted',
-              `Voting window started for match ${match.id}`,
-              authUser.id,
-              {
-                matchId: match.id,
-                partnerId: partnerProfile.id,
-                voteStartedAt: match.vote_started_at || match.matched_at,
-                votingWindowDuration: '10 seconds'
-              },
-              'INFO',
-              true,
-              'startSpin_voting_window'
+              match.id,
+              partnerProfile.id,
+              match.vote_started_at,
+              match.vote_expires_at,
+              finalRemainingSeconds,
+              authUser.id
             )
             
             setTimeout(() => {
@@ -2326,8 +2117,8 @@ export default function spin() {
               })
               .eq('user_id', authUser.id)
           } else {
-            // 🔒 LOCKED: Must use SPARK wrapper
-            const queueId = await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, { p_user_id: authUser.id, p_fairness_boost: 8 })
+            // V3 Matching System: Use queue_join RPC
+            const { data: queueId } = await supabase.rpc('queue_join', { p_user_id: authUser.id })
             // Add +8 boost after joining
             await supabase
               .from('matching_queue')
@@ -2338,8 +2129,8 @@ export default function spin() {
           // Remove idle partner from vote_active status
           await supabase.rpc('remove_from_queue', { p_user_id: matchedPartner?.id })
           
-          // 🔒 LOCKED: Must use SPARK wrapper
-          await supabase.rpc(CRITICAL_RPC_FUNCTIONS.PROCESS_MATCHING, { p_user_id: authUser.id })
+          // V3 Matching System: Matching is automatic via matching_orchestrator() scheduler
+          // No manual matching calls needed
           
           // Reset UI but keep spinning - user is automatically re-queued
           setRevealed(false)
@@ -2388,8 +2179,8 @@ export default function spin() {
               })
               .eq('user_id', matchedPartner.id)
           } else {
-            // 🔒 LOCKED: Must use SPARK wrapper
-            await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, { p_user_id: matchedPartner.id, p_fairness_boost: 0 })
+            // V3 Matching System: Use queue_join RPC
+            await supabase.rpc('queue_join', { p_user_id: matchedPartner.id })
           }
         }
       }
@@ -2420,22 +2211,7 @@ export default function spin() {
     if (!authUser) return
 
     // Log: User cast vote - VOTING EVENT
-    await logSpinEvent(
-      supabase,
-      'voteCast',
-      `User ${user.name} cast ${voteType} vote`,
-      authUser.id,
-      {
-        voteType: voteType,
-        matchId: currentMatchId,
-        partnerId: matchedPartner.id,
-        partnerName: matchedPartner.name,
-        stateTransition: voteType === 'yes' ? 'vote_active -> waiting_for_match' : 'vote_active -> respin'
-      },
-      'INFO',
-      true,
-      'handleVote'
-    )
+    // Vote logging is handled by logVote() calls below
 
     setUserVote(voteType)
 
@@ -2466,11 +2242,9 @@ export default function spin() {
       })
       
       // Log: Vote save failed - RULE VIOLATION: Votes should always be saved
-      await logSpinEvent(
+      await logClientEvent(
         supabase,
-        'vote_save_failed',
-        `Failed to save ${voteType} vote: ${voteError.message || 'Unknown error'}`,
-        authUser.id,
+        'frontend_vote_save_failed',
         {
           voteType: voteType,
           matchId: currentMatchId,
@@ -2519,22 +2293,8 @@ export default function spin() {
       })
 
     if (voteType === "yes") {
-      // Log: User voted yes - waiting for partner's vote
-      await logSpinEvent(
-        supabase,
-        'voteYes',
-        `User ${user.name} voted yes - waiting for partner's vote`,
-        authUser.id,
-        {
-          matchId: currentMatchId,
-          partnerId: matchedPartner.id,
-          partnerName: matchedPartner.name,
-          stateTransition: 'vote_active -> waiting_for_match'
-        },
-        'INFO',
-        true,
-        'handleVote'
-      )
+      // Log: User voted yes
+      await logVote(supabase, 'yes', matchedPartner.id, currentMatchId!, authUser.id)
       
       // CRITICAL: Set waiting for match state - user MUST stay in voting window
       // DO NOT perform any checks or redirects here
@@ -2548,21 +2308,8 @@ export default function spin() {
       // This ensures users stay in the voting window for the full 10 seconds
     } else {
       // Log: User voted pass/respin
-      await logSpinEvent(
-        supabase,
-        'votePass',
-        `User ${user.name} voted pass/respin`,
-        authUser.id,
-        {
-          matchId: currentMatchId,
-          partnerId: matchedPartner.id,
-          partnerName: matchedPartner.name,
-          stateTransition: 'vote_active -> respin -> spin_active'
-        },
-        'INFO',
-        true,
-        'handleVote'
-      )
+      await logVote(supabase, 'pass', matchedPartner.id, currentMatchId!, authUser.id)
+      await logRespinTrigger(supabase, 'partner_passed', authUser.id)
       
       // Pass/Respin vote
       // Check if other user already voted yes
@@ -2595,8 +2342,8 @@ export default function spin() {
             })
             .eq('user_id', matchedPartner.id)
         } else {
-          // 🔒 LOCKED: Must use SPARK wrapper
-            await supabase.rpc(CRITICAL_RPC_FUNCTIONS.JOIN_QUEUE, { p_user_id: matchedPartner.id, p_fairness_boost: 0 })
+          // V3 Matching System: Use queue_join RPC
+          await supabase.rpc('queue_join', { p_user_id: matchedPartner.id })
           await supabase
             .from('matching_queue')
             .update({ fairness_score: 8 })

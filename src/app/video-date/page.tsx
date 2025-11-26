@@ -11,8 +11,8 @@ import { Sparkles } from "@/components/magicui/sparkles"
 import { createClient } from "@/lib/supabase/client"
 import { Room, RoomEvent, RemoteParticipant, Track } from "livekit-client"
 import Image from "next/image"
-// 🔒 LOCKED STATE: Import constants for video date defaults
-import { getVideoDateDefaults } from "@/lib/constants/locked-state"
+// Import constants for video date defaults
+import { getVideoDateDefaults } from "@/lib/constants/matching-constants"
 
 interface Partner {
   id: string
@@ -102,7 +102,7 @@ function VideoDateContent() {
   const [isEnding, setIsEnding] = useState(false)
   const [isTimerVisible, setIsTimerVisible] = useState(true)
   // 🔒 LOCKED: Video date countdown defaults - DO NOT MODIFY
-  // See: /LOCKED_STATE.md - Video Date Countdown Defaults
+  // Video Date Countdown Defaults
   // These defaults ensure user privacy during countdown
   const videoDefaults = getVideoDateDefaults()
   const [countdownMuted, setCountdownMuted] = useState<boolean>(videoDefaults.muted) // Default to muted during countdown
