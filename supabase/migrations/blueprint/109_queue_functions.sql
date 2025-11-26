@@ -38,14 +38,18 @@ BEGIN
   VALUES (p_user_id, 0, NOW(), 0)
   ON CONFLICT (user_id) DO NOTHING;
   
-  -- Update user_status to spin_active
-  UPDATE user_status
+  -- Ensure user_status exists and update to spin_active
+  -- Use INSERT ... ON CONFLICT to handle both new and existing users
+  INSERT INTO user_status (user_id, state, spin_started_at, last_state, last_state_change, updated_at, online_status, last_heartbeat)
+  VALUES (p_user_id, 'spin_active', NOW(), 'idle', NOW(), NOW(), TRUE, NOW())
+  ON CONFLICT (user_id) DO UPDATE
   SET state = 'spin_active',
       spin_started_at = NOW(),
-      last_state = COALESCE(state, 'idle'),
+      last_state = COALESCE(user_status.state, 'idle'),
       last_state_change = NOW(),
-      updated_at = NOW()
-  WHERE user_id = p_user_id;
+      updated_at = NOW(),
+      online_status = TRUE,
+      last_heartbeat = NOW();
   
   RETURN TRUE;
 END;

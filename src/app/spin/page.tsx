@@ -1418,11 +1418,12 @@ export default function spin() {
         }
       } else {
         // No match yet - log for debugging
+        // Query user_status to see other users in queue (queue table doesn't have status column)
         const { data: queueUsers } = await supabase
-          .from('queue')
-          .select('user_id, status')
+          .from('user_status')
+          .select('user_id, state')
           .neq('user_id', authUser.id)
-          .in('status', ['spin_active', 'queue_waiting'])
+          .in('state', ['spin_active', 'queue_waiting'])
         console.log(`🔄 Retry attempt: ${queueUsers?.length || 0} other users in queue, will retry in 2 seconds...`)
       }
     }
