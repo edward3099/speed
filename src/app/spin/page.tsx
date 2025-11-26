@@ -251,67 +251,6 @@ export default function spin() {
     const handleBeforeUnload = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser && isInQueue) {
-        // Check user's status before cleaning up
-        // Only clean up if user is in spin_active (not matched)
-        // If user is in vote_active (matched), don't disconnect them
-        const { data: userStatus } = await supabase
-          .from('user_status')
-          .select('state')
-          .eq('user_id', authUser.id)
-          .single()
-        
-        // Only delete matches and disconnect if user is in spin_active state
-        // If user is in vote_active, they're matched - don't disconnect them!
-        if (userStatus && userStatus.state === 'spin_active') {
-          // Log: User disconnected while in queue - DISCONNECTION EVENT
-          await logClientEvent(
-            supabase,
-            'frontend_user_disconnected',
-            {
-              userState: userStatus.state,
-              reason: 'page_unload',
-              stateTransition: 'spin_active -> disconnected'
-            },
-            authUser.id,
-            'warning'
-          )
-          
-          // Delete any pending matches for this user
-          await supabase
-            .from('matches')
-            .delete()
-            .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-            .eq('state', 'pending')
-          
-          await supabase.rpc('remove_from_queue', { p_user_id: authUser.id })
-          await supabase
-            .from('profiles')
-            .update({ is_online: false })
-            .eq('id', authUser.id)
-          setIsInQueue(false)
-        } else if (userStatus && userStatus.state === 'vote_active') {
-            // Log: User disconnected while in voting window - DISCONNECTION EVENT
-            await logClientEvent(
-              supabase,
-              'frontend_user_disconnected_voting',
-              {
-                userState: userStatus.state,
-                reason: 'page_hidden',
-                stateTransition: 'vote_active -> disconnected',
-                warning: 'User disconnected during voting - match may be affected'
-              },
-              authUser.id,
-              'warning'
-            )
-          }
-          // If user is in vote_active, do nothing - they're matched and should stay connected
-        }
-      }
-    }
-
-    const handleBeforeUnload = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser && isInQueue) {
         // Check user's queue status before cleaning up
         // Only delete matches and disconnect if user is in spin_active (not matched)
         // If user is in vote_active (matched), mark offline but don't delete match
