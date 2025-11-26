@@ -120,6 +120,23 @@ export default function spin() {
   const containerRef = useRef<HTMLDivElement>(null)
   const voteHeaderParentRef = useRef<HTMLDivElement>(null)
 
+  // Memoize currentState for SpinDebugger to avoid hook order violations
+  const debuggerCurrentState = useMemo(() => ({
+    userId: user?.id || null,
+    matchId: currentMatchId,
+    partnerId: matchedPartner?.id || null,
+    partnerName: matchedPartner?.name || null,
+    isInQueue,
+    queueStatus: null, // Will be fetched by debugger (uses user_status.state now)
+    userVote,
+    voteStartedAt,
+    spinning,
+    revealed,
+    started,
+    waitingForMatch,
+    preferences
+  }), [user?.id, currentMatchId, matchedPartner?.id, matchedPartner?.name, isInQueue, userVote, voteStartedAt, spinning, revealed, started, waitingForMatch, preferences])
+
   // Fetch user profile and preferences on mount
   useEffect(() => {
     const fetchUserData = async () => {
@@ -3380,21 +3397,7 @@ export default function spin() {
       <SpinDebugger
         key={`debugger-${user?.id || 'anonymous'}`}
         supabase={supabase}
-        currentState={useMemo(() => ({
-          userId: user?.id || null,
-          matchId: currentMatchId,
-          partnerId: matchedPartner?.id || null,
-          partnerName: matchedPartner?.name || null,
-          isInQueue,
-          queueStatus: null, // Will be fetched by debugger (uses user_status.state now)
-          userVote,
-          voteStartedAt,
-          spinning,
-          revealed,
-          started,
-          waitingForMatch,
-          preferences
-        }), [user?.id, currentMatchId, matchedPartner?.id, matchedPartner?.name, isInQueue, userVote, voteStartedAt, spinning, revealed, started, waitingForMatch, preferences])}
+        currentState={debuggerCurrentState}
       />
 
     </div>
