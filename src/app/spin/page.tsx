@@ -267,7 +267,7 @@ export default function spin() {
               .from('matches')
               .delete()
               .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-              .eq('state', 'pending')
+              .in('status', ['pending', 'vote_active'])
             
             await supabase.rpc('remove_from_queue', { p_user_id: authUser.id })
             await supabase
@@ -519,21 +519,20 @@ export default function spin() {
         .eq('user_id', authUser.id)
         .single()
 
-      // Only check for existing matches if user is in vote_active state
-      // If user is in spin_active, they've been re-queued and shouldn't see the old match
-      if (userStatus?.state === 'vote_active') {
-        // Check if user has an active match
-        const { data: existingMatches } = await supabase
-          .from('matches')
-          .select('*')
-          .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-          .eq('state', 'pending')
-          .order('matched_at', { ascending: false })
-        
-        const existingMatch = existingMatches && existingMatches.length > 0 ? existingMatches[0] : null
-
-        if (existingMatch) {
-          // CRITICAL: Verify this match actually belongs to the current authenticated user
+      // Check for existing matches regardless of user state
+      // (matches can be created while user is in spin_active, then transition to vote_active)
+      const { data: existingMatches } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
+        .in('status', ['pending', 'vote_active'])
+        .order('matched_at', { ascending: false })
+        .limit(1)
+      
+      const existingMatch = existingMatches && existingMatches.length > 0 ? existingMatches[0] : null
+      
+      if (existingMatch) {
+        // CRITICAL: Verify this match actually belongs to the current authenticated user
           if (existingMatch.user1_id !== authUser.id && existingMatch.user2_id !== authUser.id) {
             console.error('❌ Match does not belong to current user!', {
               matchUser1: existingMatch.user1_id,
@@ -755,7 +754,7 @@ export default function spin() {
             .from('user_status')
             .select('state')
             .eq('user_id', partnerId)
-            .eq('state', 'vote_active')
+            .eq('status', 'vote_active')
             .maybeSingle()
           
           if (voteActiveCheck) {
@@ -854,7 +853,7 @@ export default function spin() {
                   .from('user_status')
                   .select('state')
                   .eq('user_id', partnerId)
-                  .eq('state', 'vote_active')
+                  .eq('status', 'vote_active')
                   .maybeSingle()
                 
                 if (voteActiveData) {
@@ -1339,7 +1338,7 @@ export default function spin() {
         .from('matches')
         .select('*')
         .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-        .eq('state', 'pending')
+        .in('status', ['pending', 'vote_active'])
         .order('matched_at', { ascending: false })
         .limit(1)
       
@@ -1411,10 +1410,10 @@ export default function spin() {
       if (userStatus?.state === 'vote_active') {
         // User was matched - find the match
         const { data: activeMatch } = await supabase
-          .from('matches')
-          .select('*')
-          .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-          .eq('state', 'pending')
+              .from('matches')
+              .select('*')
+              .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
+              .in('status', ['pending', 'vote_active'])
           .order('created_at', { ascending: false })
           .limit(1)
           .single()
@@ -1794,7 +1793,7 @@ export default function spin() {
             .from('matches')
             .select('*')
             .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-            .eq('state', 'vote_active')
+            .eq('status', 'vote_active')
             .order('created_at', { ascending: false })
             .limit(1)
             .single()
@@ -1887,7 +1886,7 @@ export default function spin() {
             .from('user_status')
             .select('state')
             .eq('user_id', partnerId)
-            .eq('state', 'vote_active')
+            .eq('status', 'vote_active')
             .maybeSingle()
           
           if (voteActiveData) {
@@ -2005,7 +2004,7 @@ export default function spin() {
                     .from('user_status')
                     .select('state')
                     .eq('user_id', partnerId)
-                    .eq('state', 'vote_active')
+                    .eq('status', 'vote_active')
                     .maybeSingle()
                   
                   if (voteActiveData) {
