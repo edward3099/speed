@@ -745,11 +745,11 @@ export default function spin() {
               // Log all errors for debugging - properly serialize error objects
               console.error('🔍 Partner lookup failed (real-time):', {
                 partnerId,
-                partnerQueueError: partnerQueueError ? {
-                  message: partnerQueueError.message,
-                  code: partnerQueueError.code,
-                  details: partnerQueueError.details,
-                  hint: partnerQueueError.hint
+                partnerStatusError: partnerStatusError ? {
+                  message: partnerStatusError.message,
+                  code: partnerStatusError.code,
+                  details: partnerStatusError.details,
+                  hint: partnerStatusError.hint
                 } : null,
                 voteActiveError: voteActiveError ? {
                   message: voteActiveError.message,
@@ -763,7 +763,7 @@ export default function spin() {
                   details: anyStatusError.details,
                   hint: anyStatusError.hint
                 } : null,
-                partnerQueueData,
+                partnerStatusData,
                 voteActiveCheck,
                 anyStatusCheck
               })
@@ -809,8 +809,8 @@ export default function spin() {
                 // Try multiple query approaches
                 // Approach 1: Standard query with maybeSingle (doesn't throw on no results)
                 const { data: partnerData, error: partnerError } = await supabase
-                  .from('queue')
-                  .select('status')
+                  .from('user_status')
+                  .select('state')
                   .eq('user_id', partnerId)
                   .maybeSingle()
                 
@@ -819,10 +819,10 @@ export default function spin() {
                   break
                 }
                 
-                // Approach 2: Check for vote_active status specifically
+                // Approach 2: Check for vote_active state specifically
                 const { data: voteActiveData, error: voteActiveError } = await supabase
-                  .from('queue')
-                  .select('status')
+                  .from('user_status')
+                  .select('state')
                   .eq('user_id', partnerId)
                   .eq('state', 'vote_active')
                   .maybeSingle()
@@ -832,34 +832,17 @@ export default function spin() {
                   break
                 }
                 
-                // Approach 3: Check all valid statuses
+                // Approach 3: Check all valid states
                 const { data: anyStatusData, error: anyStatusError } = await supabase
-                  .from('queue')
-                  .select('status')
+                  .from('user_status')
+                  .select('state')
                   .eq('user_id', partnerId)
-                  .in('status', ['spin_active', 'queue_waiting', 'vote_active'])
+                  .in('state', ['spin_active', 'queue_waiting', 'vote_active'])
                   .maybeSingle()
-                
+                  
                   if (anyStatusData) {
                     partnerAfterCleanup = anyStatusData
                     break
-                  }
-                  
-                  // Last resort: Try RPC function to bypass potential RLS issues
-                  if (retry === 0) {
-                    try {
-                      const { data: rpcResult, error: rpcError } = await supabase.rpc('check_user_in_queue', {
-                        p_user_id: partnerId
-                      })
-                      
-                      if (rpcResult?.found) {
-                        partnerAfterCleanup = { status: rpcResult.status }
-                        console.log('✅ Partner found via RPC function (real-time after cleanup):', rpcResult)
-                        break
-                      }
-                    } catch (rpcException: any) {
-                      console.error('❌ Exception calling check_user_in_queue RPC:', rpcException)
-                    }
                   }
                   
                   // Log errors for debugging - properly serialize error objects
@@ -903,7 +886,7 @@ export default function spin() {
               }
               
               // Partner found after cleanup - continue with normal flow
-              partnerQueue = partnerAfterCleanup
+              partnerStatus = partnerAfterCleanup
             }
           } catch (cleanupError: any) {
             console.error('❌ Exception calling validate_queue_integrity:', cleanupError)
@@ -1731,61 +1714,61 @@ export default function spin() {
             return
           }
           
-        // Check partner's queue status to ensure they're in a valid state
+        // Check partner's user_status to ensure they're in a valid state
         // Valid states: vote_active (matched), spin_active (waiting), queue_waiting (waiting)
         // Add retry logic to handle race conditions where partner status hasn't updated yet
-        let partnerQueue = null
+        let partnerStatus = null
         // 🔒 LOCKED: Race condition handling - must match MATCHING_CONFIG
         // See: /LOCKED_STATE.md - Error Handling Patterns
         const matchingConfig = getMatchingConfig()
         let retries = matchingConfig.maxRetries
         let retryDelay = matchingConfig.retryDelay
         
-        while (retries > 0 && !partnerQueue) {
-          // Try multiple query approaches to find the partner
+        while (retries > 0 && !partnerStatus) {
+          // Try multiple query approaches to find the partner status
           // Approach 1: Standard query
-          const { data: queueData, error: queueError } = await supabase
-            .from('queue')
-            .select('status')
+          const { data: statusData, error: statusError } = await supabase
+            .from('user_status')
+            .select('state')
             .eq('user_id', partnerId)
             .maybeSingle() // Use maybeSingle() instead of single() to avoid errors
           
-          if (queueData) {
-            partnerQueue = queueData
+          if (statusData) {
+            partnerStatus = statusData
             break
           }
           
-          // Approach 2: Check for vote_active status specifically (match might have just been created)
+          // Approach 2: Check for vote_active state specifically (match might have just been created)
           const { data: voteActiveData, error: voteActiveError } = await supabase
-            .from('queue')
-            .select('status')
+            .from('user_status')
+            .select('state')
             .eq('user_id', partnerId)
             .eq('state', 'vote_active')
             .maybeSingle()
           
           if (voteActiveData) {
-            partnerQueue = voteActiveData
+            partnerStatus = voteActiveData
             break
           }
           
-          // Approach 3: Check all statuses (spin_active, queue_waiting, vote_active)
+          // Approach 3: Check all states (spin_active, queue_waiting, vote_active)
           const { data: anyStatusData, error: anyStatusError } = await supabase
-            .from('queue')
-            .select('status')
+            .from('user_status')
+            .select('state')
             .eq('user_id', partnerId)
-            .in('status', ['spin_active', 'queue_waiting', 'vote_active'])
+            .in('state', ['spin_active', 'queue_waiting', 'vote_active'])
             .maybeSingle()
           
           if (anyStatusData) {
-            partnerQueue = anyStatusData
+            partnerStatus = anyStatusData
             break
           }
           
           // If partner not found, wait a bit and retry (race condition: match just created)
           if (retries > 1) {
-            console.log(`⏳ Partner not in queue yet, retrying... (${retries - 1} retries left)`, {
+            console.log(`⏳ Partner status not found yet, retrying... (${retries - 1} retries left)`, {
               partnerId,
-              queueError: queueError?.message,
+              statusError: statusError?.message,
               voteActiveError: voteActiveError?.message,
               anyStatusError: anyStatusError?.message
             })
@@ -1863,8 +1846,8 @@ export default function spin() {
                   // Try multiple query approaches
                   // Approach 1: Standard query with maybeSingle (doesn't throw on no results)
                   const { data: partnerData, error: partnerError } = await supabase
-                    .from('queue')
-                    .select('status')
+                    .from('user_status')
+                    .select('state')
                     .eq('user_id', partnerId)
                     .maybeSingle()
                   
@@ -1873,10 +1856,10 @@ export default function spin() {
                     break
                   }
                   
-                  // Approach 2: Check for vote_active status specifically
+                  // Approach 2: Check for vote_active state specifically
                   const { data: voteActiveData, error: voteActiveError } = await supabase
-                    .from('queue')
-                    .select('status')
+                    .from('user_status')
+                    .select('state')
                     .eq('user_id', partnerId)
                     .eq('state', 'vote_active')
                     .maybeSingle()
@@ -1886,34 +1869,17 @@ export default function spin() {
                     break
                   }
                   
-                  // Approach 3: Check all valid statuses
+                  // Approach 3: Check all valid states
                   const { data: anyStatusData, error: anyStatusError } = await supabase
-                    .from('queue')
-                    .select('status')
+                    .from('user_status')
+                    .select('state')
                     .eq('user_id', partnerId)
-                    .in('status', ['spin_active', 'queue_waiting', 'vote_active'])
+                    .in('state', ['spin_active', 'queue_waiting', 'vote_active'])
                     .maybeSingle()
                   
                   if (anyStatusData) {
                     partnerAfterCleanup = anyStatusData
                     break
-                  }
-                  
-                  // Last resort: Try RPC function to bypass potential RLS issues
-                  if (retry === 0) {
-                    try {
-                      const { data: rpcResult, error: rpcError } = await supabase.rpc('check_user_in_queue', {
-                        p_user_id: partnerId
-                      })
-                      
-                      if (rpcResult?.found) {
-                        partnerAfterCleanup = { status: rpcResult.status }
-                        console.log('✅ Partner found via RPC function (startSpin):', rpcResult)
-                        break
-                      }
-                    } catch (rpcException: any) {
-                      console.error('❌ Exception calling check_user_in_queue RPC:', rpcException)
-                    }
                   }
                   
                   // Log errors for debugging - properly serialize error objects
@@ -1951,8 +1917,8 @@ export default function spin() {
                 
                 if (partnerAfterCleanup) {
                   // Partner found after cleanup - use it
-                  partnerQueue = partnerAfterCleanup
-                  console.log('✅ Partner found after validate_queue_integrity cleanup:', partnerAfterCleanup.status)
+                  partnerStatus = partnerAfterCleanup
+                  console.log('✅ Partner found after validate_queue_integrity cleanup:', partnerAfterCleanup.state)
                 } else {
                   // Partner still not found - match might be orphaned, reset state gracefully
                   console.error('❌ Partner still not found after validate_queue_integrity and retries - resetting state', {
@@ -1975,22 +1941,22 @@ export default function spin() {
             }
           }
           
-          // Partner is in queue - check if status is valid
+          // Partner status found - check if state is valid
           // vote_active = matched (correct!), spin_active/queue_waiting = still waiting (shouldn't happen but acceptable during transition)
-          if (partnerQueue && !['vote_active', 'spin_active', 'queue_waiting'].includes(partnerStatus?.state)) {
-            console.error('❌ Partner in invalid queue status:', {
+          if (partnerStatus && !['vote_active', 'spin_active', 'queue_waiting'].includes(partnerStatus.state)) {
+            console.error('❌ Partner in invalid state:', {
               partnerId,
-              status: partnerStatus?.state,
+              state: partnerStatus.state,
               matchId
             })
-            // Invalid status - reset but don't delete match (let database handle it)
+            // Invalid state - reset but don't delete match (let database handle it)
             setSpinning(false)
             setStarted(false)
             setIsInQueue(false)
             return
           }
           
-          console.log('✅ Match verified: match exists and partner is in valid state:', partnerQueue?.status || 'vote_active')
+          console.log('✅ Match verified: match exists and partner is in valid state:', partnerStatus?.state || 'vote_active')
           
           // Fetch partner profile
           const { data: partnerProfile } = await supabase
@@ -2256,11 +2222,11 @@ export default function spin() {
           error_code: voteError.code,
           error_details: voteError.details,
           error_hint: voteError.hint,
-          ruleViolation: 'Votes should always be saved successfully'
+          ruleViolation: 'Votes should always be saved successfully',
+          function: 'handleVote'
         },
-        'ERROR',
-        false,
-        'handleVote'
+        undefined,
+        'error'
       )
       // If record_vote fails, log error and return
       console.error('record_vote RPC failed, cannot proceed with vote')
@@ -2334,22 +2300,20 @@ export default function spin() {
         }
       } else {
         // Other user hasn't voted yet - no boost given
-        // Remove other user from vote_active status so they can match again
-        // Check if they're in queue first
-        const { data: partnerQueue } = await supabase
-          .from('queue')
-          .select('*')
+        // Remove other user from vote_active state so they can match again
+        // Check their user_status first
+        const { data: partnerUserStatus } = await supabase
+          .from('user_status')
+          .select('state')
           .eq('user_id', matchedPartner.id)
           .single()
 
-        if (partnerQueue && partnerStatus?.state === 'vote_active') {
-          await supabase
-            .from('queue')
-            .update({ 
-              status: 'spin_active',
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', matchedPartner.id)
+        if (partnerUserStatus && partnerUserStatus.state === 'vote_active') {
+          // Transition partner back to spin_active state
+          await supabase.rpc('execute_state_transition', {
+            p_user_id: matchedPartner.id,
+            p_new_state: 'spin_active'
+          })
         }
       }
 
