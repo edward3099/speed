@@ -1,0 +1,200 @@
+  );
+END;
+$$;
+
+-- Check if pair is blocked
+CREATE OR REPLACE FUNCTION is_blocked(p_user1 UUID, p_user2 UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM never_pair_again
+    WHERE (user1 = LEAST(p_user1, p_user2) AND user2 = GREATEST(p_user1, p_user2))
+  );
+END;
+$$;
+
+COMMENT ON FUNCTION add_to_blocklist IS 'Adds pair to never_pair_again blocklist (symmetric storage)';
+COMMENT ON FUNCTION is_blocked IS 'Checks if pair is in never_pair_again blocklist';
+
+
+-- ============================================================================
+-- 109_queue_functions.sql
+-- ============================================================================
+
+-- ============================================================================
+-- Migration 109: Queue Functions
+-- ============================================================================
+-- Part 5.3: Queue management
+-- ============================================================================
+
+-- Join queue
+CREATE OR REPLACE FUNCTION join_queue(p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  user_online BOOLEAN;
+  user_cooldown TIMESTAMPTZ;
+BEGIN
+  -- Check user is online (from profiles table)
+  SELECT online, cooldown_until INTO user_online, user_cooldown
+  FROM profiles
+  WHERE id = p_user_id;
+  
+  IF NOT user_online THEN
+    RETURN FALSE;
+  END IF;
+  
+  -- Check cooldown
+  IF user_cooldown IS NOT NULL AND user_cooldown > NOW() THEN
+    RETURN FALSE;
+  END IF;
+  
+  -- Check not already in queue
+  IF EXISTS (SELECT 1 FROM queue WHERE user_id = p_user_id) THEN
+    RETURN FALSE;
+  END IF;
+  
+  -- Insert into queue
+  INSERT INTO queue (user_id, fairness_score, spin_started_at, preference_stage)
+  VALUES (p_user_id, 0, NOW(), 0)
+  ON CONFLICT (user_id) DO NOTHING;
+  
+  -- Update user_status to spin_active
+  UPDATE user_status
+  SET state = 'spin_active',
+      spin_started_at = NOW(),
+      last_state = COALESCE(state, 'idle'),
+      last_state_change = NOW(),
+      updated_at = NOW()
+  WHERE user_id = p_user_id;
+  
+  RETURN TRUE;
+END;
+$$;
+
+-- Remove from queue
+CREATE OR REPLACE FUNCTION remove_from_queue(p_user_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  DELETE FROM queue WHERE user_id = p_user_id;
+END;
+$$;
+
+COMMENT ON FUNCTION join_queue IS 'Joins user to queue - validates online, cooldown, duplicates';
+COMMENT ON FUNCTION remove_from_queue IS 'Removes user from queue';
+
+
+-- ============================================================================
+-- 110_state_machine.sql
+-- ============================================================================
+
+-- ============================================================================
+-- Migration 110: State Machine Transitions
+-- ============================================================================
+-- Part 4.2: Legal state transitions enforcement
+-- ============================================================================
+
+-- Validate state transition
+CREATE OR REPLACE FUNCTION validate_state_transition(
+  p_user_id UUID,
+  p_from_state TEXT,
+  p_to_state TEXT
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Define legal transitions
+  CASE p_from_state
+    WHEN 'idle' THEN
+      RETURN p_to_state IN ('spin_active');
+    WHEN 'spin_active' THEN
+      RETURN p_to_state IN ('queue_waiting', 'idle');
+    WHEN 'queue_waiting' THEN
+      RETURN p_to_state IN ('paired', 'idle');
+    WHEN 'paired' THEN
+      RETURN p_to_state IN ('vote_active', 'idle');
+    WHEN 'vote_active' THEN
+      RETURN p_to_state IN ('spin_active', 'idle', 'cooldown');
+    WHEN 'cooldown' THEN
+      RETURN p_to_state IN ('idle');
+    WHEN 'offline' THEN
+      RETURN p_to_state IN ('idle');
+    ELSE
+      RETURN FALSE;
+  END CASE;
+END;
+$$;
+
+-- Execute state transition
+CREATE OR REPLACE FUNCTION execute_state_transition(
+  p_user_id UUID,
+  p_to_state TEXT
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  current_state TEXT;
+BEGIN
+  -- Get current state
+  SELECT state INTO current_state
+  FROM user_status
+  WHERE user_id = p_user_id;
+  
+  IF NOT FOUND THEN
+    -- Create initial state
+    INSERT INTO user_status (user_id, state, online_status, last_heartbeat)
+    VALUES (p_user_id, 'idle', TRUE, NOW());
+    current_state := 'idle';
+  END IF;
+  
+  -- Validate transition
+  IF NOT validate_state_transition(p_user_id, current_state, p_to_state) THEN
+    -- Log illegal transition attempt
+    INSERT INTO debug_logs (user_id, event_type, metadata, severity)
+    VALUES (
+      p_user_id,
+      'illegal_state_transition',
+      jsonb_build_object('from', current_state, 'to', p_to_state),
+      'error'
+    );
+    RETURN FALSE;
+  END IF;
+  
+  -- Execute transition
+  UPDATE user_status
+  SET state = p_to_state,
+      last_state = current_state,
+      last_state_change = NOW(),
+      updated_at = NOW()
+  WHERE user_id = p_user_id;
+  
+  RETURN TRUE;
+END;
+$$;
+
+COMMENT ON FUNCTION validate_state_transition IS 'Validates legal state transitions according to Part 4.2';
+COMMENT ON FUNCTION execute_state_transition IS 'Executes state transition with validation';
+
+
+-- ============================================================================
+-- 111_guardians.sql
+-- ============================================================================
+
+-- ============================================================================
+-- Migration 111: Guardians
+-- ============================================================================
+-- Part 5.10: Background checks fixing problems
+-- ============================================================================
+
