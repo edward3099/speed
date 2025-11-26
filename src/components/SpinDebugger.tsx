@@ -630,6 +630,39 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     }
   }, [supabase])
 
+  // Fetch critical errors
+  const fetchCriticalErrors = useCallback(async () => {
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      
+      const { data, error } = await supabase
+        .from('debug_logs')
+        .select('*')
+        .in('event_type', [
+          'matching_stuck',
+          'users_waiting_too_long',
+          'background_job_inactive'
+        ])
+        .gte('timestamp', fiveMinutesAgo)
+        .eq('severity', 'error')
+        .order('timestamp', { ascending: false })
+        .limit(10)
+
+      if (error) {
+        console.error('Error fetching critical errors:', error)
+        return
+      }
+
+      if (data) {
+        startTransition(() => {
+          setCriticalErrors(data)
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching critical errors:', error)
+    }
+  }, [supabase])
+
   // Fetch logs from database
   const fetchDatabaseLogs = useCallback(async () => {
     if (!currentState.userId) return
