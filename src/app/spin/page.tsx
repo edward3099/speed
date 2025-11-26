@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, Sparkles as SparklesIcon, MapPin, Users, User, Calendar, MessageCircle, Bug } from "lucide-react"
+import { SpinDebugger } from "@/components/SpinDebugger"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { SpinButton } from "@/components/ui/spin-button"
 import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
@@ -3428,6 +3429,26 @@ export default function spin() {
           </motion.div>
         </motion.div>
       </Modal>
+
+      {/* Spin Debugger */}
+      <SpinDebugger
+        supabase={supabase}
+        currentState={{
+          userId: user?.id || null,
+          matchId: currentMatchId,
+          partnerId: matchedPartner?.id || null,
+          partnerName: matchedPartner?.name || null,
+          isInQueue,
+          queueStatus: null, // Will be fetched by debugger
+          userVote,
+          voteStartedAt,
+          spinning,
+          revealed,
+          started,
+          waitingForMatch,
+          preferences
+        }}
+      />
 
     </div>
   )
