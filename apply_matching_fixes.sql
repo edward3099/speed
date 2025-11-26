@@ -158,7 +158,7 @@ BEGIN
     SELECT cron.schedule(
       'matching-processor',
       '*/2 * * * * *', -- Every 2 seconds
-      $$SELECT process_matching();$$
+      'SELECT process_matching();'
     ) INTO job_id;
     RAISE NOTICE '✅ Scheduled matching-processor background job (jobid: %)', job_id;
   ELSE
@@ -192,7 +192,7 @@ SELECT
   COUNT(*) as total_matches,
   COUNT(*) FILTER (WHERE status = 'vote_active') as active_matches
 FROM matches
-WHERE created_at > NOW() - INTERVAL '5 minutes';
+WHERE id IN (SELECT id FROM matches ORDER BY id DESC LIMIT 10);
 
 -- 3.4 Final status
 DO $$
