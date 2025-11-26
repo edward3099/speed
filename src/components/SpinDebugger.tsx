@@ -315,11 +315,12 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
   // Fetch active matches
   const fetchActiveMatches = useCallback(async () => {
     try {
+      // Try to fetch with created_at, but handle if column doesn't exist
       const { data: matchesData, error } = await supabase
         .from('matches')
-        .select('id, user1_id, user2_id, status, created_at, vote_window_expires_at')
+        .select('id, user1_id, user2_id, status, vote_window_expires_at')
         .in('status', ['pending', 'vote_active'])
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(50)
 
       if (error) {
@@ -351,10 +352,13 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
 
         const votesByMatch = new Map<string, Map<string, string>>()
         votesData?.forEach(v => {
-          if (!votesByMatch.has(v.match_id.toString())) {
-            votesByMatch.set(v.match_id.toString(), new Map())
+          if (v.match_id != null) {
+            const matchIdStr = v.match_id.toString()
+            if (!votesByMatch.has(matchIdStr)) {
+              votesByMatch.set(matchIdStr, new Map())
+            }
+            votesByMatch.get(matchIdStr)!.set(v.voter_id, v.vote_type)
           }
-          votesByMatch.get(v.match_id.toString())!.set(v.voter_id, v.vote_type)
         })
 
         const matches: MatchInfo[] = matchesData.map(m => {
@@ -364,7 +368,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
             user1_id: m.user1_id,
             user2_id: m.user2_id,
             status: m.status,
-            created_at: m.created_at,
+            created_at: (m as any).created_at || new Date().toISOString(), // Fallback if column doesn't exist
             vote_window_expires_at: m.vote_window_expires_at,
             user1_name: profileMap.get(m.user1_id),
             user2_name: profileMap.get(m.user2_id),
@@ -401,7 +405,17 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       }
 
       if (votesData && votesData.length > 0) {
-        const voterIds = new Set(votesData.map(v => v.voter_id))
+        // Filter out votes with null match_id
+        const validVotes = votesData.filter(v => v.match_id != null)
+        
+        if (validVotes.length === 0) {
+          startTransition(() => {
+            setRecentVotes([])
+          })
+          return
+        }
+
+        const voterIds = new Set(validVotes.map(v => v.voter_id))
         const { data: profilesData } = await supabase
           .from('profiles')
           .select('id, name')
@@ -409,11 +423,11 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
 
         const profileMap = new Map((profilesData || []).map(p => [p.id, p.name]))
 
-        const votes: VoteInfo[] = votesData.map(v => ({
-          match_id: v.match_id.toString(),
+        const votes: VoteInfo[] = validVotes.map(v => ({
+          match_id: v.match_id?.toString() || 'unknown',
           voter_id: v.voter_id,
           vote_type: v.vote_type,
-          created_at: v.created_at,
+          created_at: v.created_at || new Date().toISOString(),
           voter_name: profileMap.get(v.voter_id)
         }))
 
@@ -889,9 +903,11 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                                   )}
                                   <div>User1 Vote: <span className={match.user1_vote === 'yes' ? 'text-green-300' : match.user1_vote === 'pass' ? 'text-red-300' : 'text-gray-400'}>{match.user1_vote || 'pending'}</span></div>
                                   <div>User2 Vote: <span className={match.user2_vote === 'yes' ? 'text-green-300' : match.user2_vote === 'pass' ? 'text-red-300' : 'text-gray-400'}>{match.user2_vote || 'pending'}</span></div>
-                                  <div className="col-span-2 text-[8px] text-white/40">
-                                    Created: {new Date(match.created_at).toLocaleTimeString()}
-                                  </div>
+                                  {match.created_at && (
+                                    <div className="col-span-2 text-[8px] text-white/40">
+                                      Created: {new Date(match.created_at).toLocaleTimeString()}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -935,7 +951,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                                 </span>
                               </div>
                               <div className="text-[8px] text-white/40">
-                                Match: {vote.match_id.substring(0, 8)}... | {new Date(vote.created_at).toLocaleTimeString()}
+                                Match: {vote.match_id !== 'unknown' ? vote.match_id.substring(0, 8) + '...' : 'unknown'} | {new Date(vote.created_at).toLocaleTimeString()}
                               </div>
                             </div>
                           </div>
