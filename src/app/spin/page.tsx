@@ -626,12 +626,26 @@ export default function spin() {
             setRevealed(true)
           }
         }
-      } else if (userStatus?.state === 'spin_active') {
+      } else if (userStatus?.state === 'spin_active' && !spinning) {
         // User is in queue from a previous session, but NOT actively spinning now
-        // Remove them from queue - they must press spin again to join
-        console.log('⚠️ User found in queue but not actively spinning - removing from queue')
-        await supabase.rpc('remove_from_queue', { p_user_id: authUser.id })
-        setIsInQueue(false)
+        // Only remove if they're definitely not spinning (not just initializing)
+        // Give a small grace period to allow spin to start
+        const gracePeriodMs = 2000 // 2 seconds grace period
+        const spinStartedAt = userStatus?.spin_started_at ? new Date(userStatus.spin_started_at).getTime() : 0
+        const timeSinceSpinStart = Date.now() - spinStartedAt
+        
+        // Only remove if spin_started_at is old (more than grace period ago)
+        // This prevents removing users who just clicked spin but haven't set spinning state yet
+        if (timeSinceSpinStart > gracePeriodMs) {
+          console.log('⚠️ User found in queue but not actively spinning - removing from queue')
+          await supabase.rpc('remove_from_queue', { p_user_id: authUser.id })
+          setIsInQueue(false)
+        } else {
+          // User just started spinning - set isInQueue to true
+          setIsInQueue(true)
+          setSpinning(true)
+          setStarted(true)
+        }
       }
     }
 
@@ -1615,6 +1629,13 @@ export default function spin() {
       // 2. Reset the OTHER user from vote_active to spin_active (if they were in a match together)
       // 3. Reset the current user from vote_active to spin_active
       // 4. Create/update queue entry
+      // Ensure user is marked as online before joining queue
+      // This is required by join_queue() function
+      await supabase
+        .from('profiles')
+        .update({ online: true, cooldown_until: null })
+        .eq('id', authUser.id)
+      
       // New Matching System: Use join_queue RPC
       const { data: joinSuccess, error: queueError } = await supabase.rpc('join_queue', {
         p_user_id: authUser.id
