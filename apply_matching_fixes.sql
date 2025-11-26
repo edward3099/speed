@@ -148,18 +148,19 @@ $$;
 DO $$
 DECLARE
   job_exists BOOLEAN;
+  job_id INTEGER;
 BEGIN
   SELECT EXISTS (
     SELECT 1 FROM cron.job WHERE jobname = 'matching-processor'
   ) INTO job_exists;
   
   IF NOT job_exists THEN
-    PERFORM cron.schedule(
+    SELECT cron.schedule(
       'matching-processor',
       '*/2 * * * * *', -- Every 2 seconds
       $$SELECT process_matching();$$
-    );
-    RAISE NOTICE '✅ Scheduled matching-processor background job';
+    ) INTO job_id;
+    RAISE NOTICE '✅ Scheduled matching-processor background job (jobid: %)', job_id;
   ELSE
     RAISE NOTICE '✅ Background job already scheduled';
   END IF;
