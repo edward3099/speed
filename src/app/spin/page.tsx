@@ -1026,6 +1026,11 @@ export default function spin() {
       const reconnect = () => {
         if (!isMounted) return
         
+        // Prevent multiple simultaneous reconnection attempts
+        if (reconnectTimeout) {
+          return
+        }
+        
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
           console.warn('⚠️ Max reconnection attempts reached. Realtime subscriptions will rely on polling fallback.')
           return
@@ -1037,6 +1042,7 @@ export default function spin() {
         console.log(`🔄 Attempting to reconnect Realtime subscriptions (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${delay}ms...`)
         
         reconnectTimeout = setTimeout(() => {
+          reconnectTimeout = null // Clear timeout reference after execution
           if (!isMounted) return
           
           // Clean up old channels before reconnecting
@@ -1061,6 +1067,7 @@ export default function spin() {
           
           // Reconnect
           setupRealtime()
+          reconnectTimeout = null // Clear timeout reference after execution
         }, delay)
       }
 
@@ -1131,12 +1138,13 @@ export default function spin() {
               reconnect()
             }
           } else if (status === 'CLOSED') {
-            // CLOSED is expected during cleanup - only log in debug mode
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Realtime subscription (user1) closed')
-            }
-            // Only reconnect if component is still mounted
-            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            // CLOSED is expected during cleanup - don't reconnect if already reconnecting or during cleanup
+            // Only reconnect if component is still mounted, not already reconnecting, and not during cleanup
+            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !reconnectTimeout) {
+              // Only log in debug mode
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('⚠️ Realtime subscription (user1) closed, reconnecting...')
+              }
               reconnect()
             }
           } else {
@@ -1194,12 +1202,13 @@ export default function spin() {
               reconnect()
             }
           } else if (status === 'CLOSED') {
-            // CLOSED is expected during cleanup - only log in debug mode
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Realtime subscription (user2) closed')
-            }
-            // Only reconnect if component is still mounted
-            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            // CLOSED is expected during cleanup - don't reconnect if already reconnecting or during cleanup
+            // Only reconnect if component is still mounted, not already reconnecting, and not during cleanup
+            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !reconnectTimeout) {
+              // Only log in debug mode
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('⚠️ Realtime subscription (user2) closed, reconnecting...')
+              }
               reconnect()
             }
           } else {
