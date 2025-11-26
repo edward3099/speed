@@ -1637,19 +1637,35 @@ export default function spin() {
         .eq('id', authUser.id)
       
       // New Matching System: Use join_queue RPC
-      const { data: joinSuccess, error: queueError } = await supabase.rpc('join_queue', {
-        p_user_id: authUser.id
-      }).catch((rpcError: any) => {
-        // Catch and log RPC errors with full context
-        console.error('❌ join_queue RPC failed:', {
+      let joinSuccess: any = null
+      let queueError: any = null
+      
+      try {
+        const result = await supabase.rpc('join_queue', {
+          p_user_id: authUser.id
+        })
+        joinSuccess = result.data
+        queueError = result.error
+        
+        if (queueError) {
+          // Log RPC errors with full context
+          console.error('❌ join_queue RPC failed:', {
+            message: queueError?.message,
+            code: queueError?.code,
+            details: queueError?.details,
+            hint: queueError?.hint,
+            error: queueError
+          })
+        }
+      } catch (rpcError: any) {
+        // Catch and log unexpected errors
+        console.error('❌ join_queue RPC threw exception:', {
           message: rpcError?.message,
-          code: rpcError?.code,
-          details: rpcError?.details,
-          hint: rpcError?.hint,
+          stack: rpcError?.stack,
           error: rpcError
         })
-        return { data: null, error: rpcError }
-      })
+        queueError = rpcError
+      }
       
       // CRITICAL: Small delay to ensure join_queue completes and other user is reset
       // This prevents race condition where process_matching runs before the other user is reset
