@@ -721,12 +721,12 @@ export default function spin() {
         // We should verify the match is valid, not delete it based on queue status
         // The database-level validation in create_pair already ensures both users are in queue before matching
         
-        // Verify the match is still valid by checking if it exists and is pending
+        // Verify the match is still valid by checking if it exists and is pending or vote_active
         const { data: matchVerification } = await supabase
           .from('matches')
           .select('id, status, user1_id, user2_id')
           .eq('id', match.id)
-          .eq('state', 'pending')
+          .in('status', ['pending', 'vote_active'])
           .single()
         
         if (!matchVerification) {
@@ -1839,12 +1839,12 @@ export default function spin() {
           // 2. Both users are in vote_active OR one is in vote_active and the other is transitioning
           // We should NOT delete the match just because a user isn't in queue - they might be in vote_active!
           
-          // Verify the match is still valid by checking if it exists and is pending
+          // Verify the match is still valid by checking if it exists and is pending or vote_active
           const { data: matchVerification } = await supabase
             .from('matches')
             .select('id, status, user1_id, user2_id')
             .eq('id', matchId)
-            .eq('state', 'pending')
+            .in('status', ['pending', 'vote_active'])
             .single()
           
           if (!matchVerification) {
@@ -1885,7 +1885,7 @@ export default function spin() {
             .from('user_status')
             .select('state')
             .eq('user_id', partnerId)
-            .eq('status', 'vote_active')
+            .eq('state', 'vote_active')
             .maybeSingle()
           
           if (voteActiveData) {
@@ -2150,8 +2150,11 @@ export default function spin() {
               authUser.id
             )
             
+            // CRITICAL: Set revealed to true to show the voting window
+            // Use setTimeout for animation delay (consistent with other match detection paths)
             setTimeout(() => {
               setRevealed(true)
+              console.log('✅ Voting window revealed - partner:', partnerProfile.name)
             }, 300)
             return
           }
