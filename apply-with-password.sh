@@ -23,7 +23,9 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-CONNECTION_STRING="postgresql://postgres.${PROJECT_REF}:${PASSWORD}@aws-1-${REGION}.pooler.supabase.com:6543/postgres"
+# URL encode the password for connection string
+ENCODED_PASSWORD=$(echo -n "$PASSWORD" | sed 's/@/%40/g' | sed 's/#/%23/g' | sed 's/&/%26/g')
+CONNECTION_STRING="postgresql://postgres.${PROJECT_REF}:${ENCODED_PASSWORD}@aws-1-${REGION}.pooler.supabase.com:6543/postgres?sslmode=require"
 
 echo "🚀 Applying migrations via psql..."
 echo "📄 File: ${SQL_FILE}"
