@@ -2127,8 +2127,8 @@ export default function spin() {
               })
               .eq('user_id', authUser.id)
           } else {
-            // V3 Matching System: Use queue_join RPC
-            const { data: queueId } = await supabase.rpc('queue_join', { p_user_id: authUser.id })
+            // New Matching System: Use join_queue RPC
+            const { data: joinSuccess } = await supabase.rpc('join_queue', { p_user_id: authUser.id })
             // Add +8 boost after joining
             await supabase
               .from('queue')
@@ -2189,8 +2189,8 @@ export default function spin() {
               })
               .eq('user_id', matchedPartner.id)
           } else {
-            // V3 Matching System: Use queue_join RPC
-            await supabase.rpc('queue_join', { p_user_id: matchedPartner.id })
+            // New Matching System: Use join_queue RPC
+            await supabase.rpc('join_queue', { p_user_id: matchedPartner.id })
           }
         }
       }
@@ -2325,8 +2325,8 @@ export default function spin() {
             })
             .eq('user_id', matchedPartner.id)
         } else {
-          // V3 Matching System: Use queue_join RPC
-          await supabase.rpc('queue_join', { p_user_id: matchedPartner.id })
+          // New Matching System: Use join_queue RPC
+          await supabase.rpc('join_queue', { p_user_id: matchedPartner.id })
           await supabase
             .from('queue')
             .update({ fairness_score: 8 })
