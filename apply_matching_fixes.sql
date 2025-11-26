@@ -58,9 +58,10 @@ DECLARE
   matched_count INTEGER := 0;
   user_record RECORD;
   candidate_id UUID;
-  match_id BIGINT;
+  match_id UUID;
   preference_stage INTEGER;
   wait_time_seconds INTEGER;
+  new_stage_value INTEGER;  -- Temporary variable to avoid ambiguity
 BEGIN
   -- Process all users in queue, ordered by priority
   FOR user_record IN
@@ -104,11 +105,13 @@ BEGIN
     END IF;
     
     -- Update preference stage if changed
+    -- Use temporary variable to avoid ambiguity between variable and column name
     IF preference_stage != user_record.preference_stage THEN
+      new_stage_value := preference_stage;  -- Store variable value
       UPDATE queue
-      SET preference_stage = preference_stage,
+      SET preference_stage = new_stage_value,  -- Use temp variable
           updated_at = NOW()
-      WHERE user_id = user_record.user_id;
+      WHERE queue.user_id = user_record.user_id;
     END IF;
     
     -- Find best match for this user
