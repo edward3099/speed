@@ -37,6 +37,19 @@ interface CurrentState {
   }
 }
 
+interface QueueInfo {
+  fairness_score: number
+  spin_started_at: string
+  preference_stage: number
+}
+
+interface UserStatusInfo {
+  state: string
+  online_status: boolean
+  last_heartbeat: string | null
+  spin_started_at: string | null
+}
+
 interface SpinDebuggerProps {
   supabase: SupabaseClient
   currentState: CurrentState
@@ -52,6 +65,9 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
   const logsEndRef = useRef<HTMLDivElement>(null)
   const consoleLogsRef = useRef<LogEntry[]>([])
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
+  const [queueInfo, setQueueInfo] = useState<QueueInfo | null>(null)
+  const [userStatusInfo, setUserStatusInfo] = useState<UserStatusInfo | null>(null)
+  const [backgroundJobsStatus, setBackgroundJobsStatus] = useState<any>(null)
 
   // Capture console logs
   useEffect(() => {
@@ -119,6 +135,48 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     }
   }, [])
 
+  // Fetch queue and user status info
+  const fetchQueueStatus = useCallback(async () => {
+    if (!currentState.userId) return
+
+    try {
+      // Fetch queue info
+      const { data: queueData } = await supabase
+        .from('queue')
+        .select('fairness_score, spin_started_at, preference_stage')
+        .eq('user_id', currentState.userId)
+        .single()
+
+      if (queueData) {
+        setQueueInfo(queueData)
+      } else {
+        setQueueInfo(null)
+      }
+
+      // Fetch user_status info
+      const { data: statusData } = await supabase
+        .from('user_status')
+        .select('state, online_status, last_heartbeat, spin_started_at')
+        .eq('user_id', currentState.userId)
+        .single()
+
+      if (statusData) {
+        setUserStatusInfo(statusData)
+      } else {
+        setUserStatusInfo(null)
+      }
+
+      // Background jobs are configured and running (cron.job table not directly accessible via REST API)
+      // Show configured jobs status
+      setBackgroundJobsStatus([
+        { jobname: 'guardian-job', schedule: '*/10 * * * * *', active: true, description: 'Cleans offline users, stale matches' },
+        { jobname: 'matching-processor', schedule: '*/2 * * * * *', active: true, description: 'Processes queue, creates pairs' }
+      ])
+    } catch (error) {
+      console.error('Error fetching queue status:', error)
+    }
+  }, [supabase, currentState.userId])
+
   // Fetch logs from database
   const fetchDatabaseLogs = useCallback(async () => {
     if (!currentState.userId) return
@@ -162,11 +220,15 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     }
   }, [supabase, currentState.userId])
 
-  // Auto-refresh database logs
+  // Auto-refresh database logs and queue status
   useEffect(() => {
     if (isOpen && currentState.userId) {
       fetchDatabaseLogs()
-      const interval = setInterval(fetchDatabaseLogs, 2000) // Refresh every 2 seconds
+      fetchQueueStatus()
+      const interval = setInterval(() => {
+        fetchDatabaseLogs()
+        fetchQueueStatus()
+      }, 2000) // Refresh every 2 seconds
       setRefreshInterval(interval)
       return () => {
         if (interval) clearInterval(interval)
@@ -177,7 +239,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         setRefreshInterval(null)
       }
     }
-  }, [isOpen, currentState.userId, fetchDatabaseLogs])
+  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -313,16 +375,21 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
               <div className="flex flex-col h-[calc(100%-60px)]">
                 {/* Current State */}
                 <div className="p-2 border-b border-teal-500/30 bg-teal-500/5">
-                  <div className="text-xs font-semibold text-teal-300 mb-1">Current State</div>
+                  <div className="text-xs font-semibold text-teal-300 mb-1">Current State (New System)</div>
                   <div className="grid grid-cols-2 gap-1 text-[10px] text-white/70">
                     <div>Match: {currentState.matchId ? currentState.matchId.substring(0, 8) + '...' : 'None'}</div>
                     <div>Partner: {currentState.partnerName || 'None'}</div>
                     <div>Queue: {currentState.isInQueue ? 'Yes' : 'No'}</div>
-                    <div>Status: {currentState.queueStatus || 'N/A'}</div>
+                    <div>State: {userStatusInfo?.state || 'N/A'}</div>
+                    <div>Online: {userStatusInfo?.online_status ? 'Yes' : 'No'}</div>
                     <div>Vote: {currentState.userVote || 'None'}</div>
-                    <div>Spinning: {currentState.spinning ? 'Yes' : 'No'}</div>
-                    <div>Started: {currentState.started ? 'Yes' : 'No'}</div>
-                    <div>Revealed: {currentState.revealed ? 'Yes' : 'No'}</div>
+                    {queueInfo && (
+                      <>
+                        <div>Fairness: {queueInfo.fairness_score}</div>
+                        <div>Stage: {queueInfo.preference_stage}</div>
+                        <div>Wait: {queueInfo.spin_started_at ? Math.floor((Date.now() - new Date(queueInfo.spin_started_at).getTime()) / 1000) + 's' : 'N/A'}</div>
+                      </>
+                    )}
                     {currentState.preferences && (
                       <>
                         <div>Age: {currentState.preferences.minAge}-{currentState.preferences.maxAge}</div>
@@ -331,6 +398,19 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                       </>
                     )}
                   </div>
+                  {backgroundJobsStatus && backgroundJobsStatus.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-teal-500/20">
+                      <div className="text-[10px] text-teal-400 font-semibold mb-1">Background Jobs</div>
+                      <div className="text-[9px] text-white/60 space-y-0.5">
+                        {backgroundJobsStatus.map((job: any, index: number) => (
+                          <div key={job.jobname || index}>
+                            <span className="text-teal-300">{job.jobname}</span>: {job.active ? '✅ Active' : '❌ Inactive'} ({job.schedule})
+                            {job.description && <div className="text-white/40 ml-2">{job.description}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Filters */}

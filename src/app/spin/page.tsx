@@ -3421,7 +3421,7 @@ export default function spin() {
           partnerId: matchedPartner?.id || null,
           partnerName: matchedPartner?.name || null,
           isInQueue,
-          queueStatus: null, // Will be fetched by debugger
+          queueStatus: null, // Will be fetched by debugger (uses user_status.state now)
           userVote,
           voteStartedAt,
           spinning,
