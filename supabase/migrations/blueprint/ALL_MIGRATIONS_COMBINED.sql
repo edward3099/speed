@@ -180,6 +180,16 @@ CREATE TABLE IF NOT EXISTS matches (
   CHECK (user1_id < user2_id) -- Ensure consistent ordering
 );
 
+-- Add vote_window_expires_at column if table exists but column doesn't
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'matches') THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'matches' AND column_name = 'vote_window_expires_at') THEN
+      ALTER TABLE matches ADD COLUMN vote_window_expires_at TIMESTAMPTZ;
+    END IF;
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_matches_user1 ON matches(user1_id);
 CREATE INDEX IF NOT EXISTS idx_matches_user2 ON matches(user2_id);
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
