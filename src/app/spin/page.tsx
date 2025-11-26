@@ -659,8 +659,10 @@ export default function spin() {
     let isMounted = true
     let reconnectTimeout: NodeJS.Timeout | null = null
     let reconnectAttempts = 0
-    const MAX_RECONNECT_ATTEMPTS = 5
-    const INITIAL_RECONNECT_DELAY = 1000 // 1 second
+    const MAX_RECONNECT_ATTEMPTS = 3 // Reduced from 5 to prevent excessive reconnection loops
+    const INITIAL_RECONNECT_DELAY = 3000 // Increased from 1s to 3s to reduce rapid reconnection attempts
+    let lastReconnectTime = 0
+    const MIN_RECONNECT_INTERVAL = 5000 // Minimum 5 seconds between reconnection attempts
     let channel1: any = null
     let channel2: any = null
 
@@ -1033,12 +1035,21 @@ export default function spin() {
         }
       }
 
-      // Reconnection function with exponential backoff
+      // Reconnection function with exponential backoff and debouncing
       const reconnect = () => {
         if (!isMounted) return
         
         // Prevent multiple simultaneous reconnection attempts
         if (reconnectTimeout) {
+          return
+        }
+        
+        // Debounce: Don't reconnect too frequently
+        const now = Date.now()
+        if (now - lastReconnectTime < MIN_RECONNECT_INTERVAL) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`⏸️ Skipping reconnect - too soon (${now - lastReconnectTime}ms ago)`)
+          }
           return
         }
         
@@ -1048,9 +1059,12 @@ export default function spin() {
         }
 
         reconnectAttempts++
+        lastReconnectTime = now
         const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1) // Exponential backoff
         
-        console.log(`🔄 Attempting to reconnect Realtime subscriptions (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${delay}ms...`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 Attempting to reconnect Realtime subscriptions (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${delay}ms...`)
+        }
         
         reconnectTimeout = setTimeout(() => {
           reconnectTimeout = null // Clear timeout reference after execution
@@ -1062,7 +1076,7 @@ export default function spin() {
               channel1.unsubscribe()
               supabase.removeChannel(channel1)
             } catch (e) {
-              console.error('Error cleaning up channel1 during reconnect:', e)
+              // Ignore cleanup errors during reconnect
             }
             channel1 = null
           }
@@ -1071,7 +1085,7 @@ export default function spin() {
               channel2.unsubscribe()
               supabase.removeChannel(channel2)
             } catch (e) {
-              console.error('Error cleaning up channel2 during reconnect:', e)
+              // Ignore cleanup errors during reconnect
             }
             channel2 = null
           }
@@ -1141,22 +1155,41 @@ export default function spin() {
               reconnect()
             }
           } else if (status === 'TIMED_OUT') {
-            // TIMED_OUT is expected during network issues - only log in debug mode
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Realtime subscription (user1) timed out')
-            }
+            // TIMED_OUT can happen due to network issues or server-side timeouts
+            // Don't log every timeout to reduce noise - only log if we're going to reconnect
             if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-              reconnect()
+              // Only reconnect if enough time has passed since last reconnect
+              const now = Date.now()
+              if (now - lastReconnectTime >= MIN_RECONNECT_INTERVAL) {
+                if (process.env.NODE_ENV === 'development') {
+                  console.warn('⚠️ Realtime subscription (user1) timed out, will reconnect...')
+                }
+                reconnect()
+              } else {
+                // Too soon to reconnect - rely on polling fallback
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('⏸️ Realtime subscription (user1) timed out, but reconnecting too soon - using polling fallback')
+                }
+              }
             }
           } else if (status === 'CLOSED') {
             // CLOSED is expected during cleanup - don't reconnect if already reconnecting or during cleanup
             // Only reconnect if component is still mounted, not already reconnecting, and not during cleanup
-            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !reconnectTimeout) {
+            // Also check debounce interval to prevent rapid reconnection loops
+            const now = Date.now()
+            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !reconnectTimeout && (now - lastReconnectTime >= MIN_RECONNECT_INTERVAL)) {
               // Only log in debug mode
               if (process.env.NODE_ENV === 'development') {
                 console.warn('⚠️ Realtime subscription (user1) closed, reconnecting...')
               }
               reconnect()
+            } else if (process.env.NODE_ENV === 'development' && isMounted) {
+              // Log why we're not reconnecting
+              if (reconnectTimeout) {
+                console.log('⏸️ Realtime subscription (user1) closed, but already reconnecting')
+              } else if (now - lastReconnectTime < MIN_RECONNECT_INTERVAL) {
+                console.log('⏸️ Realtime subscription (user1) closed, but reconnecting too soon')
+              }
             }
           } else {
             // Only log non-error statuses in debug mode
@@ -1205,22 +1238,41 @@ export default function spin() {
               reconnect()
             }
           } else if (status === 'TIMED_OUT') {
-            // TIMED_OUT is expected during network issues - only log in debug mode
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Realtime subscription (user2) timed out')
-            }
+            // TIMED_OUT can happen due to network issues or server-side timeouts
+            // Don't log every timeout to reduce noise - only log if we're going to reconnect
             if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-              reconnect()
+              // Only reconnect if enough time has passed since last reconnect
+              const now = Date.now()
+              if (now - lastReconnectTime >= MIN_RECONNECT_INTERVAL) {
+                if (process.env.NODE_ENV === 'development') {
+                  console.warn('⚠️ Realtime subscription (user2) timed out, will reconnect...')
+                }
+                reconnect()
+              } else {
+                // Too soon to reconnect - rely on polling fallback
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('⏸️ Realtime subscription (user2) timed out, but reconnecting too soon - using polling fallback')
+                }
+              }
             }
           } else if (status === 'CLOSED') {
             // CLOSED is expected during cleanup - don't reconnect if already reconnecting or during cleanup
             // Only reconnect if component is still mounted, not already reconnecting, and not during cleanup
-            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !reconnectTimeout) {
+            // Also check debounce interval to prevent rapid reconnection loops
+            const now = Date.now()
+            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !reconnectTimeout && (now - lastReconnectTime >= MIN_RECONNECT_INTERVAL)) {
               // Only log in debug mode
               if (process.env.NODE_ENV === 'development') {
                 console.warn('⚠️ Realtime subscription (user2) closed, reconnecting...')
               }
               reconnect()
+            } else if (process.env.NODE_ENV === 'development' && isMounted) {
+              // Log why we're not reconnecting
+              if (reconnectTimeout) {
+                console.log('⏸️ Realtime subscription (user2) closed, but already reconnecting')
+              } else if (now - lastReconnectTime < MIN_RECONNECT_INTERVAL) {
+                console.log('⏸️ Realtime subscription (user2) closed, but reconnecting too soon')
+              }
             }
           } else {
             // Only log non-error statuses in debug mode
