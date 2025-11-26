@@ -50,6 +50,19 @@ interface UserStatusInfo {
   spin_started_at: string | null
 }
 
+interface QueueUser {
+  user_id: string
+  fairness_score: number
+  preference_stage: number
+  spin_started_at: string
+  wait_time_seconds: number
+  state: string
+  online_status: boolean
+  profile_name?: string
+  profile_age?: number
+  profile_gender?: string
+}
+
 interface SpinDebuggerProps {
   supabase: SupabaseClient
   currentState: CurrentState
@@ -68,6 +81,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
   const [queueInfo, setQueueInfo] = useState<QueueInfo | null>(null)
   const [userStatusInfo, setUserStatusInfo] = useState<UserStatusInfo | null>(null)
   const [backgroundJobsStatus, setBackgroundJobsStatus] = useState<any>(null)
+  const [allQueueUsers, setAllQueueUsers] = useState<QueueUser[]>([])
 
   // Capture console logs
   useEffect(() => {
@@ -138,6 +152,74 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       console.debug = originalDebug
     }
   }, [])
+
+  // Fetch all users in queue
+  const fetchAllQueueUsers = useCallback(async () => {
+    try {
+      // Fetch all queue entries
+      const { data: queueData, error: queueError } = await supabase
+        .from('queue')
+        .select('user_id, fairness_score, preference_stage, spin_started_at')
+        .order('fairness_score', { ascending: false })
+
+      if (queueError) {
+        console.error('Error fetching queue:', queueError)
+        return
+      }
+
+      if (!queueData || queueData.length === 0) {
+        startTransition(() => {
+          setAllQueueUsers([])
+        })
+        return
+      }
+
+      // Fetch user_status for all users
+      const userIds = queueData.map(q => q.user_id)
+      const { data: statusData } = await supabase
+        .from('user_status')
+        .select('user_id, state, online_status')
+        .in('user_id', userIds)
+
+      // Fetch profiles for all users
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, name, age, gender')
+        .in('id', userIds)
+
+      // Combine the data
+      const statusMap = new Map((statusData || []).map(s => [s.user_id, s]))
+      const profileMap = new Map((profileData || []).map(p => [p.id, p]))
+
+      const queueUsers: QueueUser[] = queueData.map((entry) => {
+        const waitTime = entry.spin_started_at 
+          ? Math.floor((Date.now() - new Date(entry.spin_started_at).getTime()) / 1000)
+          : 0
+
+        const status = statusMap.get(entry.user_id)
+        const profile = profileMap.get(entry.user_id)
+
+        return {
+          user_id: entry.user_id,
+          fairness_score: entry.fairness_score || 0,
+          preference_stage: entry.preference_stage || 0,
+          spin_started_at: entry.spin_started_at,
+          wait_time_seconds: waitTime,
+          state: status?.state || 'unknown',
+          online_status: status?.online_status || false,
+          profile_name: profile?.name,
+          profile_age: profile?.age,
+          profile_gender: profile?.gender
+        }
+      })
+
+      startTransition(() => {
+        setAllQueueUsers(queueUsers)
+      })
+    } catch (error) {
+      console.error('Error fetching all queue users:', error)
+    }
+  }, [supabase])
 
   // Fetch queue and user status info
   const fetchQueueStatus = useCallback(async () => {
@@ -249,6 +331,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         if (!isMounted) return
         fetchDatabaseLogs()
         fetchQueueStatus()
+        fetchAllQueueUsers()
       }, 0)
     }
     initialFetch()
@@ -258,6 +341,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       if (!isMounted) return
       fetchDatabaseLogs()
       fetchQueueStatus()
+      fetchAllQueueUsers()
     }, 2000) // Refresh every 2 seconds
 
     // Defer interval setup to avoid render warnings
@@ -273,7 +357,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         clearInterval(interval)
       }
     }
-  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus])
+  }, [isOpen, currentState.userId, fetchDatabaseLogs, fetchQueueStatus, fetchAllQueueUsers])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -445,6 +529,53 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* All Queue Users */}
+                <div className="p-2 border-b border-teal-500/30 bg-purple-500/5">
+                  <div className="text-xs font-semibold text-purple-300 mb-1">
+                    All Users in Queue ({allQueueUsers.length})
+                  </div>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {allQueueUsers.length === 0 ? (
+                      <div className="text-[10px] text-white/50 py-2">No users in queue</div>
+                    ) : (
+                      allQueueUsers.map((user) => {
+                        const isCurrentUser = user.user_id === currentState.userId
+                        return (
+                          <div
+                            key={user.user_id}
+                            className={`p-1.5 rounded border text-[9px] ${
+                              isCurrentUser
+                                ? 'bg-teal-500/20 border-teal-500/50'
+                                : 'bg-white/5 border-white/10'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <span className={`font-medium ${isCurrentUser ? 'text-teal-300' : 'text-white/80'}`}>
+                                    {user.profile_name || 'Unknown'}
+                                  </span>
+                                  {isCurrentUser && <span className="text-teal-400 text-[8px]">(You)</span>}
+                                  {user.profile_age && <span className="text-white/50">({user.profile_age})</span>}
+                                  {user.profile_gender && <span className="text-white/50">{user.profile_gender}</span>}
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-white/60">
+                                  <div>ID: {user.user_id.substring(0, 8)}...</div>
+                                  <div>State: <span className="text-purple-300">{user.state}</span></div>
+                                  <div>Fairness: <span className="text-yellow-300">{user.fairness_score}</span></div>
+                                  <div>Stage: <span className="text-blue-300">{user.preference_stage}</span></div>
+                                  <div>Wait: <span className="text-green-300">{user.wait_time_seconds}s</span></div>
+                                  <div>Online: {user.online_status ? '✅' : '❌'}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
                 </div>
 
                 {/* Filters */}
