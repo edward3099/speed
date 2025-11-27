@@ -12,31 +12,20 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    // Update heartbeat (update profiles table)
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        online: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id)
+    // Update heartbeat
+    const { error } = await supabase.rpc('heartbeat_update', {
+      p_user_id: user.id
+    })
     
     if (error) {
+      console.error('Error updating heartbeat:', error)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
     
-    // Update user_status heartbeat
-    await supabase
-      .from('user_status')
-      .update({ 
-        last_heartbeat: new Date().toISOString(),
-        online_status: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-    
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('Heartbeat error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -12,31 +12,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
+    // Get vote from request body
     const body = await request.json()
-    const { match_id, vote_type } = body
+    const { match_id, vote } = body
     
-    if (!match_id || !vote_type || !['yes', 'pass'].includes(vote_type)) {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    if (!match_id || !vote) {
+      return NextResponse.json({ error: 'match_id and vote are required' }, { status: 400 })
+    }
+    
+    if (!['yes', 'pass'].includes(vote)) {
+      return NextResponse.json({ error: 'vote must be "yes" or "pass"' }, { status: 400 })
     }
     
     // Record vote
-    const { data, error } = await supabase.rpc('record_vote', {
+    const { data: result, error: voteError } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
-      p_vote_type: vote_type
+      p_vote: vote
     })
     
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+    if (voteError) {
+      console.error('Error recording vote:', voteError)
+      return NextResponse.json({ error: voteError.message }, { status: 400 })
     }
     
-    // If outcome requires respin, trigger matching
-    if (data?.outcome === 'yes_pass' || data?.outcome === 'both_pass') {
+    // If outcome is spin_active (yes voter respins), trigger matching
+    if (result?.your_state === 'spin_active') {
       await supabase.rpc('process_matching')
     }
     
-    return NextResponse.json({ success: true, data })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(result)
+  } catch (error: unknown) {
+    console.error('Vote error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

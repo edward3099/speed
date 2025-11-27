@@ -13,8 +13,16 @@ export function ShuffleAnimation({
   profiles,
   duration = 5000,
 }: ShuffleAnimationProps) {
-  // Filter out empty/null photos
-  const validProfiles = profiles.filter(photo => photo && photo.trim() !== '')
+  // Filter out empty/null photos and placeholder services
+  const validProfiles = profiles.filter(photo => {
+    if (!photo || typeof photo !== 'string') return false
+    const trimmed = photo.trim()
+    if (trimmed === '') return false
+    // Filter out pravatar and other placeholder services
+    if (trimmed.includes('pravatar.cc')) return false
+    if (trimmed.includes('placeholder')) return false
+    return true
+  })
   // If no valid profiles, use a placeholder
   const profilesToUse = validProfiles.length > 0 ? validProfiles : []
   const duplicatedProfiles = [...profilesToUse, ...profilesToUse]
@@ -88,6 +96,13 @@ export function ShuffleAnimation({
                 fill
                 sizes="(max-width: 640px) 70px, 192px"
                 className="object-cover"
+                onError={(e) => {
+                  // Hide broken images
+                  const target = e.currentTarget as HTMLImageElement
+                  if (target) {
+                    target.style.display = 'none'
+                  }
+                }}
               />
             {/* Gradient overlay - lighter on mobile */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent sm:from-black/40" />

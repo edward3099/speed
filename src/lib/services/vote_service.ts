@@ -13,13 +13,13 @@ export class VoteService {
    */
   async recordVote(
     userId: string,
-    matchId: number,
+    matchId: string,
     voteType: 'yes' | 'pass'
   ): Promise<VoteOutcome | null> {
     const { data, error } = await this.supabase.rpc('record_vote', {
       p_user_id: userId,
       p_match_id: matchId,
-      p_vote_type: voteType
+      p_vote: voteType
     })
 
     if (error) {
@@ -33,17 +33,17 @@ export class VoteService {
   /**
    * Handle idle voter (countdown expired)
    */
-  async handleIdleVoter(userId: string, matchId: number): Promise<void> {
+  async handleIdleVoter(userId: string, matchId: string): Promise<void> {
     await this.supabase.rpc('handle_idle_voter', {
-      p_user_id: userId,
-      p_match_id: matchId
+      p_match_id: matchId,
+      p_idle_user_id: userId
     })
   }
 
   /**
    * Get votes for a match
    */
-  async getVotes(matchId: number) {
+  async getVotes(matchId: string) {
     const { data, error } = await this.supabase
       .from('votes')
       .select('*')

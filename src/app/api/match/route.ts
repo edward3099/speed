@@ -13,39 +13,34 @@ export async function GET() {
     }
     
     // Get active match
-    const { data: match, error } = await supabase
-      .from('matches')
-      .select('*, user1:users!matches_user1_id_fkey(*), user2:users!matches_user2_id_fkey(*)')
-      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-      .eq('status', 'vote_active')
-      .single()
+    const { data: match, error: matchError } = await supabase.rpc('get_active_match', {
+      p_user_id: user.id
+    })
     
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      return NextResponse.json({ error: error.message }, { status: 400 })
+    if (matchError) {
+      console.error('Error getting match:', matchError)
+      return NextResponse.json({ error: matchError.message }, { status: 400 })
     }
     
-    if (!match) {
-      return NextResponse.json({ match: null })
+    if (match && match.length > 0) {
+      return NextResponse.json({ 
+        matched: true,
+        match: match[0]
+      })
     }
     
-    // Get partner info
-    const partnerId = match.user1_id === user.id ? match.user2_id : match.user1_id
-    
-    // Get partner profile (assuming profiles table exists)
-    const { data: partnerProfile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', partnerId)
-      .single()
+    // Get queue status
+    const { data: queueStatus } = await supabase.rpc('get_queue_status', {
+      p_user_id: user.id
+    })
     
     return NextResponse.json({ 
-      match: {
-        id: match.id,
-        partner: partnerProfile,
-        vote_window_expires_at: match.vote_window_expires_at
-      }
+      matched: false,
+      queue: queueStatus?.[0] || null
     })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('Match check error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

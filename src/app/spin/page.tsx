@@ -203,21 +203,35 @@ export default function spin() {
     }
 
     fetchUserData()
-
-    // Cleanup: Remove from queue when component unmounts
-    return () => {
-      const cleanup = async () => {
+    
+    // Clean up expired matches on mount to prevent stale state
+    const cleanupStaleMatches = async () => {
+      try {
+        await supabase.rpc('cleanup_expired_matches')
+        // Clear any stale vote_started_at state if no active match
         const { data: { user: authUser } } = await supabase.auth.getUser()
         if (authUser) {
-          await supabase.rpc('remove_from_queue', { p_user_id: authUser.id })
-          await supabase
-            .from('profiles')
-            .update({ is_online: false })
-            .eq('id', authUser.id)
+          const { data: activeMatch } = await supabase.rpc('get_active_match', {
+            p_user_id: authUser.id
+          })
+          if (!activeMatch || activeMatch.length === 0) {
+            setVoteStartedAt(null)
+            setCurrentMatchId(null)
+          }
         }
+      } catch (error) {
+        console.warn('Error cleaning up stale matches on mount:', error)
       }
-      cleanup()
     }
+    cleanupStaleMatches()
+
+    // NOTE: We intentionally do NOT remove from queue on component unmount.
+    // Queue removal should only happen via:
+    // 1. beforeunload event (user closes tab/navigates away)
+    // 2. Explicit user action (cancel spin)
+    // 3. Guardian cleanup (stale heartbeat)
+    // This prevents race conditions where users get removed from queue
+    // during React re-renders or navigation within the app.
   }, [router, supabase])
 
   // Handle page visibility change and beforeunload
@@ -234,13 +248,7 @@ export default function spin() {
         if (authUser && isInQueue) {
           // Update heartbeat to mark user as online
           try {
-            await supabase
-              .from('user_status')
-              .update({ 
-                online_status: true,
-                last_heartbeat: new Date().toISOString()
-              })
-              .eq('user_id', authUser.id)
+            await supabase.rpc('heartbeat_update', { p_user_id: authUser.id })
           } catch (error) {
             console.warn('Failed to update heartbeat on visibility change:', error)
           }
@@ -316,13 +324,7 @@ export default function spin() {
       
       // Update heartbeat to keep user marked as online
       try {
-        await supabase
-          .from('user_status')
-          .update({ 
-            online_status: true,
-            last_heartbeat: new Date().toISOString()
-          })
-          .eq('user_id', authUser.id)
+        await supabase.rpc('heartbeat_update', { p_user_id: authUser.id })
       } catch (error) {
         console.warn('Failed to update heartbeat:', error)
       }
@@ -584,8 +586,8 @@ export default function spin() {
           
           // Check if vote window is invalid
           if (!existingMatch.vote_expires_at || remainingSeconds < 2) {
-            await logVoteWindowInvalid(supabase, existingMatch.id, remainingSeconds, 10, authUser.id)
-            finalRemainingSeconds = 10 // Fallback for UX
+            await logVoteWindowInvalid(supabase, existingMatch.id, remainingSeconds, 30, authUser.id)
+            finalRemainingSeconds = 30 // Fallback for UX
           }
           
           // Log: Voting window started (existing match)
@@ -806,10 +808,13 @@ export default function spin() {
             matchId: match.id
           })
           
-          // Call validate_queue_integrity to auto-fix the orphaned match
+          // Note: validate_queue_integrity function removed - using simpler backend
+          // Orphaned matches will be cleaned up by cleanup_stale_matches
           try {
-            const { data: integrityResult, error: integrityError } = await supabase.rpc('validate_queue_integrity')
+            // Try to clean up stale matches instead
+            await supabase.rpc('cleanup_stale_matches')
             
+            const integrityError = null // No error since function doesn't exist
             if (integrityError) {
               console.error('❌ Error calling validate_queue_integrity:', integrityError)
             } else {
@@ -1006,8 +1011,8 @@ export default function spin() {
           
           // Check if vote window is invalid
           if (!voteExpiresAtValue || remainingSeconds < 2) {
-            await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 10, currentAuthUser.id)
-            finalRemainingSeconds = 10 // Fallback for UX
+            await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 30, currentAuthUser.id)
+            finalRemainingSeconds = 30 // Fallback for UX
           }
           
           // Log: Voting window started (realtime match)
@@ -1356,6 +1361,32 @@ export default function spin() {
 
         console.log('✅ Match verified for current user:', authUser.id)
         console.log('🎯 Found existing match via periodic check:', existingMatch.id)
+        
+        // CRITICAL: Check if match is expired
+        const remainingSeconds = existingMatch.vote_expires_at 
+          ? computeRemainingSeconds(existingMatch.vote_expires_at)
+          : 0
+        
+        if (remainingSeconds <= 0) {
+          console.log('⚠️ Existing match expired, cleaning up:', existingMatch.id, 'remaining:', remainingSeconds)
+          await logVoteWindowInvalid(supabase, existingMatch.id, remainingSeconds, 30, authUser.id)
+          
+          // Clean up expired match
+          try {
+            await supabase.rpc('cleanup_expired_matches')
+          } catch (error) {
+            console.warn('Error cleaning up expired match:', error)
+          }
+          
+          // Clear stale state
+          setVoteStartedAt(null)
+          setCurrentMatchId(null)
+          setMatchedPartner(null)
+          
+          // Continue spinning - don't show expired match
+          return
+        }
+        
         const partnerId = existingMatch.user1_id === authUser.id ? existingMatch.user2_id : existingMatch.user1_id
         
         const { data: partnerProfile } = await supabase
@@ -1398,94 +1429,78 @@ export default function spin() {
       // Background job runs every 2 seconds automatically
       // No manual matching calls needed - just check if match was created
       
-      // Check if user was already matched (could happen if process_matching ran during polling)
-      let matchId: string | null = null
-      const { data: userStatus } = await supabase
-        .from('user_status')
-        .select('state')
-        .eq('user_id', authUser.id)
-        .single()
-      
-      if (userStatus?.state === 'vote_active') {
-        // User was matched - find the match
-        const { data: activeMatch } = await supabase
-              .from('matches')
-              .select('*')
-              .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-              .in('status', ['pending', 'vote_active'])
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-        
-        if (activeMatch) {
-          matchId = activeMatch.id
-        }
+      // Trigger matching process
+      try {
+        await supabase.rpc('process_matching')
+      } catch (error) {
+        console.warn('Error in process_matching:', error)
       }
-
-      if (matchId) {
-        console.log('✅ Periodic matching attempt found match:', matchId)
-        // Check user status to see if we're in vote_active
-        if (userStatus?.state === 'vote_active') {
-          // Match was created - get the match details
-          const { data: match } = await supabase
-            .from('matches')
-            .select('*')
-            .eq('id', matchId)
-            .single()
+      
+      // Check for active match using new function
+      const { data: activeMatchData } = await supabase.rpc('get_active_match', {
+        p_user_id: authUser.id
+      })
+      
+      if (activeMatchData && activeMatchData.length > 0) {
+        const matchData = activeMatchData[0]
+        const matchId = matchData.match_id
+        
+        // Compute remaining seconds
+        const remainingSeconds = computeRemainingSeconds(matchData.vote_expires_at)
+        
+        // CRITICAL: If match is expired, clean it up and continue spinning
+        if (!matchData.vote_expires_at || remainingSeconds <= 0) {
+          console.log('⚠️ Match expired, cleaning up:', matchId, 'remaining:', remainingSeconds)
+          await logVoteWindowInvalid(supabase, matchId, remainingSeconds, 30, authUser.id)
           
-          if (match) {
-            const partnerId = match.user1_id === authUser.id ? match.user2_id : match.user1_id
-            const { data: partnerProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', partnerId)
-              .single()
-            
-            if (partnerProfile) {
-              setSpinning(false)
-              setCurrentMatchId(match.id)
-              setMatchedPartner({
-                id: partnerProfile.id,
-                name: partnerProfile.name,
-                age: partnerProfile.age,
-                bio: partnerProfile.bio || '',
-                photo: partnerProfile.photo || '',
-                location: partnerProfile.location || ''
-              })
-              setIsInQueue(false)
-              if (match.vote_started_at) {
-                setVoteStartedAt(match.vote_started_at)
-              } else if (match.matched_at) {
-                setVoteStartedAt(match.matched_at)
-              }
-              
-              // Compute remaining seconds and log vote window
-              const remainingSeconds = computeRemainingSeconds(match.vote_expires_at)
-              let finalRemainingSeconds = remainingSeconds
-              
-              // Check if vote window is invalid
-              if (!match.vote_expires_at || remainingSeconds < 2) {
-                await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 10, authUser.id)
-                finalRemainingSeconds = 10 // Fallback for UX
-              }
-              
-              // Log: Voting window started
-              await logVoteWindowStart(
-                supabase,
-                match.id,
-                partnerProfile.id,
-                match.vote_started_at,
-                match.vote_expires_at,
-                finalRemainingSeconds,
-                authUser.id
-              )
-              
-              setTimeout(() => {
-                setRevealed(true)
-              }, 300)
-            }
+          // Clean up expired match
+          try {
+            await supabase.rpc('cleanup_expired_matches')
+          } catch (error) {
+            console.warn('Error cleaning up expired match:', error)
           }
+          
+          // Clear any stale state
+          setVoteStartedAt(null)
+          setCurrentMatchId(null)
+          setMatchedPartner(null)
+          
+          // Continue spinning - don't show expired match
+          return
         }
+        
+        console.log('✅ Periodic matching attempt found match:', matchId, 'remaining:', remainingSeconds)
+        
+        // Match is valid - show it to user
+        setSpinning(false)
+        setCurrentMatchId(matchId)
+        setMatchedPartner({
+          id: matchData.partner_id,
+          name: matchData.partner_name,
+          age: matchData.partner_age,
+          bio: '', // get_active_match doesn't return bio
+          photo: matchData.partner_photo || '',
+          location: ''
+        })
+        setIsInQueue(false)
+        if (matchData.vote_started_at) {
+          setVoteStartedAt(matchData.vote_started_at)
+        }
+        
+        // Log: Voting window started
+        await logVoteWindowStart(
+          supabase,
+          matchId,
+          matchData.partner_id,
+          matchData.vote_started_at,
+          matchData.vote_expires_at,
+          remainingSeconds,
+          authUser.id
+        )
+        
+        setTimeout(() => {
+          setRevealed(true)
+        }, 300)
       } else {
         // No match yet - log for debugging
         // Query user_status to see other users in queue (queue table doesn't have status column)
@@ -1585,17 +1600,31 @@ export default function spin() {
         })
       }
 
-      // Batch check for passed votes
-      const { data: passedVotes } = await supabase
+      // Batch check for passed votes (new schema: votes are match-based, not profile-based)
+      // Get matches where user voted 'pass' and extract partner IDs
+      const { data: passedMatches } = await supabase
         .from('votes')
-        .select('profile_id')
+        .select('match_id, vote')
         .eq('voter_id', authUser.id)
-        .eq('vote_type', 'pass')
-        .in('profile_id', userIds)
+        .eq('vote', 'pass')
 
       const passedIds = new Set<string>()
-      if (passedVotes) {
-        passedVotes.forEach(vote => passedIds.add(vote.profile_id))
+      if (passedMatches && passedMatches.length > 0) {
+        // Get match details to find partner IDs
+        const matchIds = passedMatches.map(v => v.match_id)
+        const { data: matches } = await supabase
+          .from('matches')
+          .select('user1_id, user2_id')
+          .in('id', matchIds)
+        
+        if (matches) {
+          matches.forEach(match => {
+            const partnerId = match.user1_id === authUser.id ? match.user2_id : match.user1_id
+            if (userIds.includes(partnerId)) {
+              passedIds.add(partnerId)
+            }
+          })
+        }
       }
 
       // Collect valid photos (not pravatar, not blocked, not passed)
@@ -1665,12 +1694,8 @@ export default function spin() {
       
       // Also ensure user_status.online_status is set to true
       await supabase
-        .from('user_status')
-        .update({ 
-          online_status: true,
-          last_heartbeat: new Date().toISOString()
-        })
-        .eq('user_id', authUser.id)
+        // Use heartbeat_update function
+        await supabase.rpc('heartbeat_update', { p_user_id: authUser.id })
       
       // New Matching System: Use join_queue RPC
       let joinSuccess: any = null
@@ -1749,25 +1774,35 @@ export default function spin() {
 
       setIsInQueue(true)
 
-      // CRITICAL: Small delay to ensure join_queue completes and other user is reset
-      // This prevents race condition where process_matching runs before the other user is reset
+      // CRITICAL: Small delay to ensure join_queue completes
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // New Matching System: Matching is automatic via process_matching() scheduler
-      // Background job runs every 2 seconds automatically
-      // No manual matching calls needed - just check if match was created
+      // Trigger matching process immediately
+      try {
+        await supabase.rpc('process_matching')
+      } catch (error) {
+        console.warn('Error in process_matching:', error)
+      }
+      
+      // Check for active match using new function
       let matchId: string | null = null
+      const { data: activeMatchData } = await supabase.rpc('get_active_match', {
+        p_user_id: authUser.id
+      })
+      
+      if (activeMatchData && activeMatchData.length > 0) {
+        matchId = activeMatchData[0].match_id
+        console.log('✅ Match found immediately:', matchId)
+      }
       
       if (!matchId) {
         console.log('⚠️ No match found on initial attempt. Polling will continue every 2 seconds until match is found...')
         
-        // Get queue status first before logging
-        const { data: queueStatus } = await supabase
-          .from('queue')
-          .select('fairness_score, spin_started_at, preference_stage')
-          .eq('user_id', authUser.id)
-          .single()
-        console.log('📊 Current queue status:', queueStatus)
+        // Get queue status using new function
+        const { data: queueStatusData } = await supabase.rpc('get_queue_status', {
+          p_user_id: authUser.id
+        })
+        console.log('📊 Current queue status:', queueStatusData?.[0])
         
         // Check user_status for current state
         const { data: userStatus } = await supabase
@@ -1777,33 +1812,19 @@ export default function spin() {
           .single()
         console.log('👤 User status:', userStatus)
         
-        // Check how many potential matches are in queue
-        const { data: queueUsers } = await supabase
-          .from('queue')
-          .select('user_id')
-          .neq('user_id', authUser.id)
-        console.log('👥 Other users in queue:', queueUsers?.length || 0)
-        
-        // Check if user was matched (check user_status for vote_active state)
-        if (userStatus?.state === 'vote_active') {
-          console.log('✅ User is in vote_active - match was created!')
-          // Find the match
-          const { data: activeMatch } = await supabase
-            .from('matches')
-            .select('*')
-            .or(`user1_id.eq.${authUser.id},user2_id.eq.${authUser.id}`)
-            .eq('status', 'vote_active')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single()
-          
-          if (activeMatch) {
-            console.log('✅ Found active match:', activeMatch.id)
-            matchId = activeMatch.id
-          }
+        if (queueStatusData?.[0]) {
+          console.log('👥 Other users in queue:', queueStatusData[0].other_users_in_queue || 0)
         }
-      } else {
-        console.log('✅ Match found immediately!', matchId)
+        
+        // Try get_active_match again in case matching just completed
+        const { data: activeMatchData2 } = await supabase.rpc('get_active_match', {
+          p_user_id: authUser.id
+        })
+        
+        if (activeMatchData2 && activeMatchData2.length > 0) {
+          matchId = activeMatchData2[0].match_id
+          console.log('✅ Found active match after retry:', matchId)
+        }
       }
 
       if (matchId) {
@@ -1826,6 +1847,29 @@ export default function spin() {
               matchUser2: match.user2_id,
               currentUserId: authUser.id
             })
+            return
+          }
+
+          // CRITICAL: Check if match is expired
+          const remainingSeconds = match.vote_expires_at 
+            ? computeRemainingSeconds(match.vote_expires_at)
+            : 0
+          
+          if (remainingSeconds <= 0) {
+            console.log('⚠️ Match expired, cleaning up:', matchId, 'remaining:', remainingSeconds)
+            await logVoteWindowInvalid(supabase, matchId, remainingSeconds, 30, authUser.id)
+            
+            // Clean up expired match
+            try {
+              await supabase.rpc('cleanup_expired_matches')
+            } catch (error) {
+              console.warn('Error cleaning up expired match:', error)
+            }
+            
+            // Clear stale state and continue spinning
+            setVoteStartedAt(null)
+            setCurrentMatchId(null)
+            setMatchedPartner(null)
             return
           }
 
@@ -1951,10 +1995,13 @@ export default function spin() {
               matchStatus: matchRecheck.status
             })
             
-            // Call validate_queue_integrity to auto-fix the orphaned match
+            // Note: validate_queue_integrity function removed - using simpler backend
+            // Orphaned matches will be cleaned up by cleanup_stale_matches
             try {
-              const { data: integrityResult, error: integrityError } = await supabase.rpc('validate_queue_integrity')
+              // Try to clean up stale matches instead
+              await supabase.rpc('cleanup_stale_matches')
               
+              const integrityError = null // No error since function doesn't exist
               if (integrityError) {
                 console.error('❌ Error calling validate_queue_integrity:', integrityError)
               } else {
@@ -2135,8 +2182,8 @@ export default function spin() {
             
             // Check if vote window is invalid
             if (!match.vote_expires_at || remainingSeconds < 2) {
-              await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 10, authUser.id)
-              finalRemainingSeconds = 10 // Fallback for UX
+              await logVoteWindowInvalid(supabase, match.id, remainingSeconds, 30, authUser.id)
+              finalRemainingSeconds = 30 // Fallback for UX
             }
             
             // Log: Voting window started
@@ -2207,12 +2254,12 @@ export default function spin() {
         .single()
 
       if (match && match.status === 'pending') {
-        // Check if both users voted yes
+        // Check if both users voted yes (new schema: votes are match-based)
         const { data: votes } = await supabase
           .from('votes')
           .select('*')
-          .or(`and(voter_id.eq.${authUser.id},profile_id.eq.${matchedPartner?.id}),and(voter_id.eq.${matchedPartner?.id},profile_id.eq.${authUser.id})`)
-          .eq('vote_type', 'yes')
+          .eq('match_id', currentMatchId)
+          .eq('vote', 'yes')
 
         if (votes && votes.length === 2) {
           // Both voted yes - redirect to video date
@@ -2270,14 +2317,14 @@ export default function spin() {
 
     // If user didn't vote within 10 seconds (idle voter)
     if (!userVote) {
-      // Check if the other user voted yes
+      // Check if the other user voted yes (new schema: votes are match-based)
       if (matchedPartner && currentMatchId) {
         const { data: partnerVote } = await supabase
           .from('votes')
           .select('*')
+          .eq('match_id', currentMatchId)
           .eq('voter_id', matchedPartner.id)
-          .eq('profile_id', authUser.id)
-          .eq('vote_type', 'yes')
+          .eq('vote', 'yes')
           .single()
 
         if (partnerVote) {
@@ -2341,7 +2388,7 @@ export default function spin() {
     const { data: voteResult, error: voteError } = await supabase.rpc('record_vote', {
       p_user_id: authUser.id,
       p_match_id: currentMatchId,
-      p_vote_type: voteType
+      p_vote: voteType
     })
 
     if (voteError) {
@@ -2406,13 +2453,13 @@ export default function spin() {
       await logRespinTrigger(supabase, 'partner_passed', authUser.id)
       
       // Pass/Respin vote
-      // Check if other user already voted yes
+      // Check if other user already voted yes (new schema: votes are match-based)
       const { data: otherVote } = await supabase
         .from('votes')
         .select('*')
+        .eq('match_id', currentMatchId)
         .eq('voter_id', matchedPartner.id)
-        .eq('profile_id', authUser.id)
-        .eq('vote_type', 'yes')
+        .eq('vote', 'yes')
         .single()
 
       if (otherVote) {
@@ -2974,7 +3021,7 @@ export default function spin() {
                     <div style={{ minWidth: '50px', display: 'inline-block', visibility: 'visible', opacity: 1 }}>
                       <MatchSynchronizedCountdownTimer
                         matchId={currentMatchId}
-                        initialSeconds={10}
+                        initialSeconds={30}
                         onComplete={handleCountdownComplete}
                       />
                     </div>
@@ -2985,7 +3032,7 @@ export default function spin() {
                     <div style={{ minWidth: '50px', display: 'inline-block', visibility: 'visible', opacity: 1 }}>
                       <SynchronizedCountdownTimer
                         startTimestamp={voteStartedAt}
-                        initialSeconds={10}
+                        initialSeconds={30}
                         onComplete={handleCountdownComplete}
                       />
                     </div>
@@ -2996,7 +3043,7 @@ export default function spin() {
                     <div style={{ minWidth: '50px', display: 'inline-block', visibility: 'visible', opacity: 1 }}>
                       <CountdownTimer
                         resetKey={revealed ? "revealed" : "hidden"}
-                        initialSeconds={10}
+                        initialSeconds={30}
                         onComplete={handleCountdownComplete}
                       />
                     </div>

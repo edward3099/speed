@@ -69,7 +69,7 @@ interface MatchInfo {
   user2_id: string
   status: string
   created_at: string
-  vote_window_expires_at: string | null
+  vote_expires_at: string | null
   user1_name?: string
   user2_name?: string
   user1_vote?: string
@@ -79,7 +79,7 @@ interface MatchInfo {
 interface VoteInfo {
   match_id: string
   voter_id: string
-  vote_type: string
+  vote: string
   created_at: string
   voter_name?: string
 }
@@ -324,7 +324,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
       // Try to fetch with created_at, but handle if column doesn't exist
       const { data: matchesData, error } = await supabase
         .from('matches')
-        .select('id, user1_id, user2_id, status, vote_window_expires_at')
+        .select('id, user1_id, user2_id, status, vote_expires_at')
         .in('status', ['pending', 'vote_active'])
         .order('id', { ascending: false })
         .limit(50)
@@ -353,7 +353,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         const matchIds = matchesData.map(m => m.id)
         const { data: votesData } = await supabase
           .from('votes')
-          .select('match_id, voter_id, vote_type')
+          .select('match_id, voter_id, vote')
           .in('match_id', matchIds)
 
         const votesByMatch = new Map<string, Map<string, string>>()
@@ -363,7 +363,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
             if (!votesByMatch.has(matchIdStr)) {
               votesByMatch.set(matchIdStr, new Map())
             }
-            votesByMatch.get(matchIdStr)!.set(v.voter_id, v.vote_type)
+            votesByMatch.get(matchIdStr)!.set(v.voter_id, v.vote)
           }
         })
 
@@ -375,7 +375,7 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
             user2_id: m.user2_id,
             status: m.status,
             created_at: (m as any).created_at || new Date().toISOString(), // Fallback if column doesn't exist
-            vote_window_expires_at: m.vote_window_expires_at,
+            vote_window_expires_at: m.vote_expires_at,
             user1_name: profileMap.get(m.user1_id),
             user2_name: profileMap.get(m.user2_id),
             user1_vote: matchVotes?.get(m.user1_id),
@@ -401,8 +401,8 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
     try {
       const { data: votesData, error } = await supabase
         .from('votes')
-        .select('match_id, voter_id, vote_type, created_at')
-        .order('created_at', { ascending: false })
+        .select('match_id, voter_id, vote, voted_at')
+        .order('voted_at', { ascending: false })
         .limit(50)
 
       if (error) {
@@ -432,8 +432,8 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         const votes: VoteInfo[] = validVotes.map(v => ({
           match_id: v.match_id?.toString() || 'unknown',
           voter_id: v.voter_id,
-          vote_type: v.vote_type,
-          created_at: v.created_at || new Date().toISOString(),
+          vote: v.vote,
+          created_at: v.voted_at || new Date().toISOString(),
           voter_name: profileMap.get(v.voter_id)
         }))
 
@@ -526,10 +526,10 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
         for (const match of matchesData) {
           const { data: votes } = await supabase
             .from('votes')
-            .select('vote_type')
+            .select('vote')
             .eq('match_id', match.id)
           
-          if (votes && votes.length === 2 && votes.every(v => v.vote_type === 'yes')) {
+          if (votes && votes.length === 2 && votes.every(v => v.vote === 'yes')) {
             matchesBothYes++
           }
         }
@@ -1002,8 +1002,8 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                     ) : (
                       activeMatches.map((match) => {
                         const isUserInMatch = match.user1_id === currentState.userId || match.user2_id === currentState.userId
-                        const timeRemaining = match.vote_window_expires_at
-                          ? Math.max(0, Math.floor((new Date(match.vote_window_expires_at).getTime() - Date.now()) / 1000))
+                        const timeRemaining = match.vote_expires_at
+                          ? Math.max(0, Math.floor((new Date(match.vote_expires_at).getTime() - Date.now()) / 1000))
                           : null
                         
                         return (
@@ -1072,9 +1072,9 @@ export function SpinDebugger({ supabase, currentState }: SpinDebuggerProps) {
                                 </span>
                                 {isUserVote && <span className="text-teal-400 text-[8px] ml-1">(You)</span>}
                                 <span className={`ml-2 ${
-                                  vote.vote_type === 'yes' ? 'text-green-300' : 'text-red-300'
+                                  vote.vote === 'yes' ? 'text-green-300' : 'text-red-300'
                                 }`}>
-                                  {vote.vote_type === 'yes' ? '✅ Yes' : '❌ Pass'}
+                                  {vote.vote === 'yes' ? '✅ Yes' : '❌ Pass'}
                                 </span>
                               </div>
                               <div className="text-[8px] text-white/40">
