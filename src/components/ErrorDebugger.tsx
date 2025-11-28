@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, startTransition } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Copy, Trash2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 
@@ -37,7 +37,10 @@ function ErrorDebugger() {
       }
       
       errorsRef.current = [errorLog, ...errorsRef.current].slice(0, 50) // Keep last 50 errors
-      setErrors([...errorsRef.current])
+      // Defer state update to avoid updating during render
+      startTransition(() => {
+        setErrors([...errorsRef.current])
+      })
     }
 
     // Override console.error - capture error, then call original

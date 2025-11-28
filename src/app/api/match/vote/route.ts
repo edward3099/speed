@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
  * Submits a vote for a match
  * 
  * Body:
- * - match_id: UUID - The match ID
+ * - match_id: BIGINT (number or string) - The match ID
  * - vote_type: 'yes' | 'pass' - The vote type
  */
 export async function POST(request: Request) {
@@ -34,6 +34,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Convert match_id to number (BIGINT) - matches.id is BIGINT, not UUID
+    const matchIdNum = typeof match_id === 'string' ? parseInt(match_id, 10) : match_id;
+    
+    if (isNaN(matchIdNum)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid match_id format' },
+        { status: 400 }
+      );
+    }
+
     if (!vote_type || !['yes', 'pass'].includes(vote_type)) {
       return NextResponse.json(
         { success: false, error: 'vote_type must be "yes" or "pass"' },
@@ -41,10 +51,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Submit vote via RPC
-    const { data, error } = await supabase.rpc('submit_vote', {
+    // Submit vote via RPC (use record_vote which expects BIGINT)
+    const { data, error } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
-      p_match_id: match_id,
+      p_match_id: matchIdNum,
       p_vote_type: vote_type
     });
 
