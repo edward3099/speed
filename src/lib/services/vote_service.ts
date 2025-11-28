@@ -13,13 +13,21 @@ export class VoteService {
    */
   async recordVote(
     userId: string,
-    matchId: string,
+    matchId: string | number,
     voteType: 'yes' | 'pass'
   ): Promise<VoteOutcome | null> {
+    // Convert matchId to number if it's a string (matches table uses BIGINT)
+    const matchIdNum = typeof matchId === 'string' ? parseInt(matchId, 10) : matchId
+    
+    if (isNaN(matchIdNum as number)) {
+      console.error('❌ Invalid matchId format in recordVote:', matchId)
+      return null
+    }
+
     const { data, error } = await this.supabase.rpc('record_vote', {
       p_user_id: userId,
-      p_match_id: matchId,
-      p_vote: voteType
+      p_match_id: matchIdNum,
+      p_vote_type: voteType
     })
 
     if (error) {
@@ -43,11 +51,19 @@ export class VoteService {
   /**
    * Get votes for a match
    */
-  async getVotes(matchId: string) {
+  async getVotes(matchId: string | number) {
+    // Convert matchId to number if it's a string (matches table uses BIGINT)
+    const matchIdNum = typeof matchId === 'string' ? parseInt(matchId, 10) : matchId
+    
+    if (isNaN(matchIdNum as number)) {
+      console.error('❌ Invalid matchId format in getVotes:', matchId)
+      return []
+    }
+
     const { data, error } = await this.supabase
       .from('votes')
       .select('*')
-      .eq('match_id', matchId)
+      .eq('match_id', matchIdNum)
 
     if (error) {
       console.error('Error getting votes:', error)

@@ -6,6 +6,11 @@
 
 import { beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from .env.local
+config({ path: resolve(process.cwd(), '.env.local') });
 
 // Load environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jzautphzcbtqplltsfse.supabase.co';

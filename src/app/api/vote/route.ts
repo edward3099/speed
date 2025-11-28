@@ -24,11 +24,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'vote must be "yes" or "pass"' }, { status: 400 })
     }
     
+    // Convert match_id to number if it's a string (matches table uses BIGINT)
+    const matchIdNum = typeof match_id === 'string' ? parseInt(match_id, 10) : match_id
+    
+    if (isNaN(matchIdNum as number)) {
+      return NextResponse.json({ error: 'Invalid match_id format' }, { status: 400 })
+    }
+
     // Record vote
     const { data: result, error: voteError } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
-      p_match_id: match_id,
-      p_vote: vote
+      p_match_id: matchIdNum,
+      p_vote_type: vote
     })
     
     if (voteError) {

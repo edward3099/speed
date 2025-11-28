@@ -25,7 +25,9 @@ function VideoDateContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
-  const matchId = searchParams.get('matchId')
+  const matchIdParam = searchParams.get('matchId')
+  // Convert matchId to number (BIGINT) - matches.id is BIGINT, not UUID
+  const matchId = matchIdParam ? (typeof matchIdParam === 'string' ? parseInt(matchIdParam, 10) : matchIdParam) : null
   
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<Partner | null>(null)
@@ -121,7 +123,7 @@ function VideoDateContent() {
 
       await supabase.rpc('video_spark_log_event_rpc', {
         p_video_date_id: videoDateId || '',
-        p_match_id: matchId || '',
+        p_match_id: matchId ? matchId.toString() : '',
         p_user_id: authUser.id,
         p_event_type: eventType,
         p_event_category: eventCategory,
@@ -146,7 +148,7 @@ function VideoDateContent() {
 
       await supabase.rpc('video_spark_log_error_rpc', {
         p_video_date_id: videoDateId || '',
-        p_match_id: matchId || '',
+        p_match_id: matchId ? matchId.toString() : '',
         p_user_id: authUser.id,
         p_error_type: errorType,
         p_error_message: errorMessage,
@@ -177,7 +179,7 @@ function VideoDateContent() {
 
         await logVideoEvent('initialization', 'connection', 'Video date initialization started', { matchId })
 
-        // Fetch match data
+        // Fetch match data (matchId is now BIGINT)
         const { data: match, error: matchError } = await supabase
           .from('matches')
           .select('*')
@@ -231,7 +233,7 @@ function VideoDateContent() {
           bio: partnerProfile.data.bio || ''
         })
 
-        // Check if video date already exists
+        // Check if video date already exists (match_id is now BIGINT)
         const { data: existingVideoDate } = await supabase
           .from('video_dates')
           .select('*')
@@ -283,7 +285,7 @@ function VideoDateContent() {
             if (videoDateError.code === '23505' || videoDateError.message?.includes('unique') || videoDateError.message?.includes('duplicate')) {
               console.log('⚠️ Video date already exists (race condition), fetching existing record...')
               
-              // Another user created the record first, fetch it
+              // Another user created the record first, fetch it (match_id is BIGINT)
               const { data: existingRecord, error: fetchError } = await supabase
                 .from('video_dates')
                 .select('*')

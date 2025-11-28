@@ -32,7 +32,18 @@
     "test:vitest:db": "vitest run tests/database-functions-vitest.test.ts",
     "test:setup-users": "node tests/setup-users.js",
     "test:create-load-users": "node tests/create-500-users.js",
-    "test:create-users-playwright": "npx tsx tests/create-500-users-playwright.ts"
+    "test:create-users-playwright": "npx tsx tests/create-500-users-playwright.ts",
+    "test:backend:all": "vitest run backend/tests",
+    "test:backend:unit": "vitest run backend/tests/unit",
+    "test:backend:integration": "vitest run backend/tests/integration",
+    "test:backend:simulation": "vitest run backend/tests/simulation",
+    "test:backend:chaos": "vitest run backend/tests/chaos",
+    "test:backend:load": "vitest run backend/tests/load",
+    "test:backend:regression": "vitest run backend/tests/regression",
+    "test:backend:acceptance": "vitest run backend/tests/acceptance-criteria.test.ts",
+    "test:backend:coverage": "vitest run --coverage backend/tests",
+    "env:restore": "bash restore-env.sh",
+    "env:backup": "cp .env.local .env.local.backup && echo '✅ Environment file backed up'"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.29.0",
@@ -64,6 +75,7 @@
     "@types/react-dom": "^19",
     "@vitest/ui": "^4.0.13",
     "autoprefixer": "^10.4.22",
+    "dotenv": "^17.2.3",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "jsdom": "^27.2.0",

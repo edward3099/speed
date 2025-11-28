@@ -12,6 +12,19 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
+    // Ensure user is marked as online and clear cooldown before joining
+    await supabase
+      .from('profiles')
+      .update({ 
+        online: true,
+        cooldown_until: null,
+        last_active_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+    
+    // Remove from queue if already in queue (to allow re-joining)
+    await supabase.rpc('remove_from_queue', { p_user_id: user.id })
+    
     // Join queue
     const { data: joined, error: joinError } = await supabase.rpc('join_queue', {
       p_user_id: user.id
@@ -23,8 +36,30 @@ export async function POST() {
     }
     
     if (!joined) {
+      // Check why join failed for better error message
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('online, cooldown_until')
+        .eq('id', user.id)
+        .single()
+      
+      const { data: inQueue } = await supabase
+        .from('queue')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single()
+      
+      let reason = 'unknown reason'
+      if (inQueue) {
+        reason = 'already in queue'
+      } else if (profile && !profile.online) {
+        reason = 'user is offline'
+      } else if (profile && profile.cooldown_until && new Date(profile.cooldown_until) > new Date()) {
+        reason = `in cooldown until ${new Date(profile.cooldown_until).toLocaleTimeString()}`
+      }
+      
       return NextResponse.json({ 
-        error: 'Cannot join queue - you may be offline or in cooldown' 
+        error: `Cannot join queue - ${reason}` 
       }, { status: 400 })
     }
     

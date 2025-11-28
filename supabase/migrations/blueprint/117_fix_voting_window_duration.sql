@@ -7,7 +7,7 @@
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION get_voting_window_remaining(
-  p_match_id UUID
+  p_match_id BIGINT
 )
 RETURNS INTEGER AS $$
 DECLARE
@@ -53,4 +53,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON FUNCTION get_voting_window_remaining IS 'Returns remaining seconds in voting window (30s). Accepts vote_active and pending status. Uses database NOW() for synchronization.';
+
+
+
 

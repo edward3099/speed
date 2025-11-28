@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server';
  * Transitions both users to vote_active when both have revealed
  * 
  * Body:
- * - match_id: UUID - The match ID
+ * - match_id: BIGINT (number or string) - The match ID
  */
 export async function POST(request: Request) {
   try {
@@ -34,10 +34,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Convert match_id to number (BIGINT) - matches.id is BIGINT, not UUID
+    const matchIdNum = typeof match_id === 'string' ? parseInt(match_id, 10) : match_id;
+    
+    if (isNaN(matchIdNum)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid match_id format' },
+        { status: 400 }
+      );
+    }
+
     // Complete reveal via RPC
     const { data, error } = await supabase.rpc('complete_reveal', {
       p_user_id: user.id,
-      p_match_id: match_id
+      p_match_id: matchIdNum
     });
 
     if (error) {

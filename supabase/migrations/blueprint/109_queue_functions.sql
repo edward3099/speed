@@ -28,15 +28,17 @@ BEGIN
     RETURN FALSE;
   END IF;
   
-  -- Check not already in queue
-  IF EXISTS (SELECT 1 FROM queue WHERE user_id = p_user_id) THEN
-    RETURN FALSE;
-  END IF;
+  -- Remove from queue if already exists (allows re-joining)
+  DELETE FROM queue WHERE user_id = p_user_id;
   
   -- Insert into queue
   INSERT INTO queue (user_id, fairness_score, spin_started_at, preference_stage)
   VALUES (p_user_id, 0, NOW(), 0)
-  ON CONFLICT (user_id) DO NOTHING;
+  ON CONFLICT (user_id) DO UPDATE
+  SET fairness_score = 0,
+      spin_started_at = NOW(),
+      preference_stage = 0,
+      updated_at = NOW();
   
   -- Ensure user_status exists and update to spin_active
   -- Use INSERT ... ON CONFLICT to handle both new and existing users

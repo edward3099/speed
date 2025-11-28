@@ -15,7 +15,7 @@ DECLARE
   user_record RECORD;
   candidate_id UUID;
   match_id BIGINT;
-  preference_stage INTEGER;
+  v_preference_stage INTEGER;
   wait_time_seconds INTEGER;
 BEGIN
   -- Process all users in queue, ordered by priority
@@ -46,29 +46,29 @@ BEGIN
     END IF;
     
     -- Determine preference stage based on wait time
-    preference_stage := user_record.preference_stage;
+    v_preference_stage := user_record.preference_stage;
     
     -- Update preference stage if needed
     IF user_record.wait_time_seconds >= 20 THEN
-      preference_stage := 3; -- Full expansion
+      v_preference_stage := 3; -- Full expansion
     ELSIF user_record.wait_time_seconds >= 15 THEN
-      preference_stage := 2; -- Distance expanded
+      v_preference_stage := 2; -- Distance expanded
     ELSIF user_record.wait_time_seconds >= 10 THEN
-      preference_stage := 1; -- Age expanded
+      v_preference_stage := 1; -- Age expanded
     ELSE
-      preference_stage := 0; -- Exact preferences
+      v_preference_stage := 0; -- Exact preferences
     END IF;
     
-    -- Update preference stage if changed
-    IF preference_stage != user_record.preference_stage THEN
+    -- Update preference stage if changed (use qualified variable name)
+    IF v_preference_stage != user_record.preference_stage THEN
       UPDATE queue
-      SET preference_stage = preference_stage,
+      SET preference_stage = v_preference_stage,
           updated_at = NOW()
       WHERE user_id = user_record.user_id;
     END IF;
     
     -- Find best match for this user
-    candidate_id := find_best_match(user_record.user_id, preference_stage);
+    candidate_id := find_best_match(user_record.user_id, v_preference_stage);
     
     -- If candidate found, create pair atomically
     IF candidate_id IS NOT NULL THEN
@@ -89,7 +89,7 @@ BEGIN
         -- Update match status
         UPDATE matches
         SET status = 'vote_active',
-            vote_window_expires_at = NOW() + INTERVAL '10 seconds'
+            vote_window_expires_at = NOW() + INTERVAL '30 seconds'
         WHERE id = match_id;
       END IF;
     END IF;

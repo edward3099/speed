@@ -1331,8 +1331,8 @@ BEGIN
     WHERE online_status = TRUE
       AND last_heartbeat < NOW() - INTERVAL '20 seconds'
   LOOP
-    -- Mark as offline
-    UPDATE users SET online = FALSE WHERE id = user_record.user_id;
+    -- Mark as offline (update profiles table directly)
+    UPDATE profiles SET online = FALSE WHERE id = user_record.user_id;
     UPDATE user_status
     SET state = 'offline',
         online_status = FALSE,

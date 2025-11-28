@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, memo } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 interface MatchSynchronizedCountdownTimerProps {
@@ -20,7 +20,7 @@ interface MatchSynchronizedCountdownTimerProps {
  * 
  * Similar to video date countdown, but for voting window.
  */
-export function MatchSynchronizedCountdownTimer({
+function MatchSynchronizedCountdownTimerComponent({
   matchId,
   initialSeconds,
   onComplete,
@@ -31,9 +31,11 @@ export function MatchSynchronizedCountdownTimer({
   const onCompleteRef = useRef(onComplete)
   const supabase = createClient()
 
-  // Debug: Log when component mounts and matchId changes
+  // Debug: Log when component mounts and matchId changes (only in development)
   useEffect(() => {
-    console.log('MatchSynchronizedCountdownTimer mounted/updated:', { matchId, initialSeconds })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('MatchSynchronizedCountdownTimer mounted/updated:', { matchId, initialSeconds })
+    }
   }, [matchId, initialSeconds])
 
   // Update ref when callback changes
@@ -48,48 +50,84 @@ export function MatchSynchronizedCountdownTimer({
     }
     
     try {
+      // Convert matchId to number if it's a string (matches table uses BIGINT)
+      // Check if matchId is a UUID string (contains hyphens) - if so, it's invalid for BIGINT
+      let matchIdNum: number
+      if (typeof matchId === 'string') {
+        // If it contains hyphens, it's a UUID, not a number - this is an error
+        if (matchId.includes('-')) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('⚠️ MatchSynchronizedCountdownTimer: matchId is UUID, expected BIGINT:', matchId)
+          }
+          return null
+        }
+        matchIdNum = parseInt(matchId, 10)
+      } else {
+        matchIdNum = matchId
+      }
+      
+      if (isNaN(matchIdNum)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ MatchSynchronizedCountdownTimer: Invalid matchId format:', matchId)
+        }
+        return null
+      }
+
       const { data, error } = await supabase.rpc('get_voting_window_remaining', {
-        p_match_id: matchId
+        p_match_id: matchIdNum
       })
 
       if (error) {
-        // Only log if it's not a "not found" error (match might have been deleted)
-        if (error.code !== 'PGRST116' && error.message && !error.message.includes('not found')) {
-          console.warn('⚠️ Voting window RPC error:', error.message, error.code)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Voting window RPC error:', {
+            error: error.message,
+            code: error.code,
+            matchId: matchId,
+            matchIdNum: matchIdNum
+          })
         }
         return null
       }
 
       // data is the remaining seconds (INTEGER) or null if match not found/closed
-      if (data === null) {
+      if (data === null || data === undefined) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Voting window RPC returned null for matchId:', matchId)
+        }
         return null
       }
       
-      return Math.max(0, data)
-    } catch (err) {
-      // Silently handle errors - match might be deleted or closed
+      const remaining = Math.max(0, data)
+      
+      if (process.env.NODE_ENV === 'development' && remaining !== initialSeconds) {
+        console.log('🕐 Timer updated from DB:', { matchId, remaining, initialSeconds })
+      }
+      
+      return remaining
+    } catch (err: any) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('⚠️ Error fetching remaining time:', err)
+      }
       return null
     }
   }
 
   // Poll database for synchronized countdown
   useEffect(() => {
-    console.log('🕐 MatchSynchronizedCountdownTimer: Effect triggered', { matchId, initialSeconds })
-    
     if (!matchId) {
-      console.warn('⚠️ MatchSynchronizedCountdownTimer: No matchId provided, using initialSeconds')
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ MatchSynchronizedCountdownTimer: No matchId provided, using initialSeconds')
+      }
       setSeconds(initialSeconds)
       return
     }
 
     // Initial fetch - ALWAYS set seconds to initialSeconds first so timer is visible immediately
     setSeconds(initialSeconds)
-    console.log('✅ MatchSynchronizedCountdownTimer: Set initial seconds to', initialSeconds, '- timer should be visible now')
 
     // Then fetch actual remaining time from database
     fetchRemainingTime().then((remaining) => {
       if (remaining !== null) {
-        console.log('MatchSynchronizedCountdownTimer: Initial remaining time from DB:', remaining)
         setSeconds(remaining)
         
         // If countdown already completed, call onComplete
@@ -99,11 +137,9 @@ export function MatchSynchronizedCountdownTimer({
           }, 0)
           return
         }
-      } else {
-        // If RPC fails initially, keep using initialSeconds so countdown is visible
-        console.warn('MatchSynchronizedCountdownTimer: Initial fetch failed, keeping initialSeconds:', initialSeconds)
-        // Don't change seconds - already set to initialSeconds above
       }
+      // If RPC fails initially, keep using initialSeconds so countdown is visible
+      // Don't change seconds - already set to initialSeconds above
     })
 
     // Poll database every pollingInterval for perfect synchronization
@@ -113,7 +149,6 @@ export function MatchSynchronizedCountdownTimer({
       if (remaining === null) {
         // RPC failed - don't update countdown, will retry on next interval
         // This ensures we don't use client-side calculation which causes drift
-        console.warn('⚠️ Voting window RPC failed, keeping current value, will retry...')
         return
       }
       
@@ -123,8 +158,23 @@ export function MatchSynchronizedCountdownTimer({
       if (remaining <= 0) {
         clearInterval(timer)
         setSeconds(0)
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⏰ Timer reached 0, calling onComplete for matchId:', matchId)
+        }
+        
+        // Call onComplete callback
         setTimeout(() => {
-          onCompleteRef.current?.()
+          if (onCompleteRef.current) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Calling onComplete callback')
+            }
+            onCompleteRef.current()
+          } else {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ onComplete callback is null')
+            }
+          }
         }, 0)
       }
     }, pollingInterval)
@@ -134,8 +184,6 @@ export function MatchSynchronizedCountdownTimer({
 
   // Always render the timer - don't return null
   // Even if seconds is 0 or negative, show it so user knows timer exists
-  // Debug: Log render
-  console.log('🕐 MatchSynchronizedCountdownTimer: RENDERING with seconds:', seconds, 'matchId:', matchId, 'should be visible')
   
   return (
     <div 
@@ -221,4 +269,16 @@ export function MatchSynchronizedCountdownTimer({
     </div>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders when parent re-renders
+// Only re-render when props actually change
+export const MatchSynchronizedCountdownTimer = memo(MatchSynchronizedCountdownTimerComponent, (prevProps, nextProps) => {
+  // Re-render only if matchId, initialSeconds, or pollingInterval change
+  // onComplete and className changes don't require re-render
+  return (
+    prevProps.matchId === nextProps.matchId &&
+    prevProps.initialSeconds === nextProps.initialSeconds &&
+    prevProps.pollingInterval === nextProps.pollingInterval
+  )
+})
 

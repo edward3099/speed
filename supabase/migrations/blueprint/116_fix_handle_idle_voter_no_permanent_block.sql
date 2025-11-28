@@ -60,3 +60,6 @@ COMMENT ON FUNCTION handle_idle_voter IS 'Handles idle voters - does NOT create 
 DELETE FROM never_pair_again WHERE reason = 'idle_timeout';
 
 
+
+
+
