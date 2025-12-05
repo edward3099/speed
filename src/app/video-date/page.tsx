@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/modal"
 import { AnimatedGradientBackground } from "@/components/magicui/animated-gradient-background"
 import { Sparkles } from "@/components/magicui/sparkles"
 import { createClient } from "@/lib/supabase/client"
-import { Room, RoomEvent, RemoteParticipant, Track } from "livekit-client"
+import { Room, RoomEvent, RemoteParticipant, Track, TokenSourceConfigurable, TokenSourceFixed } from "livekit-client"
 import Image from "next/image"
 // Import constants for video date defaults
 import { getVideoDateDefaults } from "@/lib/constants/matching-constants"
@@ -26,8 +26,8 @@ function VideoDateContent() {
   const searchParams = useSearchParams()
   const supabase = createClient()
   const matchIdParam = searchParams.get('matchId')
-  // Convert matchId to number (BIGINT) - matches.id is BIGINT, not UUID
-  const matchId = matchIdParam ? (typeof matchIdParam === 'string' ? parseInt(matchIdParam, 10) : matchIdParam) : null
+  // matchId is now UUID (TEXT) from Commander system
+  const matchId = matchIdParam || null
   
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<Partner | null>(null)
@@ -169,6 +169,33 @@ function VideoDateContent() {
         return
       }
 
+      // Track that user arrived at video_date page
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (authUser) {
+          console.log('🎯 [VIDEO_DATE_TRACKING] User arrived at video_date page - tracking arrival', {
+            matchId: matchId,
+            userId: authUser.id,
+            timestamp: new Date().toISOString()
+          })
+          // Confirm arrival at video_date using the new function
+          const { data: confirmed, error: trackError } = await supabase.rpc('confirm_video_date_arrival', {
+            p_user_id: authUser.id,
+            p_match_id: matchId
+          })
+          if (trackError) {
+            console.error('❌ [VIDEO_DATE_TRACKING] Error tracking arrival:', trackError)
+          } else {
+            console.log('✅ [VIDEO_DATE_TRACKING] Successfully tracked user arrival at video_date', {
+              matchId: matchId,
+              userId: authUser.id
+            })
+          }
+        }
+      } catch (error) {
+        console.error('❌ [VIDEO_DATE_TRACKING] Error tracking user arrival at video_date:', error)
+      }
+
       try {
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
         if (authError || !authUser) {
@@ -179,24 +206,24 @@ function VideoDateContent() {
 
         await logVideoEvent('initialization', 'connection', 'Video date initialization started', { matchId })
 
-        // Fetch match data (matchId is now BIGINT)
-        const { data: match, error: matchError } = await supabase
-          .from('matches')
-          .select('*')
-          .eq('id', matchId)
+        // Fetch video date data directly (contains user1_id and user2_id)
+        const { data: videoDate, error: videoDateError } = await supabase
+          .from('video_dates')
+          .select('user1_id, user2_id')
+          .eq('match_id', matchId)
           .single()
 
-        if (matchError || !match) {
-          console.error('Error fetching match:', matchError)
-          await logVideoError('api_error', 'Failed to fetch match', { matchId, error: matchError })
+        if (videoDateError || !videoDate) {
+          console.error('Error fetching video date:', videoDateError)
+          await logVideoError('api_error', 'Failed to fetch video date', { matchId, error: videoDateError })
           router.push('/spin')
           return
         }
 
-        await logVideoEvent('initialization', 'connection', 'Match fetched successfully', { matchId, matchStatus: match.status })
+        await logVideoEvent('initialization', 'connection', 'Video date fetched successfully', { matchId })
 
-        // Determine partner ID
-        const partnerId = match.user1_id === authUser.id ? match.user2_id : match.user1_id
+        // Determine partner ID from video_dates
+        const partnerId = videoDate.user1_id === authUser.id ? videoDate.user2_id : videoDate.user1_id
 
         // Fetch user and partner profiles
         const [userProfile, partnerProfile] = await Promise.all([
@@ -271,8 +298,8 @@ function VideoDateContent() {
             .from('video_dates')
             .insert({
               match_id: matchId,
-              user1_id: match.user1_id,
-              user2_id: match.user2_id,
+              user1_id: videoDate.user1_id,
+              user2_id: videoDate.user2_id,
               status: 'countdown'
               // countdown_started_at will be set automatically by database trigger
             })
@@ -417,28 +444,107 @@ function VideoDateContent() {
         const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
 
         if (!wsUrl) {
-          console.error('LiveKit URL not configured')
-          await logVideoError('configuration_error', 'LiveKit URL not configured', {})
+          console.error('❌ LiveKit URL not configured')
+          await logVideoError('configuration_error', 'LiveKit URL not configured', {
+            hasEnvVar: !!process.env.NEXT_PUBLIC_LIVEKIT_URL
+          })
           router.push('/spin')
           return
         }
+        
+        // Validate URL format
+        if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+          console.error('❌ Invalid LiveKit URL format (must start with ws:// or wss://):', wsUrl)
+          await logVideoError('configuration_error', 'Invalid LiveKit URL format', {
+            wsUrl,
+            expectedFormat: 'ws:// or wss://'
+          })
+          router.push('/spin')
+          return
+        }
+        
+        console.log('🔗 LiveKit connection details:', {
+          wsUrl: wsUrl.replace(/\/\/.*@/, '//***@'), // Hide credentials in URL if any
+          roomName,
+          username: authUser.id
+        })
 
         await logVideoEvent('initialization', 'connection', 'Requesting LiveKit token', { roomName })
 
-        // Get LiveKit token
-        const tokenResponse = await fetch(
-          `/api/livekit-token?room=${roomName}&username=${authUser.id}`
-        )
-        const { token } = await tokenResponse.json()
+        // Use TokenSourceConfigurable for automatic token refresh
+        // This handles token expiration automatically and refreshes when needed
+        class LiveKitTokenSource extends TokenSourceConfigurable {
+          async doFetch(options: any) {
+            try {
+              console.log('🔄 Fetching LiveKit token...', {
+                roomName,
+                username: authUser.id,
+                participantIdentity: options.participantIdentity
+              })
+              
+              const tokenResponse = await fetch(
+                `/api/livekit-token?room=${encodeURIComponent(roomName)}&username=${encodeURIComponent(authUser.id)}`
+              )
+              
+              if (!tokenResponse.ok) {
+                const errorText = await tokenResponse.text()
+                let errorData: any = {}
+                try {
+                  errorData = JSON.parse(errorText)
+                } catch {
+                  errorData = { message: errorText }
+                }
+                
+                console.error('❌ Token fetch failed:', {
+                  status: tokenResponse.status,
+                  statusText: tokenResponse.statusText,
+                  error: errorData
+                })
+                
+                throw new Error(`Token fetch failed: ${tokenResponse.status} ${errorData.error || errorData.message || errorText}`)
+              }
+              
+              const data = await tokenResponse.json()
+              
+              if (!data.token) {
+                console.error('❌ No token in response:', data)
+                throw new Error('No token in response')
+              }
 
-        if (!token) {
-          console.error('Failed to get LiveKit token')
-          await logVideoError('api_error', 'Failed to get LiveKit token', { roomName })
-          router.push('/spin')
-          return
+              console.log('✅ LiveKit token fetched successfully', {
+                tokenLength: data.token.length,
+                expiresIn: data.expiresIn,
+                debug: data.debug // Only in development
+              })
+
+              await logVideoEvent('token_fetched', 'connection', 'LiveKit token fetched', { 
+                roomName,
+                participantIdentity: options.participantIdentity,
+                expiresIn: data.expiresIn
+              })
+
+              return {
+                participantToken: data.token,
+              }
+            } catch (error: any) {
+              console.error('❌ Failed to fetch LiveKit token:', {
+                error: error.message,
+                name: error.name,
+                roomName,
+                username: authUser.id
+              })
+              await logVideoError('token_fetch_failed', 'Failed to fetch LiveKit token', { 
+                error: error.message,
+                roomName 
+              })
+              throw error
+            }
+          }
         }
 
-        await logVideoEvent('initialization', 'connection', 'LiveKit token received', { roomName })
+        const tokenSource = new LiveKitTokenSource()
+
+        await logVideoEvent('initialization', 'connection', 'Initializing LiveKit connection with token source', { roomName })
 
         // Connect to LiveKit room with error handling configuration
         const livekitRoom = new Room({
@@ -538,13 +644,43 @@ function VideoDateContent() {
           setIsConnected(false)
           setEngineReady(false) // Reset engine ready state on disconnect
           console.log('Disconnected from LiveKit room', reason)
+          
+          // Log specific disconnect reasons for debugging
+          if (reason) {
+            console.log('Disconnect reason details:', {
+              reason: reason.toString(),
+              code: (reason as any)?.code,
+              message: (reason as any)?.message
+            })
+          }
+          
           // Clean up tracks when room disconnects to prevent "skipping incoming track" errors
           setLocalVideoTrack(null)
           setLocalAudioTrack(null)
           setRemoteVideoTrack(null)
           setRemoteAudioTrack(null)
           
-          await logVideoEvent('room_disconnected', 'connection', 'Disconnected from LiveKit room', { reason: reason?.toString() })
+          await logVideoEvent('room_disconnected', 'connection', 'Disconnected from LiveKit room', { 
+            reason: reason?.toString(),
+            reasonCode: (reason as any)?.code,
+            reasonMessage: (reason as any)?.message
+          })
+        })
+        
+        // Handle connection errors
+        livekitRoom.on(RoomEvent.ConnectionQualityChanged, (quality, participant) => {
+          if (quality === 'poor' || quality === 'lost') {
+            console.warn(`⚠️ Connection quality degraded: ${quality} for ${participant?.identity || 'unknown'}`)
+          }
+        })
+        
+        // Handle media track errors
+        livekitRoom.on(RoomEvent.MediaDevicesError, (error) => {
+          console.error('❌ Media devices error:', error)
+          // Call logVideoError without await - event handlers don't need to be async
+          logVideoError('media_devices_error', 'Media devices error', { error: error.message }).catch((err) => {
+            console.error('Failed to log video error:', err)
+          })
         })
 
         livekitRoom.on(RoomEvent.ParticipantConnected, async (participant: RemoteParticipant) => {
@@ -1140,10 +1276,11 @@ function VideoDateContent() {
           }
         })
 
-        // Connect to room with error handling
+        // Connect to room with error handling using token source for automatic refresh
         try {
-          await livekitRoom.connect(wsUrl, token, {
+          await livekitRoom.connect(wsUrl, tokenSource, {
             autoSubscribe: true,
+            participantName: authUser.id,
             // Ensure we subscribe to all tracks
           })
           setRoom(livekitRoom)
@@ -1171,20 +1308,105 @@ function VideoDateContent() {
         } catch (connectError: any) {
           // Check if error is related to media devices
           const errorMessage = connectError?.message || String(connectError)
+          const errorName = connectError?.name || ''
           const isMediaError = errorMessage.includes('getUserMedia') || 
                                errorMessage.includes('mediaDevices') ||
                                errorMessage.includes('navigator')
           
-          if (isMediaError) {
+          // Check if error is related to token/authorization
+          const isTokenError = errorMessage.includes('invalid authorization token') ||
+                              errorMessage.includes('token') ||
+                              errorMessage.includes('authorization') ||
+                              errorMessage.includes('401') ||
+                              errorMessage.includes('NotAllowed')
+          
+          if (isTokenError) {
+            console.error('❌ LiveKit token authorization error:', {
+              message: errorMessage,
+              name: errorName,
+              error: connectError,
+              wsUrl: wsUrl.replace(/\/\/.*@/, '//***@'), // Hide credentials
+              roomName,
+              username: authUser.id,
+              suggestion: 'Verify LIVEKIT_API_KEY and LIVEKIT_API_SECRET match your LiveKit Cloud project settings'
+            })
+            await logVideoError('token_error', 'LiveKit token authorization failed', {
+              error: errorMessage,
+              errorName,
+              roomName,
+              wsUrl: wsUrl.replace(/\/\/.*@/, '//***@')
+            })
+            // Try to get a fresh token and retry once
+            try {
+              console.log('🔄 Attempting to fetch fresh token and retry connection...')
+              const freshTokenResponse = await fetch(
+                `/api/livekit-token?room=${roomName}&username=${authUser.id}`
+              )
+              
+              if (!freshTokenResponse.ok) {
+                const errorText = await freshTokenResponse.text()
+                console.error('❌ Fresh token fetch failed:', {
+                  status: freshTokenResponse.status,
+                  statusText: freshTokenResponse.statusText,
+                  error: errorText
+                })
+                throw new Error(`Token fetch failed: ${freshTokenResponse.status} ${errorText}`)
+              }
+              
+              const freshTokenData = await freshTokenResponse.json()
+              
+              if (!freshTokenData.token) {
+                console.error('❌ No token in fresh token response:', freshTokenData)
+                throw new Error('No token in response')
+              }
+              
+              console.log('✅ Fresh token fetched, attempting connection...')
+              
+              // Create a new token source with fresh token using TokenSourceFixed
+              const freshTokenSource = new TokenSourceFixed(freshTokenData.token)
+              await livekitRoom.connect(wsUrl, freshTokenSource, {
+                autoSubscribe: true,
+                participantName: authUser.id,
+              })
+              setRoom(livekitRoom)
+              console.log('✅ Successfully connected with fresh token')
+              return
+            } catch (retryError: any) {
+              console.error('❌ Retry with fresh token also failed:', {
+                error: retryError,
+                message: retryError?.message,
+                name: retryError?.name,
+                wsUrl,
+                roomName,
+                username: authUser.id
+              })
+              await logVideoError('token_retry_failed', 'Retry with fresh token failed', {
+                error: retryError?.message,
+                wsUrl,
+                roomName
+              })
+            }
+            setLoading(false)
+            return
+          } else if (isMediaError) {
             // Media device errors are expected in some environments - continue anyway
             console.warn('⚠️ Media device error during connection (this is often harmless):', connectError)
             // Still set the room - connection may have succeeded despite the error
             setRoom(livekitRoom)
           } else {
-          console.error('Failed to connect to LiveKit room:', connectError)
-          // Don't set room if connection fails
-          setLoading(false)
-          return
+            console.error('❌ Failed to connect to LiveKit room:', {
+              message: errorMessage,
+              name: errorName,
+              error: connectError
+            })
+            await logVideoError('connection_failed', 'Failed to connect to LiveKit room', {
+              error: errorMessage,
+              errorName,
+              roomName
+            })
+            // Don't set room if connection fails
+            setLoading(false)
+            return
           }
         }
 
@@ -1214,18 +1436,18 @@ function VideoDateContent() {
           setLoading(false)
         } else {
           // Real errors should be logged properly
-        console.error('Error initializing video date:', {
-          error,
-          message: error?.message,
-          name: error?.name,
-          stack: error?.stack,
-          matchId,
-          hasWindow: typeof window !== 'undefined',
-          hasNavigator: typeof navigator !== 'undefined',
-          protocol: typeof window !== 'undefined' ? window.location.protocol : 'unknown',
-        })
-        // Don't redirect immediately - let user see the error or try to continue
-        setLoading(false)
+          console.error('Error initializing video date:', {
+            error,
+            message: error?.message,
+            name: error?.name,
+            stack: error?.stack,
+            matchId,
+            hasWindow: typeof window !== 'undefined',
+            hasNavigator: typeof navigator !== 'undefined',
+            protocol: typeof window !== 'undefined' ? window.location.protocol : 'unknown',
+          })
+          // Don't redirect immediately - let user see the error or try to continue
+          setLoading(false)
         }
       }
     }
@@ -1255,98 +1477,173 @@ function VideoDateContent() {
   useEffect(() => {
     if (!videoDateId) return
 
-    const channel = supabase
-      .channel(`video-date-${videoDateId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'video_dates',
-          filter: `id=eq.${videoDateId}`
-        },
-        async (payload) => {
-          const updatedVideoDate = payload.new as any
-          const oldVideoDate = payload.old as any
-          
-          console.log('🔄 Real-time update received:', {
-            newStatus: updatedVideoDate.status,
-            oldStatus: oldVideoDate?.status,
-            endedBy: updatedVideoDate.ended_by_user_id
-          })
-          
-          // Check if partner ended the date
-          // Check if status is 'ended_early' and it wasn't already 'ended_early' (or old status is not available)
-          const statusChangedToEndedEarly = updatedVideoDate.status === 'ended_early' && 
-            (oldVideoDate?.status !== 'ended_early' || !oldVideoDate)
-          
-          if (statusChangedToEndedEarly && updatedVideoDate.ended_by_user_id) {
-            const { data: { user: authUser } } = await supabase.auth.getUser()
-            if (authUser && updatedVideoDate.ended_by_user_id !== authUser.id) {
-              // Partner ended the date, show message modal
-              console.log('⚠️ Partner ended the date - showing modal', {
-                endedBy: updatedVideoDate.ended_by_user_id,
-                currentUser: authUser.id
-              })
-              setShowPartnerEndedDateModal(true)
-            } else {
-              console.log('ℹ️ User ended their own date or no auth user', {
-                endedBy: updatedVideoDate.ended_by_user_id,
-                currentUser: authUser?.id
+    let channel: any = null
+    let reconnectTimeout: NodeJS.Timeout | null = null
+    let reconnectAttempts = 0
+    const MAX_RECONNECT_ATTEMPTS = 5
+    const INITIAL_RECONNECT_DELAY = 1000
+    const MIN_RECONNECT_INTERVAL = 2000
+    let lastReconnectTime = 0
+    let isMounted = true
+
+    const setupSubscription = () => {
+      if (!isMounted || !videoDateId) return
+
+      // Clean up existing channel if any
+      if (channel) {
+        try {
+          supabase.removeChannel(channel)
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+
+      channel = supabase
+        .channel(`video-date-${videoDateId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'video_dates',
+            filter: `id=eq.${videoDateId}`
+          },
+          async (payload) => {
+            const updatedVideoDate = payload.new as any
+            const oldVideoDate = payload.old as any
+            
+            console.log('🔄 Real-time update received:', {
+              newStatus: updatedVideoDate.status,
+              oldStatus: oldVideoDate?.status,
+              endedBy: updatedVideoDate.ended_by_user_id
+            })
+            
+            // Check if partner ended the date
+            // Check if status is 'ended_early' and it wasn't already 'ended_early' (or old status is not available)
+            const statusChangedToEndedEarly = updatedVideoDate.status === 'ended_early' && 
+              (oldVideoDate?.status !== 'ended_early' || !oldVideoDate)
+            
+            if (statusChangedToEndedEarly && updatedVideoDate.ended_by_user_id) {
+              const { data: { user: authUser } } = await supabase.auth.getUser()
+              if (authUser && updatedVideoDate.ended_by_user_id !== authUser.id) {
+                // Partner ended the date, show message modal
+                console.log('⚠️ Partner ended the date - showing modal', {
+                  endedBy: updatedVideoDate.ended_by_user_id,
+                  currentUser: authUser.id
+                })
+                setShowPartnerEndedDateModal(true)
+              } else {
+                console.log('ℹ️ User ended their own date or no auth user', {
+                  endedBy: updatedVideoDate.ended_by_user_id,
+                  currentUser: authUser?.id
+                })
+              }
+            }
+            
+            // If status changed to 'active', sync countdown completion
+            if (updatedVideoDate.status === 'active' && !countdownComplete) {
+              console.log('🎯 Countdown completed (synced via real-time)')
+              setCountdownComplete(true)
+              setCountdown(0)
+              logVideoEvent('countdown_completed', 'countdown', 'Countdown completed (synced via real-time)', {
+                videoDateId
               })
             }
+            // Update countdown_started_at if it was set
+            if (updatedVideoDate.countdown_started_at && !countdownStartedAt) {
+              setCountdownStartedAt(updatedVideoDate.countdown_started_at)
+            }
+            // Update date started_at for synchronized timer (CRITICAL for timer sync)
+            if (updatedVideoDate.started_at) {
+              console.log('🔄 Updating dateStartedAt from real-time update:', updatedVideoDate.started_at)
+              setDateStartedAt(updatedVideoDate.started_at)
+            } else if (updatedVideoDate.status === 'active' && !dateStartedAt) {
+              // If status is active but started_at is missing, fetch it (trigger should have set it)
+              console.log('🔄 Status is active but started_at missing, fetching from database...')
+              supabase
+                .from('video_dates')
+                .select('started_at')
+                .eq('id', videoDateId)
+                .single()
+                .then(({ data }) => {
+                  if (data?.started_at) {
+                    console.log('✅ Found started_at after real-time update:', data.started_at)
+                    setDateStartedAt(data.started_at)
+                  }
+                })
+            }
           }
-          
-          // If status changed to 'active', sync countdown completion
-          if (updatedVideoDate.status === 'active' && !countdownComplete) {
-            console.log('🎯 Countdown completed (synced via real-time)')
-            setCountdownComplete(true)
-            setCountdown(0)
-            logVideoEvent('countdown_completed', 'countdown', 'Countdown completed (synced via real-time)', {
-              videoDateId
-            })
+        )
+        .subscribe((status) => {
+          console.log('📡 Real-time subscription status:', status)
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Real-time subscription active for video_date:', videoDateId)
+            reconnectAttempts = 0 // Reset on successful connection
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Real-time subscription error')
+            // Attempt to reconnect on error
+            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+              scheduleReconnect()
+            }
+          } else if (status === 'TIMED_OUT') {
+            console.warn('⚠️ Real-time subscription timed out')
+            // Attempt to reconnect on timeout
+            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+              scheduleReconnect()
+            }
+          } else if (status === 'CLOSED') {
+            console.warn('⚠️ Real-time subscription closed')
+            // Only reconnect if component is still mounted and not during cleanup
+            if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+              console.log(`🔄 Attempting to reconnect real-time subscription (attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`)
+              scheduleReconnect()
+            } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+              console.error('❌ Max reconnection attempts reached for real-time subscription')
+            }
           }
-          // Update countdown_started_at if it was set
-          if (updatedVideoDate.countdown_started_at && !countdownStartedAt) {
-            setCountdownStartedAt(updatedVideoDate.countdown_started_at)
-          }
-          // Update date started_at for synchronized timer (CRITICAL for timer sync)
-          if (updatedVideoDate.started_at) {
-            console.log('🔄 Updating dateStartedAt from real-time update:', updatedVideoDate.started_at)
-            setDateStartedAt(updatedVideoDate.started_at)
-          } else if (updatedVideoDate.status === 'active' && !dateStartedAt) {
-            // If status is active but started_at is missing, fetch it (trigger should have set it)
-            console.log('🔄 Status is active but started_at missing, fetching from database...')
-            supabase
-              .from('video_dates')
-              .select('started_at')
-              .eq('id', videoDateId)
-              .single()
-              .then(({ data }) => {
-                if (data?.started_at) {
-                  console.log('✅ Found started_at after real-time update:', data.started_at)
-                  setDateStartedAt(data.started_at)
-                }
-              })
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', status)
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Real-time subscription active for video_date:', videoDateId)
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Real-time subscription error')
-        } else if (status === 'TIMED_OUT') {
-          console.warn('⚠️ Real-time subscription timed out')
-        } else if (status === 'CLOSED') {
-          console.warn('⚠️ Real-time subscription closed')
-        }
-      })
+        })
+    }
 
-      return () => {
-        console.log('🧹 Cleaning up real-time subscription')
-      supabase.removeChannel(channel)
+    const scheduleReconnect = () => {
+      if (!isMounted || !videoDateId || reconnectTimeout) return
+
+      // Debounce: Don't reconnect too frequently
+      const now = Date.now()
+      if (now - lastReconnectTime < MIN_RECONNECT_INTERVAL) {
+        return
+      }
+
+      reconnectAttempts++
+      lastReconnectTime = now
+      const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1) // Exponential backoff
+      
+      console.log(`🔄 Scheduling real-time subscription reconnect (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${delay}ms...`)
+      
+      reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = null
+        if (isMounted && videoDateId) {
+          setupSubscription()
+        }
+      }, delay)
+    }
+
+    // Initial setup
+    setupSubscription()
+
+    return () => {
+      isMounted = false
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+        reconnectTimeout = null
+      }
+      console.log('🧹 Cleaning up real-time subscription')
+      if (channel) {
+        try {
+          supabase.removeChannel(channel)
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
     }
   }, [videoDateId, countdownComplete, countdownStartedAt, dateStartedAt, supabase])
 
@@ -3992,13 +4289,19 @@ function VideoDateContent() {
                     transition={{ delay: 0.2 }}
                   >
                     <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-3xl overflow-hidden border-4 border-blue-400/50 shadow-[0_0_40px_rgba(59,130,246,0.4)]">
-                      <Image
-                        src={partner.photo}
-                        alt={partner.name}
-                        fill
-                        sizes="(max-width: 640px) 96px, (max-width: 768px) 112px, 128px"
-                        className="object-cover"
-                      />
+                      {partner.photo && partner.photo.trim() !== '' && !partner.photo.includes('pravatar.cc') ? (
+                        <Image
+                          src={partner.photo}
+                          alt={partner.name}
+                          fill
+                          sizes="(max-width: 640px) 96px, (max-width: 768px) 112px, 128px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                          <span className="text-white text-2xl font-bold">{partner.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     </div>
                     <div className="text-center">
@@ -4765,7 +5068,11 @@ function VideoDateContent() {
                           }
                         }}
                         onWaiting={() => {
-                          console.warn('⚠️ Remote video waiting for data - checking stream')
+                          // This is a normal event when video buffer is waiting for data
+                          // Only log in development mode to reduce noise
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log('ℹ️ Remote video waiting for data (normal buffering)')
+                          }
                           // Check if stream is still active
                           if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
                             const stream = remoteVideoRef.current.srcObject as MediaStream

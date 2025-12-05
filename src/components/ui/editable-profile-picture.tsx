@@ -96,7 +96,8 @@ export function EditableProfilePicture({
               const target = e.currentTarget as HTMLImageElement
               if (target) {
                 target.style.display = 'none' // Hide broken image immediately
-                target.src = '' // Clear src to prevent retry
+                // Don't set src to empty string - Next.js Image component doesn't allow it
+                // Instead, just hide it and clear the state
               }
               setImageSrc('')
             }}

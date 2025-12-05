@@ -1,17 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon, MapPin, Users, User, Calendar, MessageCircle } from "lucide-react"
-import { SpinDebugger } from "@/components/SpinDebugger"
+import { Filter, Sparkles as SparklesIcon, MapPin, User, Calendar, MessageCircle } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
-import { SpinButton } from "@/components/ui/spin-button"
-import { ProfileCardSpin } from "@/components/ui/profile-card-spin"
-import { ShuffleAnimation } from "@/components/ui/shuffle-animation"
-import { CountdownTimer } from "@/components/ui/countdown-timer"
-import { SynchronizedCountdownTimer } from "@/components/ui/synchronized-countdown-timer"
-import { MatchSynchronizedCountdownTimer } from "@/components/ui/match-synchronized-countdown-timer"
 import { Modal } from "@/components/ui/modal"
 import { ShimmerButton } from "@/components/magicui/shimmer-button"
 import { Sparkles } from "@/components/magicui/sparkles"
@@ -20,8 +13,9 @@ import { FilterInput } from "@/components/ui/filter-input"
 import { RangeInput } from "@/components/ui/range-input"
 import { EditableProfilePicture } from "@/components/ui/editable-profile-picture"
 import { EditableBio } from "@/components/ui/editable-bio"
+// MatchSynchronizedCountdownTimer removed - spin functionality deleted
 import { createClient } from "@/lib/supabase/client"
-import Image from "next/image"
+// Backend logging removed - UI only
 
 interface Profile {
   id: string
@@ -30,12 +24,28 @@ interface Profile {
   bio: string
   photo: string
   location: string
-  distance_km?: number
 }
 
 export default function spin() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+  
+  
+  // Flow state tracking - Commander states
+  const [flowState, setFlowState] = useState<'idle' | 'waiting' | 'paired' | 'vote_window'>('idle')
+  const [currentMatch, setCurrentMatch] = useState<{
+    match_id: string // UUID
+    partner_id: string
+    partner_name: string
+    partner_age: number | null
+    partner_photo: string
+    partner_bio: string
+    vote_window_expires_at?: string
+  } | null>(null)
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null)
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
+  const acknowledgeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Helper function to filter out pravatar placeholder images
   const filterValidPhoto = (photo: string | null | undefined): string => {
@@ -52,22 +62,11 @@ export default function spin() {
     maxDistance: 50,
     genderPreference: 'female' as 'male' | 'female'
   })
-  const [waitingForMatch, setWaitingForMatch] = useState(false)
-  const [currentMatchId, setCurrentMatchId] = useState<string | null>(null)
-  const [matchedPartner, setMatchedPartner] = useState<Profile | null>(null)
-  const [isInQueue, setIsInQueue] = useState(false)
-  const [spinningPhotos, setSpinningPhotos] = useState<string[]>([])
-
-  const [started, setStarted] = useState(false)
-  const [spinning, setSpinning] = useState(false)
-  const [revealed, setRevealed] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const [userVote, setUserVote] = useState<"yes" | "pass" | null>(null)
-  const [voteCenterPosition, setVoteCenterPosition] = useState<number>(50)
-  const [voteCenterPx, setVoteCenterPx] = useState<number>(0)
+  const [started, setStarted] = useState(false)
   const [currentRuleIndex, setCurrentRuleIndex] = useState(0)
-  const [voteStartedAt, setVoteStartedAt] = useState<string | null>(null)
+  const [userVote, setUserVote] = useState<'yes' | 'pass' | null>(null)
   
   // Platform rules
   const platformRules = [
@@ -77,31 +76,8 @@ export default function spin() {
     "report any concerns or issues immediately",
     "have fun and be yourself - authenticity matters"
   ]
-  
-  // Refs for profile icons
-  const userProfileRef = useRef<HTMLDivElement>(null)
-  const partnerProfileRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const voteHeaderParentRef = useRef<HTMLDivElement>(null)
 
-  // Memoize currentState for SpinDebugger
-  const debuggerCurrentState = useMemo(() => ({
-    userId: user?.id || null,
-    matchId: currentMatchId,
-    partnerId: matchedPartner?.id || null,
-    partnerName: matchedPartner?.name || null,
-    isInQueue,
-    queueStatus: null,
-    userVote,
-    voteStartedAt,
-    spinning,
-    revealed,
-    started,
-    waitingForMatch,
-    preferences
-  }), [user?.id, currentMatchId, matchedPartner?.id, matchedPartner?.name, isInQueue, userVote, voteStartedAt, spinning, revealed, started, waitingForMatch, preferences])
-
-  // Fetch user profile and preferences on mount
+  // Fetch actual logged-in user
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -150,15 +126,6 @@ export default function spin() {
           })
         }
 
-        // Update online status
-        await supabase
-          .from('profiles')
-          .update({ 
-            online: true,
-            last_active_at: new Date().toISOString()
-          })
-          .eq('id', authUser.id)
-
         setLoading(false)
       } catch (error) {
         console.error('Error fetching user data:', error)
@@ -169,352 +136,134 @@ export default function spin() {
     fetchUserData()
   }, [router, supabase])
 
-  // Fetch compatible user photos for spinning animation
-  const fetchSpinningPhotos = async (): Promise<string[]> => {
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser || !user) return []
-
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('gender')
-        .eq('id', authUser.id)
-        .single()
-
-      if (!userProfile) return []
-
-      const targetGender = userProfile.gender === 'male' ? 'female' : 'male'
-
-      const { data: compatibleProfiles, error } = await supabase
-        .from('profiles')
-        .select('id, photo')
-        .eq('gender', targetGender)
-        .eq('online', true)
-        .not('photo', 'is', null)
-        .neq('photo', '')
-        .limit(30)
-
-      if (error || !compatibleProfiles) return []
-
-      const validPhotos: string[] = []
-      for (const profile of compatibleProfiles) {
-        if (profile.photo && !profile.photo.includes('pravatar.cc')) {
-          validPhotos.push(profile.photo)
-        }
-      }
-
-      return validPhotos
-    } catch (error) {
-      console.error('Error in fetchSpinningPhotos:', error)
-      return []
+  // Stop polling - defined first to avoid circular dependency
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
     }
-  }
+  }, [])
 
-  // Simplified startSpin - calls API route
-  const startSpin = async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser || !user) return
-
-    // Fetch photos for animation
-    try {
-      const photos = await fetchSpinningPhotos()
-      setSpinningPhotos(photos.length > 0 ? photos : [])
-    } catch (error) {
-      setSpinningPhotos([])
-    }
-
+  // Remove user from queue - DISABLED: All logic removed (no backend calls)
+  const leaveQueue = useCallback(async (reason: string) => {
+    // No-op: All queue logic has been disabled
+    // Only reset local state, no backend calls
+    setFlowState('idle')
+    setStarted(false)
+    setCurrentMatch(null)
     setUserVote(null)
-    setRevealed(false)
-    setSpinning(true)
-    setStarted(true)
-    setWaitingForMatch(false)
-    setCurrentMatchId(null)
-    setMatchedPartner(null)
+    setCountdownSeconds(null)
+  }, [])
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopPolling()
+      if (acknowledgeTimeoutRef.current) {
+        clearTimeout(acknowledgeTimeoutRef.current)
+      }
+    }
+  }, [stopPolling])
 
+  // Start countdown timer for vote window
+  const startCountdown = useCallback((expiresAt: string) => {
+    const updateCountdown = () => {
+      const now = new Date().getTime()
+      const expires = new Date(expiresAt).getTime()
+      const remaining = Math.max(0, Math.floor((expires - now) / 1000))
+      
+      // Always show countdown, even if expired (shows 0)
+      // This ensures vote buttons are visible
+      setCountdownSeconds(remaining)
+      
+      if (remaining <= 0) {
+        // Countdown expired - keep showing 0 so user knows time is up
+        // But still allow voting (outcome will be resolved by backend)
+        return
+      }
+      
+      // Continue countdown
+      setTimeout(updateCountdown, 1000)
+    }
+    
+    updateCountdown()
+  }, [])
+  
+  // Acknowledge match - DISABLED: All logic removed
+  const acknowledgeMatch = useCallback(async (matchId: string) => {
+    // No-op: All match acknowledgment logic has been disabled
+    return
+  }, [])
+  
+  // Start polling for match status - DISABLED: All logic removed
+  const startPolling = useCallback(() => {
+    // No-op: All polling logic has been disabled
+    return
+  }, [])
+  
+  // Start spin - Simple: calls API and redirects to /spinning
+  const startSpin = useCallback(async () => {
+    if (!user) return
+    
     try {
-      // Call API route to join queue
       const response = await fetch('/api/spin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('Error joining queue:', error)
-        setSpinning(false)
-        setStarted(false)
-        return
-      }
-
+      
       const data = await response.json()
       
-      if (data.matched && data.match) {
-        // Got matched immediately
-        setSpinning(false)
-        setCurrentMatchId(String(data.match.match_id))
-        setMatchedPartner({
-          id: data.match.partner_id,
-          name: data.match.partner_name,
-          age: data.match.partner_age,
-          bio: '',
-          photo: data.match.partner_photo || '',
-          location: ''
-        })
-        if (data.match.vote_started_at) {
-          setVoteStartedAt(data.match.vote_started_at)
-        }
-        setIsInQueue(false)
-        setTimeout(() => setRevealed(true), 300)
-      } else {
-        // In queue, waiting for match
-        setIsInQueue(true)
+      if (!response.ok) {
+        console.error('Failed to start spin:', data.error)
+        return
       }
+      
+      // Redirect to spinning page
+      router.push('/spinning')
     } catch (error) {
       console.error('Error starting spin:', error)
-      setSpinning(false)
-      setStarted(false)
     }
-  }
-
-  // Simplified handleVote - calls API route
-  const handleVote = async (voteType: "yes" | "pass") => {
-    if (!user || !matchedPartner || !currentMatchId) return
-
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) return
-
-    setUserVote(voteType)
-
-    try {
-      // Call API route to record vote
-      const response = await fetch('/api/vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match_id: currentMatchId,
-          vote: voteType
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('Error recording vote:', error)
-        return
-      }
-
-      const result = await response.json()
-
-      // Check if both users voted yes - immediate redirect
-      if (result.outcome === 'both_yes') {
-        router.push(`/video-date?matchId=${currentMatchId}`)
-        return
-      }
-
-      if (voteType === "yes") {
-        setWaitingForMatch(true)
-      } else {
-        // Pass vote - reset and respin
-        setRevealed(false)
-        setUserVote(null)
-        setMatchedPartner(null)
-        setCurrentMatchId(null)
-        setWaitingForMatch(false)
-        // Auto respin
-        await startSpin()
-      }
-    } catch (error) {
-      console.error('Error voting:', error)
-    }
-  }
-
-  // Simplified handleCountdownComplete
-  const handleCountdownComplete = async () => {
-    if (!currentMatchId && !voteStartedAt) return
-
-    // Check match status via API
-    try {
-      const response = await fetch('/api/match')
-      if (!response.ok) return
-
-      const data = await response.json()
-      
-      if (data.matched && data.match) {
-        // Check if both voted yes
-        if (data.match.status === 'ended') {
-          router.push(`/video-date?matchId=${currentMatchId}`)
-          return
-        }
-      }
-
-      // If user voted yes but countdown expired, they're waiting
-      if (userVote === "yes" && waitingForMatch) {
-        // Continue waiting or check again
-        return
-      }
-
-      // If user didn't vote, reset
-      if (!userVote) {
-        setRevealed(false)
-        setStarted(false)
-        setUserVote(null)
-        setSpinning(false)
-        setMatchedPartner(null)
-        setCurrentMatchId(null)
-        setWaitingForMatch(false)
-        setIsInQueue(false)
-      }
-    } catch (error) {
-      console.error('Error checking match status:', error)
-    }
-  }
-
-  // Poll for matches while spinning
+  }, [user, router])
+  
+  // Poll for match status updates - DISABLED: All logic removed
   useEffect(() => {
-    if (!spinning || !isInQueue || !user) return
+    // No-op: All polling logic has been disabled
+    return () => {}
+  }, [])
 
-    const pollForMatch = async () => {
-      try {
-        const response = await fetch('/api/match')
-        if (!response.ok) return
-
-        const data = await response.json()
-        
-        if (data.matched && data.match) {
-          setSpinning(false)
-          setCurrentMatchId(String(data.match.match_id))
-          setMatchedPartner({
-            id: data.match.partner_id,
-            name: data.match.partner_name,
-            age: data.match.partner_age,
-            bio: '',
-            photo: data.match.partner_photo || '',
-            location: ''
-          })
-          if (data.match.vote_started_at) {
-            setVoteStartedAt(data.match.vote_started_at)
-          }
-          setIsInQueue(false)
-          setTimeout(() => setRevealed(true), 300)
-        }
-      } catch (error) {
-        console.error('Error polling for match:', error)
-      }
-    }
-
-    const interval = setInterval(pollForMatch, 2000) // Poll every 2 seconds
-    return () => clearInterval(interval)
-  }, [spinning, isInQueue, user])
-
-  // Send heartbeat periodically
+  // Rotate through rules every 10 seconds (only when not started)
   useEffect(() => {
-    if (!user || !isInQueue) return
-
-    const sendHeartbeat = async () => {
-      try {
-        await fetch('/api/heartbeat', { method: 'POST' })
-      } catch (error) {
-        // Ignore heartbeat errors
-      }
-    }
-
-    const interval = setInterval(sendHeartbeat, 5000) // Every 5 seconds
-    return () => clearInterval(interval)
-  }, [user, isInQueue])
-
-  // Rotate through rules every 10 seconds
-  useEffect(() => {
-    if (!started) {
+    if (!started && flowState === 'idle') {
       setCurrentRuleIndex(0)
       const interval = setInterval(() => {
         setCurrentRuleIndex((prev) => (prev + 1) % platformRules.length)
       }, 10000)
       return () => clearInterval(interval)
     }
-  }, [started, platformRules.length])
+  }, [started, flowState, platformRules.length])
 
-  // Calculate center position between profile icons
+  // Heartbeat system - DISABLED: All logic removed
   useEffect(() => {
-    if (!revealed) {
-      setVoteCenterPosition(50)
-      setVoteCenterPx(0)
-      return
-    }
+    // No-op: All heartbeat logic has been disabled
+    return () => {}
+  }, [])
 
-    const calculateCenter = () => {
-      if (!userProfileRef.current || !partnerProfileRef.current || !voteHeaderParentRef.current) {
-        return
-      }
+  // Handle vote submission - DISABLED: All logic removed
+  const handleVote = useCallback(async (voteType: 'yes' | 'pass') => {
+    // No-op: All vote logic has been disabled
+    return
+  }, [])
 
-      const userRect = userProfileRef.current.getBoundingClientRect()
-      const partnerRect = partnerProfileRef.current.getBoundingClientRect()
-      const containerRect = voteHeaderParentRef.current.getBoundingClientRect()
-
-      const userCenter = userRect.left + userRect.width / 2
-      const partnerCenter = partnerRect.left + partnerRect.width / 2
-      const centerX = (userCenter + partnerCenter) / 2
-
-      const centerPx = centerX - containerRect.left
-      setVoteCenterPx(centerPx)
-      setVoteCenterPosition((centerPx / containerRect.width) * 100)
-    }
-
-    calculateCenter()
-    window.addEventListener('resize', calculateCenter)
-    return () => window.removeEventListener('resize', calculateCenter)
-  }, [revealed])
-
-  // Save preferences
+  // UI only - no backend calls
   const savePreferences = async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) {
-      alert('You must be logged in to save preferences.')
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: authUser.id,
-          min_age: preferences.minAge,
-          max_age: preferences.maxAge,
-          max_distance: preferences.maxDistance,
-          gender_preference: preferences.genderPreference,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        })
-
-      if (error) {
-        alert(`Failed to save preferences: ${error.message}`)
-      } else {
-        setShowFilters(false)
-      }
-    } catch (err: any) {
-      alert(`Failed to save preferences: ${err?.message || 'Unexpected error'}`)
-    }
+    setShowFilters(false)
   }
 
-  // Save profile updates
+  // UI only - no backend calls
   const saveProfile = async (updates: Partial<Profile>) => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) return
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', authUser.id)
-
-    if (error) {
-      console.error('Error saving profile:', error)
-      alert('Failed to save profile. Please try again.')
-    } else {
-      setUser(prev => prev ? { ...prev, ...updates } : null)
-      setShowProfile(false)
-    }
+    // UI only - update local state
+    setUser(prev => prev ? { ...prev, ...updates } : null)
+    setShowProfile(false)
   }
 
   // Handle age changes
@@ -526,6 +275,28 @@ export default function spin() {
     setPreferences(prev => ({ ...prev, maxAge: val }))
   }
 
+  // Remove from queue when user leaves or tab hides - UI only, no backend
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        leaveQueue('page-hidden')
+      }
+    }
+
+    const handleBeforeUnload = () => {
+      leaveQueue('before-unload')
+    }
+
+    window.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      leaveQueue('unmount')
+    }
+  }, [leaveQueue])
+
   if (loading || !user) {
     return (
       <div className="min-h-screen w-full bg-[#050810] text-white flex items-center justify-center">
@@ -536,6 +307,7 @@ export default function spin() {
 
   return (
     <div className="min-h-screen w-full max-w-full bg-[#050810] text-white flex items-center justify-center relative overflow-x-hidden overflow-y-auto" style={{ paddingLeft: 'max(12px, env(safe-area-inset-left, 0px))', paddingRight: 'max(12px, env(safe-area-inset-right, 0px))', width: '100%', maxWidth: '100vw' }}>
+      
       {/* Background layers */}
       <div className="fixed inset-0 bg-[#050810] pointer-events-none max-w-full" style={{ maxWidth: '100vw', width: '100vw' }} />
       <div className="fixed inset-0 pointer-events-none max-w-full overflow-hidden" style={{ maxWidth: '100vw', width: '100vw' }}>
@@ -645,9 +417,134 @@ export default function spin() {
         </motion.div>
       </div>
 
+      {/* Spin animation - shown when flowState is 'waiting' */}
+      <AnimatePresence>
+        {flowState === 'waiting' && (
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="flex items-center justify-center"
+              animate={{
+                rotate: [0, 360],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{
+                rotate: {
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "linear"
+                },
+                scale: {
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+            >
+              <SparklesIcon className="w-32 h-32 sm:w-40 sm:h-40 text-teal-300" />
+            </motion.div>
+            <motion.p
+              className="mt-8 text-lg sm:text-xl text-teal-300 opacity-80"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              Finding your match...
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Vote window UI - shown when flowState is 'vote_window' */}
+      <AnimatePresence>
+        {flowState === 'vote_window' && currentMatch && (
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            <div className="max-w-md w-full flex flex-col items-center gap-6">
+              {/* Partner profile */}
+              <motion.div
+                className="flex flex-col items-center gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                {currentMatch.partner_photo && (
+                  <motion.img
+                    src={currentMatch.partner_photo}
+                    alt={currentMatch.partner_name}
+                    className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-4 border-teal-300"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", delay: 0.3 }}
+                  />
+                )}
+                <div className="text-center">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-teal-300">
+                    {currentMatch.partner_name}
+                    {currentMatch.partner_age && `, ${currentMatch.partner_age}`}
+                  </h2>
+                  {currentMatch.partner_bio && (
+                    <p className="mt-2 text-sm sm:text-base opacity-80">{currentMatch.partner_bio}</p>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Countdown timer - shows remaining time or 0 if expired */}
+              {countdownSeconds !== null && (
+                <motion.div
+                  className={`text-4xl sm:text-5xl font-bold ${
+                    countdownSeconds === 0 ? 'text-red-400' : 'text-teal-300'
+                  }`}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  {countdownSeconds === 0 ? 'Time\'s Up!' : countdownSeconds}
+                </motion.div>
+              )}
+
+              {/* Vote buttons */}
+              <motion.div
+                className="flex gap-4 w-full"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <motion.button
+                  onClick={() => handleVote('pass')}
+                  disabled={userVote !== null}
+                  className="flex-1 px-6 py-4 rounded-xl bg-white/10 border-2 border-white/20 hover:bg-white/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg"
+                  whileHover={{ scale: userVote === null ? 1.05 : 1 }}
+                  whileTap={{ scale: userVote === null ? 0.95 : 1 }}
+                >
+                  {userVote === 'pass' ? '✓ Respin' : 'Respin'}
+                </motion.button>
+                <motion.button
+                  onClick={() => handleVote('yes')}
+                  disabled={userVote !== null}
+                  className="flex-1 px-6 py-4 rounded-xl bg-teal-300 text-black hover:bg-teal-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg"
+                  whileHover={{ scale: userVote === null ? 1.05 : 1 }}
+                  whileTap={{ scale: userVote === null ? 0.95 : 1 }}
+                >
+                  {userVote === 'yes' ? '✓ Yes' : 'Yes'}
+                </motion.button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Start spin button */}
       <AnimatePresence>
-        {!started && (
+        {flowState === 'idle' && !started && (
           <motion.div
             className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-4 sm:gap-8"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -720,361 +617,6 @@ export default function spin() {
         )}
       </AnimatePresence>
 
-      {/* Timer */}
-      {(currentMatchId || voteStartedAt) && (
-        <div
-          data-vote-header-outer
-          className="fixed top-8 sm:top-4 md:top-2 left-1/2 transform -translate-x-1/2 z-[9999]"
-          style={{ 
-            position: 'fixed',
-            top: '2rem',
-            left: voteCenterPx > 0 ? `${voteCenterPx}px` : '50%',
-            transform: 'translateX(-50%)',
-            width: 'max-content',
-            maxWidth: 'calc(100vw - 32px)',
-            visibility: 'visible',
-            display: 'block',
-            zIndex: 99999,
-            pointerEvents: 'auto',
-          } as React.CSSProperties}
-        >
-          <div className="rounded-lg sm:rounded-3xl overflow-visible" style={{ padding: '2px' }}>
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.9 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0, 
-                scale: 1,
-                boxShadow: [
-                  "0 0 30px rgba(94,234,212,0.4)",
-                  "0 0 50px rgba(94,234,212,0.6)",
-                  "0 0 30px rgba(94,234,212,0.4)",
-                ],
-              }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{
-                delay: 0,
-                type: "spring",
-                stiffness: 300,
-                damping: 25,
-                boxShadow: {
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }
-              }}
-              className="flex items-center justify-center gap-1 sm:gap-3 md:gap-4 px-3 sm:px-8 md:px-10 py-2 sm:py-4 md:py-5 rounded-lg sm:rounded-3xl bg-gradient-to-r from-teal-300/30 via-teal-300/25 to-blue-500/30 backdrop-blur-xl border-2 border-teal-300/60 sm:border-2 relative"
-              style={{
-                visibility: 'visible',
-                display: 'flex',
-                opacity: 1,
-                pointerEvents: 'auto',
-              }}
-            >
-              <motion.span
-                className="text-sm sm:text-3xl md:text-4xl font-extrabold text-teal-300 whitespace-nowrap"
-                animate={{
-                  textShadow: [
-                    "0 0 15px rgba(94,234,212,0.7)",
-                    "0 0 30px rgba(94,234,212,1)",
-                    "0 0 15px rgba(94,234,212,0.7)",
-                  ],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                vote
-              </motion.span>
-              <span className="text-sm sm:text-3xl md:text-4xl opacity-70 mx-1 sm:mx-1.5">•</span>
-              {currentMatchId ? (
-                <div style={{ minWidth: '50px', display: 'inline-block', visibility: 'visible', opacity: 1 }}>
-                  <MatchSynchronizedCountdownTimer
-                    matchId={currentMatchId}
-                    initialSeconds={30}
-                    onComplete={handleCountdownComplete}
-                  />
-                </div>
-              ) : voteStartedAt ? (
-                <div style={{ minWidth: '50px', display: 'inline-block', visibility: 'visible', opacity: 1 }}>
-                  <SynchronizedCountdownTimer
-                    startTimestamp={voteStartedAt}
-                    initialSeconds={30}
-                    onComplete={handleCountdownComplete}
-                  />
-                </div>
-              ) : (
-                <div style={{ minWidth: '50px', display: 'inline-block', visibility: 'visible', opacity: 1 }}>
-                  <CountdownTimer
-                    resetKey={revealed ? "revealed" : "hidden"}
-                    initialSeconds={30}
-                    onComplete={handleCountdownComplete}
-                  />
-                </div>
-              )}
-            </motion.div>
-          </div>
-        </div>
-      )}
-
-      <AnimatePresence mode="wait">
-        {started && (
-          <>
-            <motion.div
-              ref={voteHeaderParentRef}
-              key="started"
-              className="w-full max-w-6xl min-h-full flex flex-col gap-1 sm:gap-4 md:gap-6 py-12 sm:py-4 md:py-8 px-2 sm:px-0 overflow-visible relative"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              style={{ overflow: 'visible' }}
-            >
-            <div ref={containerRef} className="w-full flex flex-row items-center justify-center gap-1.5 sm:gap-4 md:gap-6 lg:gap-8 flex-1 relative px-1 sm:px-0">
-              {/* Left side - User profile */}
-              <motion.div
-                className="w-1/2 flex flex-col items-center text-center gap-0.5 sm:gap-3 md:gap-4 relative px-0.5 sm:px-0"
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <motion.div
-                  className="absolute inset-0 -z-10"
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.3, 0.5, 0.3],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-48 sm:h-48 md:w-64 md:h-64 bg-teal-300/20 rounded-full blur-3xl" />
-                </motion.div>
-
-                {userVote === "yes" && (
-                  <motion.div
-                    className="absolute -top-6 sm:-top-8 left-1/2 -translate-x-1/2 z-20"
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ 
-                      scale: [1, 1.2, 1],
-                      rotate: [0, 10, -10, 0],
-                    }}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 200, 
-                      damping: 15,
-                      rotate: {
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      },
-                      scale: {
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      },
-                    }}
-                  >
-                    <div className="w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-teal-300 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.8)]">
-                      <span className="text-base sm:text-xl md:text-2xl font-bold text-black">✓</span>
-                    </div>
-                  </motion.div>
-                )}
-                
-                <motion.div
-                  ref={userProfileRef}
-                  className="relative w-24 h-24 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border-2 sm:border-3 md:border-4 border-teal-300/50 shadow-[0_0_30px_rgba(94,234,212,0.3)]"
-                  whileHover={{ scale: 1.05 }}
-                  animate={{
-                    boxShadow: [
-                      "0 0 30px rgba(94,234,212,0.3)",
-                      "0 0 50px rgba(94,234,212,0.5)",
-                      "0 0 30px rgba(94,234,212,0.3)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  {user.photo && user.photo.trim() !== '' && !user.photo.includes('pravatar.cc') ? (
-                    <Image
-                      src={user.photo}
-                      alt={user.name}
-                      fill
-                      sizes="(max-width: 640px) 80px, (max-width: 768px) 100px, 120px"
-                      className="object-cover"
-                      placeholder="empty"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement
-                        if (target) {
-                          target.style.display = 'none'
-                        }
-                        setUser(prev => prev ? { ...prev, photo: '' } : null)
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-transparent flex items-center justify-center">
-                    </div>
-                  )}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    animate={{
-                      x: ["-100%", "100%"],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      repeatDelay: 2,
-                      ease: "easeInOut",
-                    }}
-                  />
-                </motion.div>
-                <motion.h2
-                  className="text-sm sm:text-xl md:text-2xl font-bold text-teal-300"
-                  animate={{
-                    textShadow: [
-                      "0 0 10px rgba(94,234,212,0.5)",
-                      "0 0 20px rgba(94,234,212,0.8)",
-                      "0 0 10px rgba(94,234,212,0.5)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  {user.name}
-                </motion.h2>
-                <p className="text-[10px] sm:text-xs md:text-sm opacity-80 max-w-[150px] sm:max-w-xs leading-tight sm:leading-relaxed text-center line-clamp-1 sm:line-clamp-2">{user.bio}</p>
-              </motion.div>
-
-            {/* Right side - Animation/Profile */}
-            <div className="w-1/2 flex flex-col items-center justify-center relative px-0.5 sm:px-0">
-              {revealed && (
-                <motion.div
-                  className="absolute inset-0 -z-10"
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.3, 0.5, 0.3],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-blue-500/20 rounded-full blur-3xl" />
-                </motion.div>
-              )}
-
-              <AnimatePresence mode="wait">
-                {spinning && (
-                  <motion.div
-                    key="spinning"
-                    className="relative w-full flex items-center justify-center"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                  >
-                    <motion.div
-                      className="absolute w-[160px] sm:w-full max-w-md h-[110px] sm:h-80 -z-10 rounded-md sm:rounded-2xl"
-                      animate={{
-                        boxShadow: [
-                          "0 0 15px rgba(94,234,212,0.2)",
-                          "0 0 25px rgba(94,234,212,0.4)",
-                          "0 0 15px rgba(94,234,212,0.2)",
-                        ],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                    <div data-testid="spinning">
-                      <ShuffleAnimation
-                        profiles={spinningPhotos.length > 0 ? spinningPhotos : []}
-                        duration={5000}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-
-                {revealed && matchedPartner && (
-                  <motion.div
-                    data-testid="reveal"
-                    key="revealed"
-                    className="w-full flex flex-col items-center gap-0.5 sm:gap-3 md:gap-4 relative"
-                    initial={{ opacity: 0, scale: 0.9, x: 30 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <motion.div
-                      ref={partnerProfileRef}
-                      animate={{
-                        scale: [1, 1.02, 1],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <div data-testid="matched-partner">
-                        <ProfileCardSpin
-                          photo={matchedPartner.photo}
-                          name={matchedPartner.name}
-                          age={matchedPartner.age}
-                          bio={matchedPartner.bio}
-                          isSelected={false}
-                        />
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      className="flex items-center justify-center gap-1.5 sm:gap-4 md:gap-5 lg:gap-6 mt-0.5 sm:mt-3 md:mt-4 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto px-1 sm:px-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 25 }}
-                    >
-                      <SpinButton
-                        variant="pass"
-                        onClick={() => handleVote("pass")}
-                        className="flex-1 min-w-[85px] sm:min-w-[100px] md:min-w-[110px] lg:min-w-[120px] max-w-[120px] sm:max-w-[140px] md:max-w-[150px] lg:max-w-[160px] h-9 sm:h-12 md:h-14 text-xs sm:text-base md:text-lg font-semibold touch-manipulation transition-all duration-200 hover:scale-105 active:scale-95"
-                      >
-                        respin
-                      </SpinButton>
-                      <SpinButton
-                        variant="yes"
-                        onClick={() => handleVote("yes")}
-                        disabled={waitingForMatch}
-                        className="flex-1 min-w-[85px] sm:min-w-[100px] md:min-w-[110px] lg:min-w-[120px] max-w-[120px] sm:max-w-[140px] md:max-w-[150px] lg:max-w-[160px] h-9 sm:h-12 md:h-14 text-xs sm:text-base md:text-lg font-semibold touch-manipulation transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
-                      >
-                        {waitingForMatch ? "waiting..." : "yes"}
-                      </SpinButton>
-                    </motion.div>
-
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
       {/* Filter modal */}
       <Modal
         isOpen={showFilters}
@@ -1085,7 +627,7 @@ export default function spin() {
         <div className="flex flex-col gap-3 sm:gap-5 md:gap-6">
           <FilterInput
             label="age range"
-            icon={<Users className="w-4 h-4" />}
+            icon={<User className="w-4 h-4" />}
           >
             <div className="flex items-center gap-4">
               <div className="flex-1">
@@ -1194,42 +736,13 @@ export default function spin() {
                 alt={`${user.name}'s profile`}
                 size="lg"
                 onImageChange={async (file) => {
-                  try {
-                    const { data: { user: authUser } } = await supabase.auth.getUser()
-                    if (!authUser) return
-
-                    const blob = await new Promise<Blob>((resolve) => {
-                      const reader = new FileReader()
-                      reader.onloadend = () => {
-                        fetch(reader.result as string)
-                          .then(res => res.blob())
-                          .then(resolve)
-                      }
-                      reader.readAsDataURL(file)
-                    })
-
-                    const fileExt = file.name.split('.').pop() || 'jpg'
-                    const fileName = `${authUser.id}-${Date.now()}.${fileExt}`
-                    const filePath = `${authUser.id}/${fileName}`
-
-                    const { error: uploadError } = await supabase.storage
-                      .from('profile-pictures')
-                      .upload(filePath, blob, {
-                        cacheControl: '3600',
-                        upsert: true
-                      })
-
-                    if (uploadError) throw uploadError
-
-                    const { data: { publicUrl } } = supabase.storage
-                      .from('profile-pictures')
-                      .getPublicUrl(filePath)
-
-                    await saveProfile({ photo: publicUrl })
-                  } catch (error) {
-                    console.error('Error uploading image:', error)
-                    alert('Failed to upload image. Please try again.')
+                  // UI only - create local URL for preview
+                  const reader = new FileReader()
+                  reader.onloadend = () => {
+                    const dataUrl = reader.result as string
+                    setUser(prev => prev ? { ...prev, photo: dataUrl } : null)
                   }
+                  reader.readAsDataURL(file)
                 }}
               />
             </div>
@@ -1308,15 +821,6 @@ export default function spin() {
           </motion.div>
         </motion.div>
       </Modal>
-
-      {/* Spin Debugger */}
-      <SpinDebugger
-        key={`debugger-${user?.id || 'anonymous'}`}
-        supabase={supabase}
-        currentState={debuggerCurrentState}
-      />
-
     </div>
   )
 }
-

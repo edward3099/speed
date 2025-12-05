@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 /**
- * POST /api/vote
+ * POST /api/match/acknowledge
  * 
- * Simple vote endpoint
- * Records vote and resolves outcome
+ * Simple acknowledge endpoint
+ * User acknowledges match, transitions to vote_window when both acknowledge
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Get vote data from request body
+    // Get match_id from request body
     const body = await request.json()
-    const { match_id, vote } = body
+    const { match_id } = body
     
     if (!match_id) {
       return NextResponse.json(
@@ -32,33 +32,24 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    if (!vote || !['yes', 'pass'].includes(vote)) {
-      return NextResponse.json(
-        { error: 'vote must be "yes" or "pass"' },
-        { status: 400 }
-      )
-    }
-    
-    // Call record_vote_and_resolve function (if it exists)
-    // Otherwise, we'll need to create a simple version
-    const { data: voteData, error: voteError } = await supabase.rpc('record_vote_and_resolve', {
+    // Call acknowledge_match function
+    const { data: ackData, error: ackError } = await supabase.rpc('acknowledge_match', {
       p_user_id: user.id,
-      p_match_id: match_id,
-      p_vote: vote
+      p_match_id: match_id
     })
     
-    if (voteError) {
-      console.error('Error recording vote:', voteError)
+    if (ackError) {
+      console.error('Error acknowledging match:', ackError)
       return NextResponse.json(
-        { error: 'Failed to record vote', details: voteError.message },
+        { error: 'Failed to acknowledge match', details: ackError.message },
         { status: 500 }
       )
     }
     
-    return NextResponse.json(voteData)
+    return NextResponse.json(ackData)
     
   } catch (error: any) {
-    console.error('Error in /api/vote:', error)
+    console.error('Error in /api/match/acknowledge:', error)
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }
