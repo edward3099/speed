@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "cascade-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "cascade-thinking-mcp"
+      ]
+    },
+    "thinking-patterns": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@emmahyde/thinking-patterns"
+      ]
+    }
+  }
+}
