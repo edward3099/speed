@@ -149,7 +149,13 @@ export async function POST(request: NextRequest) {
     if (!existingProfile) {
       // Only create if it's a small number of users (fallback for small tests)
       // For large load tests, users should be pre-created
-      const { data: authUser } = await supabase.auth.admin.getUserById(user_id)
+      let authUser = null
+      try {
+        const { data } = await supabase.auth.admin.getUserById(user_id)
+        authUser = data?.user
+      } catch (e) {
+        // User doesn't exist, will create
+      }
       
       if (!authUser) {
         // Create auth user (only for small tests)
@@ -163,10 +169,12 @@ export async function POST(request: NextRequest) {
         if (createUserError) {
           // If creation fails, return error (don't retry in load tests)
           return NextResponse.json(
-            { error: 'User not found. Pre-create users via /api/test/batch-setup', details: createUserError.message },
-            { status: 404 }
+            { error: 'Failed to create auth user', details: createUserError.message },
+            { status: 500 }
           )
         }
+
+        // Trust that createUser succeeded - no need to verify or wait
       }
 
       // Create test profile
@@ -183,13 +191,14 @@ export async function POST(request: NextRequest) {
         })
 
       if (profileError) {
-        return NextResponse.json(
-          { error: 'User not found. Pre-create users via /api/test/batch-setup', details: profileError.message },
-          { status: 404 }
-        )
+        throw new Error(`Failed to create profile: ${profileError.message}`)
       }
+
+      // Trust that insert succeeded - cache immediately without verification
+      cache.set(userCacheKey, { id: user_id }, 60000)
     }
 
+    // Profile exists (from cache or creation) - no need to verify again
     // Call join_queue function with retry logic and timeout handling
     const result = await Promise.race([
       retry(
@@ -215,22 +224,31 @@ export async function POST(request: NextRequest) {
 
     const { error: joinError } = result
 
-        if (joinError) {
-          console.error('Error joining queue:', joinError)
-          return NextResponse.json(
-            { error: 'Failed to join queue', details: joinError.message },
-            { status: 500 }
-          )
-        }
+    if (joinError) {
+      console.error('Error joining queue:', joinError)
+      throw new Error(`Failed to join queue: ${joinError.message}`)
+    }
 
-        // Invalidate cache (user status changed)
-        cache.delete(`match_status:${user_id}`)
+    // Trust that join_queue succeeded - query state only for response data
+    // join_queue RPC is synchronous, so state is immediately available
+    const { data: userState } = await supabase
+      .from('users_state')
+      .select('state, waiting_since')
+      .eq('user_id', user_id)
+      .single()
 
-        return {
-          success: true,
-          message: 'Joined queue successfully',
-          user_id: user_id
-        }
+    // Invalidate cache (user status changed)
+    cache.delete(`match_status:${user_id}`)
+
+    // Return response with state information
+    return {
+      success: true,
+      message: 'Joined queue successfully',
+      user_id: user_id,
+      state: userState?.state || 'waiting',
+      in_queue: true,
+      waiting_since: userState?.waiting_since
+    }
       })
 
       return NextResponse.json(result, {
@@ -258,6 +276,7 @@ export async function POST(request: NextRequest) {
         )
       }
       // Re-throw other errors to be caught by outer catch
+      console.error('Error in requestQueue.add:', queueError)
       throw queueError
     }
   } catch (error: any) {
