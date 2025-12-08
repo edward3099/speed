@@ -69,6 +69,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@radix-ui/react-slot": "^1.2.4",
+    "@sentry/nextjs": "^10.29.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.83.0",
     "algoliasearch": "^5.44.0",
