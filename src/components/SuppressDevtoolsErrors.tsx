@@ -5,9 +5,13 @@ import { useEffect } from "react"
 /**
  * Suppresses Next.js devtools errors and LiveKit/WebRTC warnings on mobile devices
  * These errors are harmless and only occur in development or during normal WebRTC operations
- * Note: Errors are still logged by ErrorDebugger, this just prevents console spam
+ * Only active in development mode
  */
 export function SuppressDevtoolsErrors() {
+  // Only suppress in development
+  if (process.env.NODE_ENV !== 'development') {
+    return null
+  }
   useEffect(() => {
     // Store original console methods
     const originalError = console.error

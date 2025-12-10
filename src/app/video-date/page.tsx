@@ -3867,7 +3867,8 @@ function VideoDateContent() {
                                 fill
                                 sizes="(max-width: 640px) 32px, 40px"
                                 className="object-cover"
-                                  placeholder="empty"
+                                placeholder="empty"
+                                unoptimized={user.photo?.includes('supabase.co')}
                               />
                               ) : null}
                             </div>
@@ -4235,7 +4236,8 @@ function VideoDateContent() {
                         fill
                         sizes="(max-width: 640px) 64px, 80px"
                         className="object-cover"
-                          placeholder="empty"
+                        placeholder="empty"
+                        unoptimized={partner.photo?.includes('supabase.co')}
                       />
                       ) : null}
                     </div>
@@ -4331,7 +4333,8 @@ function VideoDateContent() {
                                   fill
                                   sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
                                   className="object-cover"
-                                    placeholder="empty"
+                                  placeholder="empty"
+                                  unoptimized={user.photo?.includes('supabase.co')}
                                 />
                                 ) : null}
                               </div>
@@ -4916,7 +4919,8 @@ function VideoDateContent() {
                           fill
                           sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
                           className="object-cover"
-                            placeholder="empty"
+                          placeholder="empty"
+                          unoptimized={user.photo?.includes('supabase.co')}
                         />
                         ) : null}
                       </div>
@@ -5150,7 +5154,8 @@ function VideoDateContent() {
                 fill
                 sizes="(max-width: 640px) 64px, 80px"
                 className="object-cover"
-                  placeholder="empty"
+                placeholder="empty"
+                unoptimized={partner.photo?.includes('supabase.co')}
               />
               ) : null}
             </div>

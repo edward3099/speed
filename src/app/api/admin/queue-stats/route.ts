@@ -111,44 +111,67 @@ export async function GET(request: NextRequest) {
         } else {
           const ratio = count / oppositeCount
           
-          // Calculate theoretical wait based on queue position and match rate
-          // Average position in queue (assuming you're in the middle)
-          const avgPosition = count / 2
-          // Each match uses 2 people, so people are matched at rate of matchRatePerMin * 2
-          const theoreticalWait = avgPosition / (matchRatePerMin * 2)
+          // Calculate wait time based on queue position and match rate
+          // Key insight: If you're at position N, you need approximately N/2 matches to happen before you
+          // (assuming you're in the middle of your gender group)
           
-          // Use actual average wait time if it's meaningful (queue has been active)
-          // Otherwise fall back to theoretical calculation
           let estimatedMinutes: number
-          if (baseWaitMinutes > 5 && totalInQueue > 10) {
-            // Use actual wait time as base, adjusted for gender ratio
-            if (ratio > 1.5) {
-              // Your gender is abundant - wait longer
-              // Use logarithmic scaling: 2:1 = 1.3x, 5:1 = 1.8x, 11.5:1 = 2.4x
-              const ratioMultiplier = 1 + Math.log(ratio) * 0.4
-              estimatedMinutes = baseWaitMinutes * ratioMultiplier
-            } else if (ratio < 0.67) {
-              // Your gender is scarce - wait less
-              const ratioMultiplier = Math.max(0.6, 1 - (1/ratio - 1) * 0.25)
-              estimatedMinutes = baseWaitMinutes * ratioMultiplier
-            } else {
-              // Balanced ratio
-              estimatedMinutes = baseWaitMinutes
-            }
+          
+          // Average position in queue for this gender (assuming you're in the middle)
+          const avgPosition = count / 2
+          
+          // Base calculation: how many matches need to happen before you
+          // Each match removes 2 people (one of each gender), so matches happen at rate of matchRatePerMin
+          const matchesNeeded = avgPosition / 2 // Half because each match processes 2 people
+          const baseWaitMinutes = matchesNeeded / matchRatePerMin
+          
+          if (ratio > 1.2) {
+            // Your gender is abundant - you'll wait longer due to competition
+            // The bottleneck is the opposite gender availability
+            // Apply a multiplier based on how much more abundant your gender is
+            // For ratio 2:1, multiplier ~1.3x; for 5:1, ~1.6x; for 11.5:1, ~2.0x
+            const ratioMultiplier = 1 + Math.log(ratio) * 0.25
+            estimatedMinutes = baseWaitMinutes * ratioMultiplier
             
-            // Blend with theoretical calculation (30% weight) to account for current queue state
-            estimatedMinutes = estimatedMinutes * 0.7 + theoreticalWait * 0.3
-          } else {
-            // Use theoretical calculation, adjusted for ratio
-            if (ratio > 1) {
-              estimatedMinutes = theoreticalWait * Math.min(ratio / 1.5, 3) // Cap ratio effect
-            } else {
-              estimatedMinutes = theoreticalWait
+            // However, if there are more people of your gender than can possibly be matched
+            // (i.e., more than opposite gender count), some will never match
+            // In that case, show a more realistic estimate based on bottleneck
+            if (count > oppositeCount * 2) {
+              // Extreme imbalance - many people won't match
+              // Estimate based on how long to process all possible matches
+              const maxPossibleMatches = oppositeCount
+              const timeToProcessAll = maxPossibleMatches / matchRatePerMin
+              // If you're in the unlucky group, your wait could be very long
+              // Use a more conservative estimate: blend base wait with bottleneck time
+              estimatedMinutes = Math.min(estimatedMinutes, timeToProcessAll * 1.5)
             }
+          } else if (ratio < 0.8) {
+            // Your gender is scarce - you'll match faster
+            // Apply a reduction factor
+            const ratioMultiplier = Math.max(0.7, 1 - (1/ratio - 1) * 0.2)
+            estimatedMinutes = baseWaitMinutes * ratioMultiplier
+          } else {
+            // Balanced ratio - use base calculation
+            estimatedMinutes = baseWaitMinutes
           }
           
-          // Cap at reasonable maximum (4 hours) and minimum (1 minute)
-          estimatedWaitTimes[gender] = Math.round(Math.max(1, Math.min(estimatedMinutes, 240)))
+          // Blend with actual average wait time if available and meaningful
+          // For smaller queues, actual wait time is more reliable
+          // For larger queues, theoretical is more accurate
+          if (baseWaitMinutes > 5 && totalInQueue > 10 && totalInQueue < 200) {
+            // Small-medium queues: blend 50/50
+            estimatedMinutes = estimatedMinutes * 0.5 + baseWaitMinutes * 0.5
+          } else if (totalInQueue >= 200 && totalInQueue < 500) {
+            // Medium-large queues: favor theoretical (70/30)
+            estimatedMinutes = estimatedMinutes * 0.7 + baseWaitMinutes * 0.3
+          } else if (totalInQueue >= 500) {
+            // Very large queues: mostly theoretical (90/10) since actual wait may not reflect current state
+            estimatedMinutes = estimatedMinutes * 0.9 + baseWaitMinutes * 0.1
+          }
+          
+          // Cap at reasonable maximum (12 hours) and minimum (1 minute)
+          // For extremely long waits, show 12h as "very long wait" rather than unrealistic numbers
+          estimatedWaitTimes[gender] = Math.round(Math.max(1, Math.min(estimatedMinutes, 720)))
         }
       })
 
@@ -190,7 +213,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(queueStats)
 
   } catch (error: any) {
-    console.error('Error in /api/admin/queue-stats:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/admin/queue-stats:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
     return NextResponse.json(
       { 
         error: 'Internal server error', 

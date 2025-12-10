@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cache, CacheKeys } from '@/lib/cache/simple-cache'
 import { deduplicateRequest } from '@/lib/cache/request-deduplication'
-import { logApi, profiler } from '@/lib/debug'
 
 /**
  * GET /api/match/status
@@ -48,23 +47,8 @@ export async function GET(request: NextRequest) {
       return response
     }
     
-    // Update last_active asynchronously (non-blocking) to keep user "online" while polling
-    // Don't await - let it run in background to avoid blocking the status check
-    Promise.resolve(
-      supabase
-        .from('users_state')
-        .update({ 
-          last_active: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-    )
-      .then(() => {
-        // Silently handle - don't block on this
-      })
-      .catch(() => {
-        // Silently handle errors - don't block on this
-      })
+    // Note: last_active is updated via /api/heartbeat endpoint, not here
+    // This keeps the separation of concerns clear
     
     // Deduplicate concurrent requests for the same user
     // If multiple requests come in at once, reuse the same RPC call
@@ -94,7 +78,14 @@ export async function GET(request: NextRequest) {
     return response
     
   } catch (error: any) {
-    console.error('Error in /api/match/status:', error)
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/match/status:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
     
     return NextResponse.json(
       { error: 'Internal server error', details: process.env.NODE_ENV === 'development' ? error.message : undefined },

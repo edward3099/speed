@@ -15,8 +15,7 @@ import { EditableProfilePicture } from "@/components/ui/editable-profile-picture
 import { EditableBio } from "@/components/ui/editable-bio"
 // MatchSynchronizedCountdownTimer removed - spin functionality deleted
 import { createClient } from "@/lib/supabase/client"
-import { log, logApi, profiler, usePerformanceMeasure } from "@/lib/debug"
-// Backend logging removed - UI only
+// Debug imports removed for production
 
 interface Profile {
   id: string
@@ -32,8 +31,8 @@ export default function spin() {
   const supabase = createClient()
   
   
-  // Flow state tracking - Commander states
-  const [flowState, setFlowState] = useState<'idle' | 'waiting' | 'paired' | 'vote_window'>('idle')
+  // Flow state tracking - Zero Issues Architecture (3 states only)
+  const [flowState, setFlowState] = useState<'idle' | 'waiting' | 'matched'>('idle')
   const [currentMatch, setCurrentMatch] = useState<{
     match_id: string // UUID
     partner_id: string
@@ -201,37 +200,40 @@ export default function spin() {
     return
   }, [])
   
-  // Start spin - Simple: calls API and redirects to /spinning
+  // Start spin - Zero Issues Architecture
   const startSpin = useCallback(async () => {
-    if (!user) return
-    
     try {
-      log.info('Starting spin', { userId: user.id })
+      setStarted(true)
+      setFlowState('waiting')
       
-      const response = await profiler.measure('spin-api-call', async () => {
-        return await fetch('/api/spin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-      }, { userId: user.id })
+      // Call new event-driven spin API
+      const response = await fetch('/api/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to start spin')
+      }
       
       const data = await response.json()
       
-      if (!response.ok) {
-        logApi.error('Failed to start spin', { error: data.error, userId: user.id })
-        console.error('Failed to start spin:', data.error)
-        return
+      // Event-driven: API returns match status immediately
+      if (data.matched && data.match_id) {
+        // Matched immediately - redirect to voting window
+        router.push(`/voting-window?matchId=${data.match_id}`)
+      } else {
+        // Not matched - redirect to spinning page
+        router.push('/spinning')
       }
-      
-      log.info('Spin started successfully', { userId: user.id, matchId: data.match_id })
-      
-      // Redirect to spinning page
-      router.push('/spinning')
     } catch (error) {
-      logApi.error('Error starting spin', { error, userId: user?.id })
-      console.error('Error starting spin:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error starting spin:', error)
+      }
+      setStarted(false)
+      setFlowState('idle')
     }
-  }, [user, router])
+  }, [router])
   
   // Poll for match status updates - DISABLED: All logic removed
   useEffect(() => {
@@ -466,9 +468,9 @@ export default function spin() {
         )}
       </AnimatePresence>
 
-      {/* Vote window UI - shown when flowState is 'vote_window' */}
+      {/* Vote window UI - shown when flowState is 'matched' (redirects to /voting-window) */}
       <AnimatePresence>
-        {flowState === 'vote_window' && currentMatch && (
+        {false && currentMatch && (
           <motion.div
             className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4"
             initial={{ opacity: 0, scale: 0.9 }}

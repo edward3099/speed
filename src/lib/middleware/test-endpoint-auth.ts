@@ -9,19 +9,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export function requireTestApiKey(request: NextRequest): NextResponse | null {
+  // In production, completely disable test endpoints
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Not Found' },
+      { status: 404 }
+    )
+  }
+
   // In development, allow access without key
   if (process.env.NODE_ENV === 'development') {
     return null
   }
 
-  // In production, require API key
+  // For other environments, require API key
   const apiKey = request.headers.get('x-test-api-key') || 
                  request.headers.get('authorization')?.replace('Bearer ', '')
 
   const validApiKey = process.env.TEST_API_KEY
 
   if (!validApiKey) {
-    // If no API key configured, deny access in production
     return NextResponse.json(
       { error: 'Test endpoints disabled - TEST_API_KEY not configured' },
       { status: 503 }

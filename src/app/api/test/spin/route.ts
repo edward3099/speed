@@ -21,9 +21,13 @@ import { retry } from '@/lib/retry'
 import { getRequestQueue } from '@/lib/request-queue'
 import { getCache } from '@/lib/cache'
 import { requireTestApiKey } from '@/lib/middleware/test-endpoint-auth'
+import { getConnectionThrottle } from '@/lib/connection-throttle'
 
 // Only allow in development OR with API key in production
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production'
+
+// Increase route handler timeout for auth operations which can be slow
+export const maxDuration = 30 // 30 seconds (Next.js default is 10s for Hobby, 60s for Pro)
 
 // Rate limiting: 500 requests per 10 seconds per IP (increased for 500+ users)
 // Higher limit to reduce false rate limit hits during load testing
@@ -60,11 +64,34 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Connection throttling - prevent too many concurrent connections
+  const connectionThrottle = getConnectionThrottle()
+  if (!connectionThrottle.tryAcquire()) {
+    const throttleStatus = connectionThrottle.getStatus()
+    return NextResponse.json(
+      {
+        error: 'Service temporarily unavailable',
+        message: 'Too many concurrent connections. Please try again later.',
+        activeConnections: throttleStatus.activeConnections,
+        maxConcurrent: throttleStatus.maxConcurrent,
+      },
+      {
+        status: 503,
+        headers: {
+          'Retry-After': '2',
+          'X-Active-Connections': String(throttleStatus.activeConnections),
+          'X-Max-Concurrent': String(throttleStatus.maxConcurrent),
+        },
+      }
+    )
+  }
+
   // Request queuing with backpressure
   const requestQueue = getRequestQueue()
   const queueStatus = requestQueue.getStatus()
   
   if (queueStatus.isFull) {
+    connectionThrottle.release() // Release throttle token
     return NextResponse.json(
       {
         error: 'Service temporarily unavailable',
@@ -159,19 +186,63 @@ export async function POST(request: NextRequest) {
       
       if (!authUser) {
         // Create auth user (only for small tests)
-        const { error: createUserError } = await supabase.auth.admin.createUser({
-          id: user_id,
-          email: `k6-test-${user_id}@test.com`,
-          password: 'test-password-123',
-          email_confirm: true,
-        })
+        // Use retry logic with exponential backoff to handle rate limiting
+        const createUserResult = await retry(
+          async () => {
+            const result = await supabase.auth.admin.createUser({
+              id: user_id,
+              email: `k6-test-${user_id}@test.com`,
+              password: 'test-password-123',
+              email_confirm: true,
+            })
+            
+            if (result.error) {
+              // Check for rate limiting (429) or other retryable errors
+              const errorMessage = result.error.message?.toLowerCase() || ''
+              const isRateLimit = result.error.status === 429 || errorMessage.includes('rate limit')
+              const isRetryable = isRateLimit || 
+                                 errorMessage.includes('timeout') ||
+                                 errorMessage.includes('connection') ||
+                                 errorMessage.includes('network')
+              
+              if (isRetryable) {
+                throw new Error(`Retryable error: ${result.error.message}`)
+              }
+              
+              // Non-retryable errors (e.g., user already exists)
+              return result
+            }
+            
+            return result
+          },
+          {
+            maxAttempts: 5,
+            initialDelayMs: 200,
+            maxDelayMs: 2000,
+            backoffMultiplier: 2,
+            retryableErrors: ['Retryable error', 'rate limit', 'timeout', 'connection', 'network'],
+          }
+        ).catch((error) => ({ error: { message: error.message, status: 500 } }))
 
-        if (createUserError) {
-          // If creation fails, return error (don't retry in load tests)
-          return NextResponse.json(
-            { error: 'Failed to create auth user', details: createUserError.message },
-            { status: 500 }
-          )
+        if (createUserResult.error) {
+          // Check if user already exists (non-fatal)
+          const errorMessage = createUserResult.error.message?.toLowerCase() || ''
+          if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
+            // User might have been created by another concurrent request - continue
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Auth user ${user_id} already exists, continuing...`)
+            }
+          } else {
+            // If creation fails after retries, return error
+            return NextResponse.json(
+              { 
+                error: 'Failed to create auth user', 
+                details: createUserResult.error.message,
+                status: createUserResult.error.status || 500
+              },
+              { status: createUserResult.error.status || 500 }
+            )
+          }
         }
 
         // Trust that createUser succeeded - no need to verify or wait
@@ -225,7 +296,9 @@ export async function POST(request: NextRequest) {
     const { error: joinError } = result
 
     if (joinError) {
-      console.error('Error joining queue:', joinError)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error joining queue:', joinError)
+      }
       throw new Error(`Failed to join queue: ${joinError.message}`)
     }
 
@@ -276,13 +349,27 @@ export async function POST(request: NextRequest) {
         )
       }
       // Re-throw other errors to be caught by outer catch
-      console.error('Error in requestQueue.add:', queueError)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error in requestQueue.add:', queueError)
+      }
       throw queueError
     }
   } catch (error: any) {
-    console.error('Error in /api/test/spin:', error)
+    // Ensure connection throttle is released on any error
+    const connectionThrottle = getConnectionThrottle()
+    connectionThrottle.release()
+    
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/test/spin:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
       { status: 500 }
     )
   }

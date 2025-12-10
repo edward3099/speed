@@ -27,3 +27,22 @@ export async function register() {
   }
 }
 
+// Suppress Sentry warnings if Sentry is not configured
+// These warnings appear when Next.js detects Sentry config but hooks are missing
+export async function onRequestError(
+  err: Error,
+  request: { url: string; method: string; headers: Headers },
+  context: { pathname: string }
+) {
+  // If Sentry is not configured, just log to console
+  // This prevents the warning about missing onRequestError hook
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Request error:', {
+      message: err.message,
+      url: request.url,
+      method: request.method,
+      pathname: context.pathname,
+    })
+  }
+}
+

@@ -7,7 +7,10 @@
  * Optimizations:
  * - Rate limiting
  * - Retry logic
- * - Non-blocking last_active update
+ * 
+ * CRITICAL: This endpoint does NOT update last_active
+ * Only the /api/heartbeat endpoint should update last_active
+ * This ensures stale users (who don't send heartbeat) are properly excluded from matching
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -18,6 +21,7 @@ import { retry } from '@/lib/retry'
 import { getRequestQueue } from '@/lib/request-queue'
 import { getCache } from '@/lib/cache'
 import { requireTestApiKey } from '@/lib/middleware/test-endpoint-auth'
+import { getConnectionThrottle } from '@/lib/connection-throttle'
 
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production'
 
@@ -51,11 +55,30 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // Connection throttling - prevent too many concurrent connections
+  const connectionThrottle = getConnectionThrottle()
+  if (!connectionThrottle.tryAcquire()) {
+    const throttleStatus = connectionThrottle.getStatus()
+    return NextResponse.json(
+      {
+        error: 'Service temporarily unavailable',
+        message: 'Too many concurrent connections. Please try again later.',
+      },
+      {
+        status: 503,
+        headers: {
+          'Retry-After': '2',
+        },
+      }
+    )
+  }
+
   // Request queuing with backpressure
   const requestQueue = getRequestQueue()
   const queueStatus = requestQueue.getStatus()
   
   if (queueStatus.isFull) {
+    connectionThrottle.release() // Release throttle token
     return NextResponse.json(
       {
         error: 'Service temporarily unavailable',
@@ -88,18 +111,8 @@ export async function GET(request: NextRequest) {
     
     if (cachedResult) {
       // Return cached result immediately (non-blocking)
-      // Update last_active asynchronously
-      Promise.resolve(
-        getPooledServiceClient()
-          .from('users_state')
-          .update({ 
-            last_active: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user_id)
-      )
-        .then(() => {})
-        .catch(() => {})
+      // CRITICAL: Do NOT update last_active here - only heartbeat endpoint should update it
+      // This ensures stale users (who don't send heartbeat) are properly excluded from matching
       
       return NextResponse.json(cachedResult, {
         headers: {
@@ -179,6 +192,9 @@ export async function GET(request: NextRequest) {
         return statusData
       })
 
+      // Release connection throttle token
+      connectionThrottle.release()
+
       return NextResponse.json(result, {
         headers: {
           'X-RateLimit-Remaining': String(rateLimitResult.remaining),
@@ -187,6 +203,8 @@ export async function GET(request: NextRequest) {
         },
       })
     } catch (queueError: any) {
+      // Release connection throttle token on error
+      connectionThrottle.release()
       // Handle queue errors (full queue, timeout, etc.)
       if (queueError.message?.includes('queue is full')) {
         return NextResponse.json(
@@ -206,9 +224,21 @@ export async function GET(request: NextRequest) {
       throw queueError
     }
   } catch (error: any) {
-    console.error('Error in /api/test/match-status:', error)
+    // Ensure connection throttle is released on any error
+    const connectionThrottle = getConnectionThrottle()
+    connectionThrottle.release()
+    
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/test/match-status:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
       { status: 500 }
     )
   }

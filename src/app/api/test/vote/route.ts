@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
         const result = await Promise.race([
           retry(
             async () => {
-              const result = await supabase.rpc('record_vote_and_resolve', {
+              // Use new record_vote function (Zero Issues Architecture)
+              const result = await supabase.rpc('record_vote', {
                 p_user_id: user_id,
                 p_match_id: match_id,
                 p_vote: vote
@@ -183,9 +184,15 @@ export async function POST(request: NextRequest) {
       throw queueError
     }
   } catch (error: any) {
-    console.error('Error in /api/test/vote:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/test/vote:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
       { status: 500 }
     )
   }

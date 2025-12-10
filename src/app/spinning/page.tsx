@@ -6,8 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles as SparklesIcon } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { EnhancedRealtimeSubscription } from "@/lib/utils/enhanced-realtime"
-import { log, logApi, profiler } from "@/lib/debug"
-import { WaitTimeIndicator } from "@/components/WaitTimeIndicator"
+// Debug imports removed for production
 
 /**
  * /spinning page
@@ -41,11 +40,9 @@ export default function SpinningPage() {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-        const response = await profiler.measure('match-status-initial', async () => {
-          return await fetch('/api/match/status', {
-            signal: controller.signal,
-            cache: 'no-store',
-          })
+        const response = await fetch('/api/match/status', {
+          signal: controller.signal,
+          cache: 'no-store',
         })
 
         clearTimeout(timeoutId)
@@ -63,40 +60,30 @@ export default function SpinningPage() {
 
         // If already matched, redirect immediately
         if (data.match?.match_id) {
-          log.info('Match found on initial check, redirecting', { matchId: data.match.match_id })
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Match found on initial check, redirecting', { matchId: data.match.match_id })
+          }
           setIsSpinning(false)
           router.push(`/voting-window?matchId=${data.match.match_id}`)
           return
         }
 
-        // If idle (not in queue), automatically join queue
+        // If idle (not in queue), redirect to spin page
         if (data.state === 'idle') {
-          try {
-            const spinController = new AbortController()
-            const spinTimeoutId = setTimeout(() => spinController.abort(), 5000)
-            
-            const spinResponse = await fetch('/api/spin', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              signal: spinController.signal,
-            })
-            
-            clearTimeout(spinTimeoutId)
-            
-            if (!spinResponse.ok) {
-              log.warn('Failed to join queue on initial check')
-              setIsSpinning(false)
-              router.push('/spin')
-            }
-          } catch (error) {
-            log.error('Error joining queue on initial check', { error })
-            setIsSpinning(false)
-            router.push('/spin')
-          }
+          setIsSpinning(false)
+          router.push('/spin')
+          return
+        }
+        
+        // If matched, redirect to voting window
+        if (data.state === 'matched' && data.match?.match_id) {
+          setIsSpinning(false)
+          router.push(`/voting-window?matchId=${data.match.match_id}`)
+          return
         }
       } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          log.warn('Initial status check failed, continuing with WebSocket', { error: error.message })
+        if (error.name !== 'AbortError' && process.env.NODE_ENV === 'development') {
+          console.warn('Initial status check failed, continuing with WebSocket', { error: error.message })
         }
       }
     }
@@ -117,7 +104,9 @@ export default function SpinningPage() {
             if (!isMounted) return
 
             const updatedState = payload
-            log.info('Real-time state update received', { state: updatedState.state, matchId: updatedState.match_id })
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Real-time state update received', { state: updatedState.state, matchId: updatedState.match_id })
+            }
 
             // Reset reconnect attempts on successful update
             reconnectAttempts = 0
@@ -132,7 +121,9 @@ export default function SpinningPage() {
                   const data = await response.json()
                   if (data.match?.match_id) {
                     setTimeout(() => {
-                      log.info('Match found via WebSocket, redirecting', { matchId: data.match.match_id })
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('Match found via WebSocket, redirecting', { matchId: data.match.match_id })
+                      }
                       setIsSpinning(false)
                       router.push(`/voting-window?matchId=${data.match.match_id}`)
                     }, 0)
@@ -140,24 +131,30 @@ export default function SpinningPage() {
                   }
                 }
               } catch (error) {
-                setTimeout(() => {
-                  log.error('Error fetching match status after real-time update', { error })
-                }, 0)
+                if (process.env.NODE_ENV === 'development') {
+                  setTimeout(() => {
+                    console.error('Error fetching match status after real-time update', { error })
+                  }, 0)
+                }
               }
             }
           },
           onError: (error) => {
             reconnectAttempts++
-            log.warn('Real-time subscription error', { 
-              error: error.message, 
-              attempts: reconnectAttempts,
-              maxAttempts: MAX_RECONNECT_ATTEMPTS 
-            })
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Real-time subscription error', { 
+                error: error.message, 
+                attempts: reconnectAttempts,
+                maxAttempts: MAX_RECONNECT_ATTEMPTS 
+              })
+            }
 
             // If too many reconnection attempts, show user-friendly message
             if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
               setTimeout(() => {
-                log.error('Too many WebSocket reconnection attempts, redirecting to spin page')
+                if (process.env.NODE_ENV === 'development') {
+                  console.error('Too many WebSocket reconnection attempts, redirecting to spin page')
+                }
                 setIsSpinning(false)
                 router.push('/spin')
               }, 0)
@@ -166,9 +163,11 @@ export default function SpinningPage() {
           onStatusChange: (status) => {
             if (status === 'SUBSCRIBED') {
               reconnectAttempts = 0 // Reset on successful connection
-              log.info('WebSocket subscription active')
-            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-              log.warn('WebSocket connection issue', { status })
+              if (process.env.NODE_ENV === 'development') {
+                console.log('WebSocket subscription active')
+              }
+            } else if ((status === 'CLOSED' || status === 'CHANNEL_ERROR') && process.env.NODE_ENV === 'development') {
+              console.warn('WebSocket connection issue', { status })
             }
           },
         },
@@ -178,7 +177,9 @@ export default function SpinningPage() {
       try {
         await realtimeSubRef.current.subscribe()
       } catch (error) {
-        log.error('Failed to subscribe to WebSocket', { error })
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to subscribe to WebSocket', { error })
+        }
         // Don't redirect immediately - let reconnection logic handle it
       }
     }
@@ -195,31 +196,36 @@ export default function SpinningPage() {
     }
   }, [router])
 
-  // Get user gender for wait time estimation
-  const [userGender, setUserGender] = useState<'male' | 'female' | 'other' | undefined>()
-
+  // Periodically update last_active to keep user prioritized in matching
+  // This ensures actively spinning users get matched before stale queue users
   useEffect(() => {
-    // Fetch user profile to get gender for wait time estimation
-    const fetchUserGender = async () => {
+    if (!isSpinning) return
+
+    const updateLastActive = async () => {
       try {
         const { data: { user } } = await supabaseRef.current.auth.getUser()
-        if (user) {
-          const { data: profile } = await supabaseRef.current
-            .from('profiles')
-            .select('gender')
-            .eq('id', user.id)
-            .single()
-          
-          if (profile?.gender) {
-            setUserGender(profile.gender as 'male' | 'female' | 'other')
-          }
-        }
+        if (!user) return
+
+        // Use heartbeat API endpoint (works with new state model)
+        await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id })
+        })
       } catch (error) {
-        // Silently fail - wait time will show average
+        // Silently fail - don't block on this
       }
     }
-    fetchUserGender()
-  }, [])
+
+    // Update immediately, then every 7 seconds while spinning
+    // CRITICAL: 7 seconds ensures last_active is always < 10 seconds old
+    // Matching pool requires last_active > NOW() - INTERVAL '10 seconds'
+    // With 7s interval, even if there's a 2-3s delay, last_active will still be < 10s old
+    updateLastActive()
+    const interval = setInterval(updateLastActive, 7000)
+
+    return () => clearInterval(interval)
+  }, [isSpinning])
 
   return (
     <div className="min-h-screen w-full bg-[#050810] text-white flex items-center justify-center relative overflow-hidden">
@@ -278,11 +284,6 @@ export default function SpinningPage() {
             >
               Finding your match...
             </motion.p>
-            
-            {/* Wait Time Indicator */}
-            <div className="mt-6 max-w-md w-full px-4">
-              <WaitTimeIndicator userGender={userGender} />
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

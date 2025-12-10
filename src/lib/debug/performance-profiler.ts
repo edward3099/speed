@@ -86,8 +86,9 @@ export class PerformanceProfiler {
       // Different thresholds for different operations
       // API calls include network round-trip to Supabase, so higher thresholds
       const isApiCall = metric.name.includes('api-call') || metric.name.includes('status') || metric.name.includes('spin')
-      const criticalThreshold = isApiCall ? 2000 : 1000  // 2s for API calls, 1s for others
-      const warningThreshold = isApiCall ? 1000 : 500     // 1s for API calls, 500ms for others
+      // Increased thresholds: API calls can be slow due to network, DB operations, cold starts
+      const criticalThreshold = isApiCall ? 10000 : 2000  // 10s for API calls (network/DB can be slow), 2s for others
+      const warningThreshold = isApiCall ? 5000 : 1000     // 5s for API calls, 1s for others
       
       if (metric.duration > criticalThreshold) {
         console.warn(`[Performance] ⚠️ CRITICAL: ${metric.name} took ${metric.duration.toFixed(2)}ms`, {

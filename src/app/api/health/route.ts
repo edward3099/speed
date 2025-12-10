@@ -63,11 +63,12 @@ export async function GET(request: NextRequest) {
       health.status = 'degraded'
     }
 
-    // 3. Matching function check
+    // 3. Matching function check (new event-driven try_match_user)
     try {
-      const { error: matchError } = await supabase.rpc('process_matching', {})
-      // If function exists but is locked, that's actually good
-      const isHealthy = !matchError || matchError.message.includes('locked')
+      // Check if try_match_user function exists (new Zero Issues Architecture)
+      const { error: matchError } = await supabase.rpc('try_match_user', { p_user_id: '00000000-0000-0000-0000-000000000000' })
+      // Expected to fail with invalid user_id, but function should exist
+      const isHealthy = !matchError || matchError.message.includes('not found') || matchError.message.includes('NULL')
       health.checks.matching = {
         status: isHealthy ? 'healthy' : 'unhealthy',
         error: matchError?.message,

@@ -37,9 +37,13 @@ export function getPooledClient(): SupabaseClient {
           'x-client-info': 'speed-date-pooled-client',
         },
         // Add timeout to prevent hanging requests
+        // Increased timeout for auth operations which can be slower under load
         fetch: (url, options = {}) => {
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+          // Use longer timeout for auth endpoints (15s), shorter for others (8s)
+          const isAuthEndpoint = typeof url === 'string' && url.includes('/auth/v1/')
+          const timeout = isAuthEndpoint ? 15000 : 8000
+          const timeoutId = setTimeout(() => controller.abort(), timeout)
           
           return fetch(url, {
             ...options,
@@ -80,9 +84,13 @@ export function getPooledServiceClient(): SupabaseClient {
           'x-client-info': 'speed-date-pooled-service-client',
         },
         // Add timeout to prevent hanging requests
+        // Increased timeout for auth operations which can be slower under load
         fetch: (url, options = {}) => {
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+          // Use longer timeout for auth endpoints (15s), shorter for others (8s)
+          const isAuthEndpoint = typeof url === 'string' && url.includes('/auth/v1/')
+          const timeout = isAuthEndpoint ? 15000 : 8000
+          const timeoutId = setTimeout(() => controller.abort(), timeout)
           
           return fetch(url, {
             ...options,

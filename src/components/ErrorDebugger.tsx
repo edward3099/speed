@@ -25,8 +25,67 @@ function ErrorDebugger() {
     const originalWarn = console.warn
     const originalLog = console.log
 
+    // Function to check if error should be filtered (harmless LiveKit/WebRTC errors)
+    const shouldFilterError = (args: any[]): boolean => {
+      const errorString = args.join(' ')
+      
+      // Check all args for LiveKit error objects (details might be in any position)
+      let hasLiveKitErrorObject = false
+      for (const arg of args) {
+        if (typeof arg === 'object' && arg !== null) {
+          // Check if it's a LiveKit error object with room property
+          if ('room' in arg || 'roomID' in arg || 'participant' in arg) {
+            // Check for harmless error indicators
+            if (('event' in arg && arg.event?.isTrusted === true) ||
+                ('error' in arg && Object.keys(arg.error || {}).length === 0) ||
+                errorString.includes('DataChannel')) {
+              hasLiveKitErrorObject = true
+              break
+            }
+          }
+        }
+      }
+      
+      const firstArg = args[0]
+      const firstArgString = typeof firstArg === 'object' && firstArg !== null 
+        ? JSON.stringify(firstArg) 
+        : String(firstArg || '')
+      
+      // Filter LiveKit/WebRTC errors that are harmless
+      const isLiveKitError = 
+        errorString.includes('Unknown DataChannel error') ||
+        errorString.includes('DataChannel error') ||
+        (errorString.includes('DataChannel') && (firstArg?.event?.isTrusted === true || hasLiveKitErrorObject)) ||
+        errorString.includes('error sending signal message') ||
+        errorString.includes('signal message') ||
+        errorString.includes('abort transport connection') ||
+        errorString.includes('createOffer') ||
+        errorString.includes('closed peer connection') ||
+        errorString.includes('signal disconnected') ||
+        errorString.includes('websocket closed') ||
+        hasLiveKitErrorObject ||
+        (typeof firstArg === 'object' && firstArg !== null && 'room' in firstArg && (
+          ('error' in firstArg && Object.keys(firstArg.error || {}).length === 0) ||
+          ('event' in firstArg && firstArg.event?.isTrusted === true) ||
+          (errorString.includes('DataChannel') && firstArg.event?.isTrusted === true)
+        ))
+
+      // Filter devtools errors
+      const isDevtoolsError = 
+        errorString.includes('NODE_OPTIONs are not supported') ||
+        errorString.includes('electron/shell/common/node_bindings')
+
+      return isLiveKitError || isDevtoolsError
+    }
+
     // Function to add error to log
     const addError = (message: string, details?: any, type: 'error' | 'warn' | 'log' = 'error') => {
+      // Skip filtering for harmless LiveKit/WebRTC errors
+      const args = details ? [message, details] : [message]
+      if (shouldFilterError(args)) {
+        return // Don't log filtered errors
+      }
+
       const errorLog: ErrorLog = {
         id: `${Date.now()}-${Math.random()}`,
         timestamp: new Date(),
@@ -45,33 +104,39 @@ function ErrorDebugger() {
 
     // Override console.error - capture error, then call original
     console.error = (...args: any[]) => {
-      const message = args.map(arg => {
-        if (typeof arg === 'string') return arg
-        if (arg instanceof Error) return arg.message
-        try {
-          return JSON.stringify(arg, null, 2)
-        } catch {
-          return String(arg)
-        }
-      }).join(' ')
-      addError(message, args[0] || args, 'error')
-      // Call original to preserve normal console behavior
+      // Filter out harmless LiveKit/WebRTC errors before logging
+      if (!shouldFilterError(args)) {
+        const message = args.map(arg => {
+          if (typeof arg === 'string') return arg
+          if (arg instanceof Error) return arg.message
+          try {
+            return JSON.stringify(arg, null, 2)
+          } catch {
+            return String(arg)
+          }
+        }).join(' ')
+        addError(message, args[0] || args, 'error')
+      }
+      // Call original to preserve normal console behavior (SuppressDevtoolsErrors will filter it)
       originalError.apply(console, args)
     }
 
     // Override console.warn - capture warning, then call original
     console.warn = (...args: any[]) => {
-      const message = args.map(arg => {
-        if (typeof arg === 'string') return arg
-        if (arg instanceof Error) return arg.message
-        try {
-          return JSON.stringify(arg, null, 2)
-        } catch {
-          return String(arg)
-        }
-      }).join(' ')
-      addError(message, args[0] || args, 'warn')
-      // Call original to preserve normal console behavior
+      // Filter out harmless LiveKit/WebRTC warnings before logging
+      if (!shouldFilterError(args)) {
+        const message = args.map(arg => {
+          if (typeof arg === 'string') return arg
+          if (arg instanceof Error) return arg.message
+          try {
+            return JSON.stringify(arg, null, 2)
+          } catch {
+            return String(arg)
+          }
+        }).join(' ')
+        addError(message, args[0] || args, 'warn')
+      }
+      // Call original to preserve normal console behavior (SuppressDevtoolsErrors will filter it)
       originalWarn.apply(console, args)
     }
 
@@ -88,6 +153,18 @@ function ErrorDebugger() {
 
     // Global error handler
     const handleError = (event: ErrorEvent) => {
+      // Filter out harmless LiveKit/WebRTC errors
+      const errorMessage = event.message || event.error?.message || ''
+      if (errorMessage.includes('DataChannel') || 
+          errorMessage.includes('WebRTC') ||
+          errorMessage.includes('LiveKit')) {
+        // Check if it's a harmless error
+        const args = [errorMessage, event]
+        if (shouldFilterError(args)) {
+          return // Skip logging filtered errors
+        }
+      }
+      
       addError(event.message, {
         filename: event.filename,
         lineno: event.lineno,
@@ -156,8 +233,7 @@ function ErrorDebugger() {
     
     try {
       await navigator.clipboard.writeText(allErrors)
-      // Silently copy - no need for alert in debug tool
-      console.log('All errors copied to clipboard!')
+      // Silently copy - no console log to reduce noise
     } catch (err) {
       const textarea = document.createElement('textarea')
       textarea.value = allErrors
@@ -165,8 +241,7 @@ function ErrorDebugger() {
       textarea.select()
       document.execCommand('copy')
       document.body.removeChild(textarea)
-      // Silently copy - no need for alert in debug tool
-      console.log('All errors copied to clipboard!')
+      // Silently copy - no console log to reduce noise
     }
   }
 

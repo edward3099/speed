@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { validateRequestBody, validateEnum, validateUUID } from '@/lib/request-validation'
+import { handleApiError } from '@/lib/api-error-handler'
 
 /**
  * POST /api/vote
@@ -21,39 +23,47 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Get vote data from request body
+    // Get and validate vote data from request body
     const body = await request.json()
+    
+    // Validate required fields
+    const bodyValidation = validateRequestBody(body, ['match_id', 'vote'])
+    if (!bodyValidation.valid) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: bodyValidation.errors },
+        { status: 400 }
+      )
+    }
+    
     const { match_id, vote } = body
     
-    if (!match_id) {
+    // Validate match_id is a valid UUID
+    const uuidValidation = validateUUID(match_id, 'match_id')
+    if (!uuidValidation.valid) {
       return NextResponse.json(
-        { error: 'match_id is required' },
+        { error: 'Validation failed', details: uuidValidation.errors },
         { status: 400 }
       )
     }
     
-    if (!vote || !['yes', 'pass'].includes(vote)) {
+    // Validate vote is one of allowed values
+    const voteValidation = validateEnum(vote, ['yes', 'pass'] as const, 'vote')
+    if (!voteValidation.valid) {
       return NextResponse.json(
-        { error: 'vote must be "yes" or "pass"' },
+        { error: 'Validation failed', details: voteValidation.errors },
         { status: 400 }
       )
     }
     
-    // Call record_vote_and_resolve function (if it exists)
-    // Otherwise, we'll need to create a simple version
-    const { data: voteData, error: voteError } = await supabase.rpc('record_vote_and_resolve', {
+    // Call record_vote function (new zero-issues architecture)
+    const { data: voteData, error: voteError } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
       p_vote: vote
     })
     
     if (voteError) {
-      // Log the full error object to see what we're getting
-      console.error('Error recording vote - FULL ERROR:', JSON.stringify(voteError, null, 2))
-      console.error('Error recording vote - error keys:', Object.keys(voteError))
-      
-      // Try to extract error message from various possible locations
-      // Supabase RPC errors can have different structures
+      // Extract error message from various possible locations
       const errorMessage = 
         voteError.message || 
         (voteError as any)?.error?.message ||
@@ -66,27 +76,18 @@ export async function POST(request: NextRequest) {
       const errorHint = voteError.hint || (voteError as any)?.error?.hint || null
       const errorCode = voteError.code || (voteError as any)?.error?.code || null
       
-      // Log all error properties for debugging
-      const errorInfo = {
-        message: errorMessage,
-        hint: errorHint,
-        code: errorCode,
-        fullError: voteError,
-        errorType: typeof voteError,
-        errorConstructor: voteError?.constructor?.name,
-        errorString: String(voteError),
-        errorKeys: Object.keys(voteError || {})
-      }
-      
-      console.error('Error recording vote - COMPLETE ERROR INFO:', JSON.stringify(errorInfo, null, 2))
+      // Log error with context
+      handleApiError(voteError, {
+        route: '/api/vote',
+        userId: user.id,
+        metadata: { match_id, vote, errorHint, errorCode },
+      })
       
       return NextResponse.json(
         { 
           error: 'Failed to record vote', 
-          details: errorMessage,
-          hint: errorHint,
-          code: errorCode,
-          error_info: errorInfo // Include full error info for debugging
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+          ...(process.env.NODE_ENV === 'development' && { hint: errorHint, code: errorCode }),
         },
         { status: 500 }
       )
@@ -94,12 +95,11 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(voteData)
     
-  } catch (error: any) {
-    console.error('Error in /api/vote:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    )
+  } catch (error: unknown) {
+    const { status, response } = handleApiError(error, {
+      route: '/api/vote',
+    })
+    return NextResponse.json(response, { status })
   }
 }
 

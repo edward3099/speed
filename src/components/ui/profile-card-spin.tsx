@@ -111,6 +111,7 @@ export function ProfileCardSpin({
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
             className="object-cover"
             placeholder="empty"
+            unoptimized={photo.includes('supabase.co')}
             onError={(e) => {
               // Hide broken images
               const target = e.currentTarget as HTMLImageElement

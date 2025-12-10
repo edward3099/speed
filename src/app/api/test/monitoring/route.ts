@@ -98,9 +98,15 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Error in /api/test/monitoring:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/test/monitoring:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
       { status: 500 }
     )
   }

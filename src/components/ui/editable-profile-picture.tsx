@@ -88,7 +88,7 @@ export function EditableProfilePicture({
             sizes="(max-width: 640px) 80px, (max-width: 768px) 120px, 160px"
             className="object-cover"
             placeholder="empty" // Explicitly disable placeholder per Next.js docs
-            unoptimized={imageSrc.startsWith('data:')} // Disable optimization for data URLs
+            unoptimized={imageSrc.startsWith('data:') || imageSrc.includes('supabase.co')} // Disable optimization for data URLs and Supabase images
             priority={false} // Don't prioritize placeholder images
             onError={(e) => {
               // If image fails to load, clear it immediately

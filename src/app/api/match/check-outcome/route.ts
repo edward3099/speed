@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { validateQueryParams, validateUUID } from '@/lib/request-validation'
+import { handleApiError } from '@/lib/api-error-handler'
 
 /**
  * GET /api/match/check-outcome
@@ -21,13 +23,25 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Get matchId from query params
+    // Get and validate matchId from query params
     const { searchParams } = new URL(request.url)
-    const matchId = searchParams.get('matchId')
     
-    if (!matchId) {
+    // Validate required query parameters
+    const queryValidation = validateQueryParams(searchParams, ['matchId'])
+    if (!queryValidation.valid) {
       return NextResponse.json(
-        { error: 'matchId is required' },
+        { error: 'Validation failed', details: queryValidation.errors },
+        { status: 400 }
+      )
+    }
+    
+    const matchId = searchParams.get('matchId')!
+    
+    // Validate matchId is a valid UUID
+    const uuidValidation = validateUUID(matchId, 'matchId')
+    if (!uuidValidation.valid) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: uuidValidation.errors },
         { status: 400 }
       )
     }
@@ -59,12 +73,11 @@ export async function GET(request: NextRequest) {
       status: match.status
     })
     
-  } catch (error: any) {
-    console.error('Error in /api/match/check-outcome:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    )
+  } catch (error: unknown) {
+    const { status, response } = handleApiError(error, {
+      route: '/api/match/check-outcome',
+    })
+    return NextResponse.json(response, { status })
   }
 }
 

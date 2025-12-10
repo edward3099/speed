@@ -53,6 +53,7 @@ export class RequestQueue {
       }
 
       this.queue.push(queuedRequest)
+      this.updateAdaptiveThrottle() // Update adaptive throttle metrics
       this.process()
     })
   }
@@ -60,38 +61,46 @@ export class RequestQueue {
   /**
    * Process the queue
    * Automatically called when requests are added
+   * Processes multiple requests concurrently up to maxConcurrency
    */
   private async process() {
-    // Don't process if at max concurrency or queue is empty
-    if (this.processing >= this.maxConcurrency || this.queue.length === 0) {
-      return
-    }
+    // Process as many requests as possible up to maxConcurrency
+    while (this.processing < this.maxConcurrency && this.queue.length > 0) {
+      // Get next request from queue
+      const request = this.queue.shift()
+      if (!request) {
+        break
+      }
 
-    // Get next request from queue
-    const request = this.queue.shift()
-    if (!request) {
-      return
-    }
+      // Check for timeout
+      const waitTime = Date.now() - request.timestamp
+      if (waitTime > this.timeout) {
+        request.reject(new Error('Request timeout in queue'))
+        continue // Process next request
+      }
 
-    // Check for timeout
-    const waitTime = Date.now() - request.timestamp
-    if (waitTime > this.timeout) {
-      request.reject(new Error('Request timeout in queue'))
-      this.process() // Process next request
-      return
-    }
+      this.processing++
 
-    this.processing++
-
-    try {
-      const result = await request.fn()
-      request.resolve(result)
-    } catch (error) {
-      request.reject(error)
-    } finally {
-      this.processing--
-      // Process next request
-      setImmediate(() => this.process())
+      // Process request asynchronously (don't await - allows concurrent processing)
+      Promise.resolve()
+        .then(async () => {
+          try {
+            const result = await request.fn()
+            request.resolve(result)
+          } catch (error) {
+            request.reject(error)
+          } finally {
+            this.processing--
+            // Process next request immediately
+            setImmediate(() => this.process())
+          }
+        })
+        .catch((error) => {
+          // Handle any errors in the promise chain
+          request.reject(error)
+          this.processing--
+          setImmediate(() => this.process())
+        })
     }
   }
 
@@ -105,6 +114,21 @@ export class RequestQueue {
       maxConcurrency: this.maxConcurrency,
       maxQueueSize: this.maxQueueSize,
       isFull: this.queue.length >= this.maxQueueSize,
+      utilization: (this.processing / this.maxConcurrency) * 100,
+      queueUtilization: (this.queue.length / this.maxQueueSize) * 100,
+    }
+  }
+
+  /**
+   * Update adaptive throttle with queue metrics
+   */
+  updateAdaptiveThrottle() {
+    try {
+      const { getAdaptiveThrottle } = require('./adaptive-throttle')
+      const adaptiveThrottle = getAdaptiveThrottle()
+      adaptiveThrottle.updateQueueSize(this.queue.length)
+    } catch (error) {
+      // Silently fail if adaptive throttle not available
     }
   }
 
@@ -128,12 +152,12 @@ let globalRequestQueue: RequestQueue | null = null
 export function getRequestQueue(): RequestQueue {
   if (!globalRequestQueue) {
     globalRequestQueue = new RequestQueue({
-      // Optimized for Supabase Pro plan (200 database connections)
-      // With 200 connections, we can handle 200 concurrent requests efficiently
-      // Connection pooling and request queuing work together to maximize throughput
-      // while preventing connection exhaustion at 500+ concurrent users
-      maxConcurrency: parseInt(process.env.REQUEST_QUEUE_CONCURRENCY || '200', 10),
-      maxQueueSize: parseInt(process.env.REQUEST_QUEUE_MAX_SIZE || '10000', 10),
+      // Optimized for 1000s of users:
+      // Database pool is 200, but we process more requests concurrently
+      // and queue the rest. This allows handling thousands of users efficiently.
+      // Higher concurrency = better throughput, but must balance with DB pool
+      maxConcurrency: parseInt(process.env.REQUEST_QUEUE_CONCURRENCY || '800', 10), // Increased for thousands
+      maxQueueSize: parseInt(process.env.REQUEST_QUEUE_MAX_SIZE || '50000', 10), // Large queue for thousands
       timeout: parseInt(process.env.REQUEST_QUEUE_TIMEOUT || '30000', 10),
     })
   }

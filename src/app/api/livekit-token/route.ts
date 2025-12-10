@@ -18,12 +18,14 @@ export async function GET(req: NextRequest) {
     const apiSecret = process.env.LIVEKIT_API_SECRET
 
     if (!apiKey || !apiSecret) {
-      console.error('LiveKit credentials missing:', {
-        hasApiKey: !!apiKey,
-        hasApiSecret: !!apiSecret,
-        apiKeyLength: apiKey?.length || 0,
-        apiSecretLength: apiSecret?.length || 0
-      })
+      if (process.env.NODE_ENV === 'development') {
+        console.error('LiveKit credentials missing:', {
+          hasApiKey: !!apiKey,
+          hasApiSecret: !!apiSecret,
+          apiKeyLength: apiKey?.length || 0,
+          apiSecretLength: apiSecret?.length || 0
+        })
+      }
       return NextResponse.json(
         { error: 'Server misconfigured: Missing LiveKit credentials' },
         { status: 500 }
@@ -41,7 +43,9 @@ export async function GET(req: NextRequest) {
     // Validate room name format (alphanumeric, hyphens, underscores only)
     const roomNameRegex = /^[a-zA-Z0-9_-]+$/
     if (!roomNameRegex.test(room)) {
-      console.error('Invalid room name format:', room)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Invalid room name format:', room)
+      }
       return NextResponse.json(
         { error: 'Invalid room name format' },
         { status: 400 }
@@ -86,21 +90,25 @@ export async function GET(req: NextRequest) {
           tokenPayload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString())
         }
       } catch (decodeError) {
-        console.warn('Could not decode token for verification:', decodeError)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Could not decode token for verification:', decodeError)
+        }
       }
       
-      console.log('✅ LiveKit token generated successfully', {
-        room,
-        username,
-        tokenLength: token.length,
-        tokenPrefix: token.substring(0, 20) + '...',
-        tokenPayload: tokenPayload ? {
-          sub: tokenPayload.sub, // identity
-          video: tokenPayload.video, // grants
-          exp: tokenPayload.exp,
-          iat: tokenPayload.iat
-        } : null
-      })
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ LiveKit token generated successfully', {
+          room,
+          username,
+          tokenLength: token.length,
+          tokenPrefix: token.substring(0, 20) + '...',
+          tokenPayload: tokenPayload ? {
+            sub: tokenPayload.sub, // identity
+            video: tokenPayload.video, // grants
+            exp: tokenPayload.exp,
+            iat: tokenPayload.iat
+          } : null
+        })
+      }
       
       return NextResponse.json({ 
         token,
@@ -117,15 +125,17 @@ export async function GET(req: NextRequest) {
         } : {})
       })
     } catch (tokenError: any) {
-      console.error('Error creating LiveKit token:', {
-        error: tokenError,
-        message: tokenError?.message,
-        stack: tokenError?.stack,
-        room,
-        username,
-        hasApiKey: !!apiKey,
-        hasApiSecret: !!apiSecret
-      })
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error creating LiveKit token:', {
+          error: tokenError,
+          message: tokenError?.message,
+          stack: tokenError?.stack,
+          room,
+          username,
+          hasApiKey: !!apiKey,
+          hasApiSecret: !!apiSecret
+        })
+      }
       return NextResponse.json(
         { 
           error: 'Failed to generate token',
@@ -134,8 +144,10 @@ export async function GET(req: NextRequest) {
         { status: 500 }
       )
     }
-  } catch (error: any) {
-    console.error('Error generating LiveKit token:', error)
+    } catch (error: any) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error generating LiveKit token:', error)
+    }
     return NextResponse.json(
       { error: 'Failed to generate token' },
       { status: 500 }

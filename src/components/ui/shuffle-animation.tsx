@@ -96,6 +96,7 @@ export function ShuffleAnimation({
                 fill
                 sizes="(max-width: 640px) 70px, 192px"
                 className="object-cover"
+                unoptimized={src.includes('supabase.co')}
                 onError={(e) => {
                   // Hide broken images
                   const target = e.currentTarget as HTMLImageElement

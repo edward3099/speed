@@ -70,34 +70,48 @@ function VotingWindowContent() {
           setPartner(statusData.match.partner)
         }
 
-        // If match is already completed but not both_yes, redirect to spinning
-        if (statusData.match?.status === 'completed' && statusData.match?.outcome !== 'both_yes') {
-          router.push('/spinning')
-          return
+        // If match is already completed, handle outcome
+        if (statusData.match?.status === 'completed') {
+          if (statusData.match?.outcome === 'both_yes') {
+            // Both yes → redirect to video-date
+            router.push(`/video-date?matchId=${statusData.match.match_id}`)
+            return
+          } else {
+            // Other outcomes → redirect to spinning (auto-requeued or manual spin)
+            router.push('/spinning')
+            return
+          }
         }
 
-        // If already in vote_window, start countdown
-        if (statusData.state === 'vote_window' && statusData.match?.vote_window_expires_at) {
-          startCountdown(statusData.match.vote_window_expires_at)
-          setAcknowledged(true)
-          setLoading(false)
-          return
-        }
-
-        // If in paired state, acknowledge
-        if (statusData.state === 'paired') {
+        // If in matched state (status='paired'), acknowledge
+        if (statusData.state === 'matched' && statusData.match?.status === 'paired') {
           const ackResponse = await fetch('/api/match/acknowledge', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ match_id: matchId })
           })
 
+          if (!ackResponse.ok) {
+            router.push('/spin')
+            return
+          }
+
           const ackData = await ackResponse.json()
 
-          if (ackData.vote_window_started && ackData.vote_window_expires_at) {
+          // New API returns vote_window_expires_at directly
+          if (ackData.vote_window_expires_at) {
             startCountdown(ackData.vote_window_expires_at)
             setAcknowledged(true)
+          } else {
+            // Waiting for partner to acknowledge
+            setAcknowledged(false)
           }
+        }
+        
+        // If match status is 'active' (voting window already started)
+        if (statusData.match?.status === 'active' && statusData.match?.vote_window_expires_at) {
+          startCountdown(statusData.match.vote_window_expires_at)
+          setAcknowledged(true)
         }
 
         setLoading(false)
@@ -253,19 +267,25 @@ function VotingWindowContent() {
         return
       }
 
-      // CRITICAL: If both yes, redirect to video-date immediately
-      // This must be checked BEFORE checking match_ended
-      if (data.outcome === 'both_yes' && matchId) {
-        console.log('Both users voted yes, redirecting to video-date immediately', { outcome: data.outcome, matchId })
-        router.push(`/video-date?matchId=${matchId}`)
-        return // Important: return early to prevent any other redirects
-      }
-      
-      // If match ended (but not both_yes), redirect back to spinning
-      if (data.match_ended) {
-        console.log('Match ended (not both_yes), redirecting to spinning', { outcome: data.outcome })
-        router.push('/spinning')
-        return
+      // New API response format: { outcome, completed, message? }
+      if (data.completed && data.outcome) {
+        // Match completed - handle outcome
+        if (data.outcome === 'both_yes') {
+          // Both yes → redirect to video-date
+          console.log('Both users voted yes, redirecting to video-date', { outcome: data.outcome, matchId })
+          router.push(`/video-date?matchId=${matchId}`)
+          return
+        } else if (data.outcome === 'yes_pass' || data.outcome === 'pass_pass') {
+          // Yes+pass or pass+pass → auto-requeued, redirect to spinning
+          console.log('Match completed, auto-requeued', { outcome: data.outcome })
+          router.push('/spinning')
+          return
+        }
+        // Other outcomes (pass_idle, yes_idle, idle_idle) handled by polling
+      } else if (!data.completed) {
+        // Waiting for partner - keep polling
+        console.log('Waiting for partner to vote', { message: data.message })
+        // Don't redirect, just wait
       }
     } catch (error) {
       console.error('Error recording vote:', error)

@@ -54,6 +54,7 @@ export default function Header({
                   width={36}
                   height={36}
                   className="object-cover w-full h-full"
+                  unoptimized={profileImage?.includes('supabase.co')}
                 />
               </div>
             ) : (
