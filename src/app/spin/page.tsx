@@ -486,10 +486,10 @@ export default function spin() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                {currentMatch.partner_photo && (
+                {currentMatch?.partner_photo && (
                   <motion.img
-                    src={currentMatch.partner_photo}
-                    alt={currentMatch.partner_name}
+                    src={currentMatch?.partner_photo || ''}
+                    alt={currentMatch?.partner_name || ''}
                     className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-4 border-teal-300"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -498,10 +498,10 @@ export default function spin() {
                 )}
                 <div className="text-center">
                   <h2 className="text-2xl sm:text-3xl font-bold text-teal-300">
-                    {currentMatch.partner_name}
-                    {currentMatch.partner_age && `, ${currentMatch.partner_age}`}
+                    {currentMatch?.partner_name}
+                    {currentMatch?.partner_age && `, ${currentMatch.partner_age}`}
                   </h2>
-                  {currentMatch.partner_bio && (
+                  {currentMatch?.partner_bio && (
                     <p className="mt-2 text-sm sm:text-base opacity-80">{currentMatch.partner_bio}</p>
                   )}
                 </div>
