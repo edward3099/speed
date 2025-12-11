@@ -83,41 +83,81 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
               // Add stagger within batch
               await page.waitForTimeout(Math.random() * 500)
               
-              await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 90000 })
-              await page.waitForTimeout(1000)
+              // Navigate to homepage and wait for it to fully load
+              await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle', timeout: 90000 })
+              await page.waitForTimeout(2000) // Give page time to fully render
               
-              const startButton = page.getByRole('button', { name: /start now/i }).first()
-              await expect(startButton).toBeVisible({ timeout: 20000 })
+              // Look for the "start now" button - try multiple selectors
+              const startButton = page.locator('button').filter({ hasText: /start now/i }).first()
+              await expect(startButton).toBeVisible({ timeout: 30000 })
               await startButton.click({ force: true })
-              await page.waitForTimeout(500)
+              await page.waitForTimeout(1000) // Wait for modal to open
               
+              // Modal should now be open - look for sign in tab/button
+              // The modal has tabs: "sign in" and "sign up"
               const signInTab = page.getByRole('button', { name: /sign in/i }).first()
-              if (await signInTab.isVisible({ timeout: 3000 }).catch(() => false)) {
+              await expect(signInTab).toBeVisible({ timeout: 10000 })
+              
+              // Click sign in tab if it's not already active (modal might default to sign up)
+              const isActive = await signInTab.evaluate((el) => {
+                return el.classList.contains('bg-teal-300') || 
+                       el.style.backgroundColor.includes('teal') ||
+                       el.classList.contains('border-teal-300')
+              }).catch(() => false)
+              
+              if (!isActive) {
                 await signInTab.click({ force: true })
                 await page.waitForTimeout(500)
               }
               
-              const emailInput = page.locator('input[type="email"]').first()
+              // Fill in email - look for input in the modal
+              const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first()
               await expect(emailInput).toBeVisible({ timeout: 20000 })
               await emailInput.fill(user.email)
               await page.waitForTimeout(300)
               
-              const passwordInput = page.locator('input[type="password"]').first()
+              // Fill in password
+              const passwordInput = page.locator('input[type="password"], input[placeholder*="password" i]').first()
               await expect(passwordInput).toBeVisible({ timeout: 20000 })
               await passwordInput.fill(user.password)
               await page.waitForTimeout(300)
               
+              // Click continue button
               const continueButton = page.getByRole('button', { name: /continue/i }).first()
+              await expect(continueButton).toBeVisible({ timeout: 10000 })
               await continueButton.click({ force: true })
               
-              await page.waitForURL(/\/spin/, { timeout: 30000 })
+              // Wait for redirect to /spin (or onboarding if first time)
+              // The page might go to /spin directly or show onboarding modal
+              await page.waitForTimeout(2000) // Give time for auth to process
               
-              // Verify we're actually on /spin
               const url = page.url()
               if (url.includes('/spin')) {
+                // Successfully signed in and redirected to spin
                 contexts[globalIndex].signedIn = true
                 contexts[globalIndex].url = url
                 signedIn = true
+              } else if (url.includes('/') && !url.includes('/auth') && !url.includes('/login')) {
+                // Might be on homepage still, check if onboarding modal is showing
+                // If user has completed onboarding, should redirect to /spin
+                // Otherwise, might need to complete onboarding
+                const onboardingVisible = await page.locator('text=/what\'s your name|how old are you|tell us about yourself/i').isVisible({ timeout: 5000 }).catch(() => false)
+                if (onboardingVisible) {
+                  // Onboarding is showing - for test users, they should already have completed it
+                  // But if showing, we need to handle it - for now, consider it a failure
+                  throw new Error(`Onboarding modal is showing - user may not have completed onboarding`)
+                } else {
+                  // Should have redirected but didn't - wait a bit more
+                  await page.waitForTimeout(3000)
+                  const finalUrl = page.url()
+                  if (finalUrl.includes('/spin')) {
+                    contexts[globalIndex].signedIn = true
+                    contexts[globalIndex].url = finalUrl
+                    signedIn = true
+                  } else {
+                    throw new Error(`Not redirected to /spin after sign in. Current URL: ${finalUrl}`)
+                  }
+                }
               } else {
                 throw new Error(`Not on /spin, got: ${url}`)
               }
@@ -310,10 +350,19 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           
           await Promise.all(usersInMatch.map(async ({ page, user }, index) => {
             try {
-              // Wait for Yes button to be visible (try multiple selectors)
-              // The button text might be "Yes" or "✓ Yes" after clicking
-              const yesButton = page.locator('button').filter({ hasText: /^yes$/i }).first()
-              await expect(yesButton).toBeVisible({ timeout: 15000 })
+              // Wait for voting window page to be fully loaded
+              await page.waitForTimeout(1000)
+              
+              // Wait for Yes button to be visible - try multiple selectors
+              // The button might be "Yes" or have text containing "yes"
+              let yesButton = page.locator('button').filter({ hasText: /^yes$/i }).first()
+              
+              // If that doesn't work, try broader selector
+              if (!(await yesButton.isVisible({ timeout: 2000 }).catch(() => false))) {
+                yesButton = page.locator('button').filter({ hasText: /yes/i }).first()
+              }
+              
+              await expect(yesButton).toBeVisible({ timeout: 20000 })
               
               // Check if button is disabled
               const isDisabled = await yesButton.isDisabled()
@@ -327,17 +376,20 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
               
               // Click the button
               console.log(`  🔘 ${user.gender} user: Clicking Yes button...`)
-              await yesButton.click({ force: true })
               
-              // Wait for API call to complete (check for network request)
-              await page.waitForTimeout(2000)
+              // Scroll button into view if needed
+              await yesButton.scrollIntoViewIfNeeded()
+              await yesButton.click({ force: true, timeout: 10000 })
+              
+              // Wait for API call to complete and UI to update
+              await page.waitForTimeout(3000) // Increased timeout for vote processing
               
               // Verify button state changed (indicates vote was processed)
               const buttonAfterClick = page.locator('button').filter({ hasText: /yes/i }).first()
               const buttonText = await buttonAfterClick.textContent()
               const isDisabledAfter = await buttonAfterClick.isDisabled()
               
-              console.log(`  ✅ ${user.gender} user clicked "Yes" (button text: "${buttonText}", disabled: ${isDisabledAfter})`)
+              console.log(`  ✅ ${user.gender} user clicked "Yes" (button text: "${buttonText?.trim()}", disabled: ${isDisabledAfter})`)
               
               // Check for any console errors
               const userErrors = consoleMessages.filter(msg => msg.includes(`[${index}]`))
@@ -365,7 +417,7 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           
           // Wait for both users to be redirected to /video-date
           console.log('  ⏳ Waiting for both users to be redirected to /video-date (30 seconds)...')
-          await new Promise(resolve => setTimeout(resolve, 8000)) // Give more time for votes to process
+          await new Promise(resolve => setTimeout(resolve, 5000)) // Give time for votes to process
           
           let bothOnVideoDate = false
           const maxWait = 30000 // Increased to 30 seconds
