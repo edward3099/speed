@@ -11,6 +11,8 @@ import { cache, CacheKeys } from '@/lib/cache/simple-cache'
  * Records vote and resolves outcome
  */
 export async function POST(request: NextRequest) {
+  console.log('🔵 /api/vote called')
+  
   try {
     const supabase = await createClient()
     
@@ -18,14 +20,18 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
+      console.log('❌ /api/vote: Unauthorized', { authError: authError?.message })
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
     
+    console.log('✅ /api/vote: User authenticated', { userId: user.id })
+    
     // Get and validate vote data from request body
     const body = await request.json()
+    console.log('📥 /api/vote: Request body', { match_id: body.match_id, vote: body.vote })
     
     // Validate required fields
     const bodyValidation = validateRequestBody(body, ['match_id', 'vote'])
@@ -64,11 +70,15 @@ export async function POST(request: NextRequest) {
       .single()
     
     // Call record_vote function (new zero-issues architecture)
+    console.log('🔄 /api/vote: Calling record_vote RPC', { user_id: user.id, match_id, vote })
+    
     const { data: voteData, error: voteError } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
       p_vote: vote
     })
+    
+    console.log('📊 /api/vote: RPC response', { voteData, voteError: voteError?.message, voteErrorCode: voteError?.code })
     
     // Invalidate cache for both users in the match when vote is recorded
     // This ensures polling detects vote changes immediately
@@ -76,9 +86,16 @@ export async function POST(request: NextRequest) {
       // Invalidate cache for both users (regardless of vote error - cache should be cleared)
       cache.delete(CacheKeys.userMatchStatus(matchInfo.user1_id))
       cache.delete(CacheKeys.userMatchStatus(matchInfo.user2_id))
+      console.log('🗑️ /api/vote: Cache invalidated for both users')
     }
     
     if (voteError) {
+      console.error('❌ /api/vote: Vote error', { 
+        message: voteError.message,
+        code: voteError.code,
+        details: voteError.details,
+        hint: voteError.hint
+      })
       // Extract error message from various possible locations
       const errorMessage = 
         voteError.message || 
