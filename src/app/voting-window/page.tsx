@@ -254,7 +254,7 @@ function VotingWindowContent() {
 
   // Start countdown timer
   const startCountdown = (expiresAt: string) => {
-    const updateCountdown = () => {
+    const updateCountdown = async () => {
       const now = new Date().getTime()
       const expires = new Date(expiresAt).getTime()
       const remaining = Math.max(0, Math.floor((expires - now) / 1000))
@@ -262,6 +262,42 @@ function VotingWindowContent() {
       setCountdownSeconds(remaining)
       
       if (remaining <= 0) {
+        // Countdown reached 0 - vote window expired
+        // Check match status to determine redirect
+        try {
+          const response = await fetch('/api/match/status')
+          const data = await response.json()
+          
+          if (response.ok && data.match) {
+            const currentUserId = data.user_id
+            const match = data.match
+            
+            // Check if current user voted
+            const userVoted = currentUserId && match && (
+              (match.user1_id === currentUserId && match.user1_vote) ||
+              (match.user2_id === currentUserId && match.user2_vote)
+            )
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Countdown reached 0 - vote window expired', {
+                userVoted: userVoted,
+                currentUserId: currentUserId,
+                match: match
+              })
+            }
+            
+            // Redirect based on whether user voted
+            if (userVoted) {
+              // User voted yes - redirect to /spinning (will be auto-spun)
+              router.push('/spinning')
+            } else {
+              // User didn't vote - redirect to /spin
+              router.push('/spin')
+            }
+          }
+        } catch (error) {
+          console.error('Error checking match status when countdown expired:', error)
+        }
         return
       }
       
