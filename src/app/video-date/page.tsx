@@ -3918,6 +3918,25 @@ function VideoDateContent() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 }}
                     >
+                      {/* Enable Camera & Mic Button - Only show if not enabled yet */}
+                      {!cameraMicEnabled && (
+                        <motion.button
+                          onClick={enableCameraAndMic}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl backdrop-blur-sm border-2 border-teal-300/50 bg-teal-300/20 text-teal-300 hover:bg-teal-300/30 hover:border-teal-300 transition-all duration-300 shadow-lg shadow-teal-300/20"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          title="Enable camera and microphone"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                        >
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span className="text-xs sm:text-sm font-semibold hidden sm:inline">Enable</span>
+                          </div>
+                        </motion.button>
+                      )}
+                      
                       <motion.button
                         onClick={async () => {
                           const newMutedState = !countdownMuted
