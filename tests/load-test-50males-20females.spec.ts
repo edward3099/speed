@@ -85,10 +85,41 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
               
               // Navigate to homepage and wait for it to fully load
               await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle', timeout: 90000 })
-              await page.waitForTimeout(2000) // Give page time to fully render
+              await page.waitForTimeout(3000) // Give page time to fully render with animations
               
-              // Look for the "start now" button - try multiple selectors
-              const startButton = page.locator('button').filter({ hasText: /start now/i }).first()
+              // Wait for page to be interactive
+              await page.waitForLoadState('domcontentloaded')
+              await page.waitForLoadState('networkidle')
+              
+              // Debug: Log page title and URL
+              const pageTitle = await page.title()
+              const currentUrl = page.url()
+              console.log(`  🔍 Page loaded: ${pageTitle}, URL: ${currentUrl}`)
+              
+              // Try multiple selectors for the "start now" button
+              // The button text might be "start now" (lowercase) or have different casing
+              let startButton = page.locator('button').filter({ hasText: /start now/i }).first()
+              
+              // If not found, try case-insensitive search for any button containing "start"
+              if (!(await startButton.isVisible({ timeout: 2000 }).catch(() => false))) {
+                console.log(`  🔍 Trying alternative selector for start button...`)
+                startButton = page.getByRole('button', { name: /start/i }).first()
+              }
+              
+              // If still not found, try to find by text content
+              if (!(await startButton.isVisible({ timeout: 2000 }).catch(() => false))) {
+                console.log(`  🔍 Trying text-based selector...`)
+                startButton = page.locator('button:has-text("start")').first()
+              }
+              
+              // Debug: Get all buttons on page
+              const allButtons = await page.locator('button').all()
+              console.log(`  🔍 Found ${allButtons.length} buttons on page`)
+              for (let i = 0; i < Math.min(allButtons.length, 5); i++) {
+                const buttonText = await allButtons[i].textContent()
+                console.log(`  🔍 Button ${i}: "${buttonText}"`)
+              }
+              
               await expect(startButton).toBeVisible({ timeout: 30000 })
               await startButton.click({ force: true })
               await page.waitForTimeout(1000) // Wait for modal to open
