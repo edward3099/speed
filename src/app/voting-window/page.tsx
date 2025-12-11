@@ -59,11 +59,14 @@ function VotingWindowContent() {
           const now = Date.now()
           
           if (now >= expiresAt && statusData.match?.status !== 'completed') {
-            // Vote window expired - record metric and redirect
+            // Vote window expired - check user state to determine redirect
+            // If user is idle, redirect to /spin (they didn't vote)
+            // If user is waiting, redirect to /spinning (they voted and were auto-spun)
             const expiredBySeconds = Math.floor((now - expiresAt) / 1000)
             if (process.env.NODE_ENV === 'development') {
-              console.log('Vote window expired, redirecting to spinning', {
-                expiredBy: expiredBySeconds + ' seconds'
+              console.log('Vote window expired', {
+                expiredBy: expiredBySeconds + ' seconds',
+                userState: statusData.state
               })
             }
             
@@ -78,7 +81,14 @@ function VotingWindowContent() {
               })
             }).catch(() => {})
             
-            router.push('/spinning')
+            // Check user state to determine redirect
+            if (statusData.state === 'idle') {
+              // User didn't vote - redirect to /spin
+              router.push('/spin')
+            } else {
+              // User voted (waiting state after auto-spin) - redirect to /spinning
+              router.push('/spinning')
+            }
             return
           }
         }

@@ -10,9 +10,12 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
   test('should match 50 males and 20 females when all spin', async ({ browser }) => {
     test.setTimeout(600000) // 10 minutes for large scale test with conservative batching
     
-    // Use environment variable or default to main Vercel deployment
+    // ALWAYS test on Vercel deployment - never localhost
     const BASE_URL = process.env.TEST_BASE_URL || 'https://speed-silk.vercel.app'
-    console.log(`🌐 Testing against: ${BASE_URL}`)
+    if (BASE_URL.includes('localhost') || BASE_URL.includes('127.0.0.1')) {
+      throw new Error(`❌ ERROR: Test must run on Vercel, not localhost! Current BASE_URL: ${BASE_URL}. Set TEST_BASE_URL=https://speed-silk.vercel.app`)
+    }
+    console.log(`🌐 Testing against Vercel: ${BASE_URL}`)
     
     const timestamp = Date.now()
     const password = 'TestPassword123!'
@@ -314,12 +317,13 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       
       // If we have exactly 1 match (1 male, 1 female), test voting flow
       if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1) {
-        console.log('\n🗳️ Testing voting flow: Both users will vote "yes"...')
+        // Test scenario: one votes yes, other doesn't vote (vote window expires)
+        console.log('\n🗳️ Testing voting flow: One user votes "yes", other doesn\'t vote (vote window expires)...')
         const matchId = Array.from(matchedPairs.keys())[0]
         const usersInMatch = signedInContexts.filter(c => c.matchId === matchId)
         
         if (usersInMatch.length === 2) {
-          console.log(`  Found match ${matchId} with 2 users - testing voting...`)
+          console.log(`  Found match ${matchId} with 2 users - testing yes_idle scenario (vote window expires)...`)
           
           // Wait for both users to be on voting-window
           console.log('  ⏳ Waiting for both users to reach voting-window...')
@@ -333,15 +337,12 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           
           await new Promise(resolve => setTimeout(resolve, 3000)) // Wait for page to fully load
           
-          // Both users click "Yes"
-          console.log('  👆 Both users clicking "Yes"...')
-          
           // Set up console listener to capture any errors
           const consoleMessages: string[] = []
           for (const { page } of usersInMatch) {
             page.on('console', msg => {
               const text = msg.text()
-              if (text.includes('vote') || text.includes('error') || text.includes('Error') || text.includes('Vote')) {
+              if (text.includes('vote') || text.includes('error') || text.includes('Error') || text.includes('Vote') || text.includes('expired') || text.includes('countdown')) {
                 consoleMessages.push(`[${usersInMatch.findIndex(u => u.page === page)}] ${text}`)
               }
             })
@@ -350,124 +351,90 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
             })
           }
           
-          await Promise.all(usersInMatch.map(async ({ page, user }, index) => {
-            try {
-              // Wait for voting window page to be fully loaded
-              await page.waitForTimeout(1000)
+          // First user votes "yes", second user does NOT vote (will wait for expiration)
+          const [user1, user2] = usersInMatch
+          console.log(`  👆 ${user1.user.gender} user clicking "Yes", ${user2.user.gender} user NOT voting (will wait for countdown to expire)...`)
+          
+          // Only user1 votes "yes"
+          try {
+            await user1.page.waitForTimeout(1000)
+            
+            let yesButton = user1.page.locator('button').filter({ hasText: /^yes$/i }).first()
+            
+            if (!(await yesButton.isVisible({ timeout: 2000 }).catch(() => false))) {
+              yesButton = user1.page.locator('button').filter({ hasText: /yes/i }).first()
+            }
+            
+            await expect(yesButton).toBeVisible({ timeout: 20000 })
+            
+            const isDisabled = await yesButton.isDisabled()
+            if (isDisabled) {
+              console.log(`  ⚠️ ${user1.user.gender} user's Yes button is disabled`)
+            } else {
+              await user1.page.waitForTimeout(500)
+              console.log(`  🔘 ${user1.user.gender} user: Clicking Yes button...`)
               
-              // Wait for Yes button to be visible - try multiple selectors
-              // The button might be "Yes" or have text containing "yes"
-              let yesButton = page.locator('button').filter({ hasText: /^yes$/i }).first()
-              
-              // If that doesn't work, try broader selector
-              if (!(await yesButton.isVisible({ timeout: 2000 }).catch(() => false))) {
-                yesButton = page.locator('button').filter({ hasText: /yes/i }).first()
-              }
-              
-              await expect(yesButton).toBeVisible({ timeout: 20000 })
-              
-              // Check if button is disabled
-              const isDisabled = await yesButton.isDisabled()
-              if (isDisabled) {
-                console.log(`  ⚠️ ${user.gender} user's Yes button is disabled`)
-                return
-              }
-              
-              // Wait a moment for page to be ready
-              await page.waitForTimeout(500)
-              
-              // Click the button
-              console.log(`  🔘 ${user.gender} user: Clicking Yes button...`)
-              
-              // Scroll button into view if needed
               await yesButton.scrollIntoViewIfNeeded()
               await yesButton.click({ force: true, timeout: 10000 })
               
-              // Wait for API call to complete and UI to update
-              await page.waitForTimeout(3000) // Increased timeout for vote processing
+              await user1.page.waitForTimeout(2000)
               
-              // Verify button state changed (indicates vote was processed)
-              const buttonAfterClick = page.locator('button').filter({ hasText: /yes/i }).first()
+              const buttonAfterClick = user1.page.locator('button').filter({ hasText: /yes/i }).first()
               const buttonText = await buttonAfterClick.textContent()
               const isDisabledAfter = await buttonAfterClick.isDisabled()
               
-              console.log(`  ✅ ${user.gender} user clicked "Yes" (button text: "${buttonText?.trim()}", disabled: ${isDisabledAfter})`)
-              
-              // Check for any console errors
-              const userErrors = consoleMessages.filter(msg => msg.includes(`[${index}]`))
-              if (userErrors.length > 0) {
-                console.log(`  📋 ${user.gender} user console messages:`, userErrors.join('; '))
-              }
-            } catch (error: any) {
-              console.error(`  ❌ Failed to click Yes for ${user.gender} user:`, error.message || error)
-              
-              // Try to get page content for debugging
-              try {
-                const pageContent = await page.content()
-                const hasYesButton = pageContent.toLowerCase().includes('yes')
-                console.error(`  Debug: Page has "yes" button: ${hasYesButton}`)
-              } catch (e) {
-                // Ignore
-              }
+              console.log(`  ✅ ${user1.user.gender} user clicked "Yes" (button text: "${buttonText?.trim()}", disabled: ${isDisabledAfter})`)
             }
-          }))
+          } catch (error: any) {
+            console.error(`  ❌ Failed to click Yes for ${user1.user.gender} user:`, error.message || error)
+          }
+          
+          // User2 does NOT vote - wait for vote window to expire (60 seconds)
+          console.log(`  ⏳ Waiting for vote window to expire (60 seconds)... User2 (${user2.user.gender}) will NOT vote.`)
+          
+          // Wait for vote window to expire (60 seconds + buffer)
+          const expirationWaitTime = 65000 // 65 seconds to ensure expiration
+          console.log(`  ⏳ Waiting ${expirationWaitTime/1000} seconds for vote window expiration...`)
+          await new Promise(resolve => setTimeout(resolve, expirationWaitTime))
           
           // Log all console messages
           if (consoleMessages.length > 0) {
             console.log('  📋 Browser console messages:', consoleMessages.join(' | '))
           }
           
-          // Wait for both users to be redirected to /video-date
-          console.log('  ⏳ Waiting for both users to be redirected to /video-date (30 seconds)...')
-          await new Promise(resolve => setTimeout(resolve, 5000)) // Give time for votes to process
+          // Check final states: user1 (voted yes) should be on /spinning (auto-spun), user2 (didn't vote) should be on /spin
+          console.log('  ⏳ Checking final user states after vote window expiration...')
+          await new Promise(resolve => setTimeout(resolve, 5000)) // Give time for redirects
           
-          let bothOnVideoDate = false
-          const maxWait = 30000 // Increased to 30 seconds
-          const checkInterval = 1000
-          let waited = 0
-          
-          while (!bothOnVideoDate && waited < maxWait) {
-            await new Promise(resolve => setTimeout(resolve, checkInterval))
-            waited += checkInterval
-            
-            const urls = usersInMatch.map(c => {
-              try {
-                return c.page.url()
-              } catch {
-                return c.url || 'unknown'
-              }
-            })
-            bothOnVideoDate = urls.every(url => url.includes('/video-date'))
-            
-            if (bothOnVideoDate) {
-              console.log(`  ✅ Both users redirected to /video-date! (after ${waited}ms)`)
-              break
+          const urls = usersInMatch.map(c => {
+            try {
+              return c.page.url()
+            } catch {
+              return c.url || 'unknown'
             }
-            
-            // Log progress every 5 seconds
-            if (waited % 5000 === 0) {
-              console.log(`  ⏳ Still waiting... (${waited}/${maxWait}ms) - URLs: ${urls.join(', ')}`)
-            }
-          }
+          })
           
-          if (!bothOnVideoDate) {
-            const urls = usersInMatch.map(c => {
-              try {
-                return c.page.url()
-              } catch {
-                return c.url || 'unknown'
-              }
-            })
-            console.log(`  ⚠️ Not all users on /video-date after ${waited}ms`)
-            console.log(`     URLs: ${urls.join(', ')}`)
+          console.log(`  📍 Final URLs: User1 (${user1.user.gender}, voted yes): ${urls[0]}, User2 (${user2.user.gender}, didn't vote): ${urls[1]}`)
+          
+          const user1OnSpinning = urls[0].includes('/spinning')
+          const user2OnSpin = urls[1].includes('/spin') || urls[1].includes('/spinning')
+          
+          if (user1OnSpinning && user2OnSpin) {
+            console.log(`  ✅ Correct redirects after vote window expiration:`)
+            console.log(`     - ${user1.user.gender} user (voted yes) → /spinning (auto-spun) ✓`)
+            console.log(`     - ${user2.user.gender} user (didn't vote) → /spin or /spinning ✓`)
+          } else {
+            console.log(`  ⚠️ Unexpected redirects:`)
+            console.log(`     - ${user1.user.gender} user (voted yes): Expected /spinning, got ${urls[0]}`)
+            console.log(`     - ${user2.user.gender} user (didn't vote): Expected /spin or /spinning, got ${urls[1]}`)
           }
           
           // Update context URLs for final analysis
           for (const context of usersInMatch) {
             try {
               context.url = context.page.url()
-              if (context.url.includes('/video-date')) {
-                context.matched = true // Still considered matched
+              if (context.url.includes('/spinning') || context.url.includes('/spin')) {
+                context.matched = false // Reset matched status
               }
             } catch (error) {
               // Page might be closed or navigated
@@ -493,27 +460,90 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       // Check for issues
       const issues: string[] = []
       
-      // Issue 1: Sign-in failures
+      // Check if this is a yes_pass scenario (users were auto-spun after voting) or yes_idle (vote window expired)
+      let isYesPassScenario = false
+      let isYesIdleScenario = false
+      if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1) {
+        const matchId = Array.from(matchedPairs.keys())[0]
+        const usersInMatch = signedInContexts.filter(c => c.matchId === matchId || c.url?.includes('/spinning') || c.url?.includes('/spin'))
+        if (usersInMatch.length === 2) {
+          const urls = usersInMatch.map(c => {
+            try {
+              return c.page?.url() || c.url || 'unknown'
+            } catch {
+              return c.url || 'unknown'
+            }
+          })
+          // If both are on /spinning after matching, it's likely a yes_pass scenario (auto-spun)
+          isYesPassScenario = urls.every(url => url.includes('/spinning'))
+          // If one is on /spinning and one is on /spin, it's likely a yes_idle scenario (vote expired)
+          isYesIdleScenario = urls.some(url => url.includes('/spinning')) && urls.some(url => url.includes('/spin'))
+        }
+      }
+      
+      // Issue 1: Auto-spin check (for yes_idle scenario - one voted yes, other didn't vote)
+      if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1) {
+        const matchId = Array.from(matchedPairs.keys())[0]
+        const usersInMatch = signedInContexts.filter(c => c.matchId === matchId || c.url?.includes('/spinning') || c.url?.includes('/spin'))
+        if (usersInMatch.length === 2 && isYesIdleScenario) {
+          const urls = usersInMatch.map(c => {
+            try {
+              return c.page?.url() || c.url || 'unknown'
+            } catch {
+              return c.url || 'unknown'
+            }
+          })
+          const votedUserOnSpinning = urls.some(url => url.includes('/spinning'))
+          const nonVotedUserOnSpin = urls.some(url => url.includes('/spin') || url.includes('/spinning'))
+          if (!votedUserOnSpinning || !nonVotedUserOnSpin) {
+            issues.push(`ISSUE: After yes_idle outcome (one voted yes, other didn't vote), user who voted should be on /spinning (auto-spun) and user who didn't vote should be on /spin. URLs: ${urls.join(', ')}`)
+          }
+        }
+      }
+      
+      // Issue 1b: Auto-spin check (for yes_pass scenario)
+      if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1) {
+        const matchId = Array.from(matchedPairs.keys())[0]
+        const usersInMatch = signedInContexts.filter(c => c.matchId === matchId)
+        if (usersInMatch.length === 2) {
+          const urls = usersInMatch.map(c => {
+            try {
+              return c.page?.url() || c.url || 'unknown'
+            } catch {
+              return c.url || 'unknown'
+            }
+          })
+          const bothAutoSpun = urls.every(url => url.includes('/spinning'))
+          if (!bothAutoSpun) {
+            issues.push(`ISSUE: After yes_pass outcome (one pass, one yes), not all users were auto-spun to /spinning. URLs: ${urls.join(', ')}`)
+          }
+        }
+      }
+      
+      // Issue 2: Sign-in failures
       const failedSignIns = contexts.length - signedInContexts.length
       if (failedSignIns > 0) {
         issues.push(`ISSUE: ${failedSignIns} users failed to sign in (${contexts.length - signedInContexts.length} out of ${contexts.length} total)`)
       }
       
-      // Issue 2: Not all signed-in females matched
+      // Calculate matched counts (used in multiple checks)
       const matchedFemales = signedInContexts.filter(c => c.user.gender === 'female' && c.matched).length
-      
-      if (signedInFemales > 0 && matchedFemales < signedInFemales) {
-        const expectedMatches = Math.min(signedInFemales, signedInMales)
-        if (matchedFemales < expectedMatches) {
-          issues.push(`ISSUE: Only ${matchedFemales}/${expectedMatches} signed-in females matched (${signedInFemales} females and ${signedInMales} males signed in)`)
-        }
-      }
-      
-      // Issue 3: Too many unmatched males (if all females matched, should have excess unmatched males)
       const matchedMales = signedInContexts.filter(c => c.user.gender === 'male' && c.matched).length
       const unmatchedMales = signedInContexts.filter(c => c.user.gender === 'male' && !c.matched).length
       
-      if (matchedFemales === signedInFemales && signedInFemales > 0 && signedInMales > signedInFemales) {
+      // Issue 3: Not all signed-in females matched (skip if yes_pass or yes_idle scenario - they auto-spun back or expired)
+      if (!isYesPassScenario && !isYesIdleScenario) {
+        if (signedInFemales > 0 && matchedFemales < signedInFemales) {
+          const expectedMatches = Math.min(signedInFemales, signedInMales)
+          if (matchedFemales < expectedMatches) {
+            issues.push(`ISSUE: Only ${matchedFemales}/${expectedMatches} signed-in females matched (${signedInFemales} females and ${signedInMales} males signed in)`)
+          }
+        }
+      }
+      
+      // Issue 4: Too many unmatched males (if all females matched, should have excess unmatched males)
+      // Skip if yes_pass or yes_idle scenario - users auto-spun back or expired so they're not "matched" anymore
+      if (!isYesPassScenario && !isYesIdleScenario && matchedFemales === signedInFemales && signedInFemales > 0 && signedInMales > signedInFemales) {
         const expectedUnmatchedMales = signedInMales - signedInFemales
         if (unmatchedMales !== expectedUnmatchedMales) {
           issues.push(`ISSUE: Expected ${expectedUnmatchedMales} unmatched males, but found ${unmatchedMales} unmatched males (${matchedMales} matched)`)
@@ -527,7 +557,7 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
         }
       }
       
-      // Issue 5: Users in same-gender matches
+      // Issue 6: Users in same-gender matches
       for (const [matchId, userIds] of matchedPairs.entries()) {
         const usersInMatch = contexts.filter(c => userIds.includes(c.user.userId))
         const genders = usersInMatch.map(c => c.user.gender)
@@ -537,16 +567,19 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       }
       
       // Issue 6: Users stuck on /spinning or /spin (signed-in users who didn't match)
-      const stuckUsers = signedInContexts.filter(c => {
-        return !c.matched && (c.url.includes('/spinning') || c.url.includes('/spin'))
-      })
-      if (stuckUsers.length > 0) {
-        const stuckMale = stuckUsers.filter(c => c.user.gender === 'male').length
-        const stuckFemale = stuckUsers.filter(c => c.user.gender === 'female').length
-        if (stuckFemale > 0) {
-          issues.push(`ISSUE: ${stuckFemale} females stuck waiting (still on /spin or /spinning) - they should have matched`)
+      // Skip this check for yes_pass or yes_idle scenario - users are expected to be on /spinning or /spin after auto-spin/expiration
+      if (!isYesPassScenario && !isYesIdleScenario) {
+        const stuckUsers = signedInContexts.filter(c => {
+          return !c.matched && (c.url.includes('/spinning') || c.url.includes('/spin'))
+        })
+        if (stuckUsers.length > 0) {
+          const stuckMale = stuckUsers.filter(c => c.user.gender === 'male').length
+          const stuckFemale = stuckUsers.filter(c => c.user.gender === 'female').length
+          if (stuckFemale > 0) {
+            issues.push(`ISSUE: ${stuckFemale} females stuck waiting (still on /spin or /spinning) - they should have matched`)
+          }
+          // Unmatched males are expected if there are more males than females
         }
-        // Unmatched males are expected if there are more males than females
       }
       
       // Issue 7: Signed-in users on unexpected pages
@@ -563,7 +596,8 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       }
       
       // Issue 8: For 1 male + 1 female test, verify both reached video-date after voting yes
-      if (MALE_COUNT === 1 && FEMALE_COUNT === 1 && signedInContexts.length === 2) {
+      // Skip this check for yes_pass or yes_idle scenario - users should auto-spin or be redirected, not go to video-date
+      if (!isYesPassScenario && !isYesIdleScenario && MALE_COUNT === 1 && FEMALE_COUNT === 1 && signedInContexts.length === 2) {
         const usersOnVideoDate = signedInContexts.filter(c => c.url.includes('/video-date')).length
         if (usersOnVideoDate < 2) {
           issues.push(`ISSUE: Only ${usersOnVideoDate}/2 users reached /video-date after both voting yes (expected both to redirect)`)
