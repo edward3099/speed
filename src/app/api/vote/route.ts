@@ -72,13 +72,37 @@ export async function POST(request: NextRequest) {
     // Call record_vote function (new zero-issues architecture)
     console.log('🔄 /api/vote: Calling record_vote RPC', { user_id: user.id, match_id, vote })
     
-    const { data: voteData, error: voteError } = await supabase.rpc('record_vote', {
+    const { data: voteData, error: voteError, status, statusText } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
       p_vote: vote
     })
     
-    console.log('📊 /api/vote: RPC response', { voteData, voteError: voteError?.message, voteErrorCode: voteError?.code })
+    console.log('📊 /api/vote: RPC response', { 
+      voteData, 
+      voteError: voteError?.message, 
+      voteErrorCode: voteError?.code,
+      status,
+      statusText,
+      hasError: !!voteError,
+      hasData: !!voteData
+    })
+    
+    // Verify vote was actually saved by checking database directly
+    if (!voteError && voteData && !voteData.error) {
+      const { data: matchCheck } = await supabase
+        .from('matches')
+        .select('user1_vote, user2_vote, status, outcome')
+        .eq('match_id', match_id)
+        .single()
+      
+      console.log('🔍 /api/vote: Database verification after RPC call', {
+        match_id,
+        user_id: user.id,
+        db_votes: matchCheck,
+        rpc_response: voteData
+      })
+    }
     
     // Invalidate cache for both users in the match when vote is recorded
     // This ensures polling detects vote changes immediately
