@@ -120,7 +120,7 @@ export default function spin() {
           setPreferences({
             minAge: prefs.min_age,
             maxAge: prefs.max_age,
-            maxDistance: prefs.max_distance,
+            city: prefs.city || '',
             genderPreference: (prefs.gender_preference || 'female') as 'male' | 'female'
           })
         }
