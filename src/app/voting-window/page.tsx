@@ -264,9 +264,26 @@ function VotingWindowContent() {
       if (remaining <= 0) {
         // Countdown reached 0 - vote window expired
         // Check match status to determine redirect
+        console.log('⏰ Countdown reached 0 - vote window expired, checking match status...')
         try {
           const response = await fetch('/api/match/status')
           const data = await response.json()
+          
+          console.log('⏰ Countdown expiration - API response:', {
+            ok: response.ok,
+            hasMatch: !!data.match,
+            user_id: data.user_id,
+            state: data.state,
+            match: data.match ? {
+              match_id: data.match.match_id,
+              user1_id: data.match.user1_id,
+              user2_id: data.match.user2_id,
+              user1_vote: data.match.user1_vote,
+              user2_vote: data.match.user2_vote,
+              status: data.match.status,
+              outcome: data.match.outcome
+            } : null
+          })
           
           if (response.ok && data.match) {
             const currentUserId = data.user_id
@@ -278,25 +295,36 @@ function VotingWindowContent() {
               (match.user2_id === currentUserId && match.user2_vote)
             )
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log('Countdown reached 0 - vote window expired', {
-                userVoted: userVoted,
-                currentUserId: currentUserId,
-                match: match
-              })
-            }
+            console.log('⏰ Countdown expiration - Vote check:', {
+              userVoted: userVoted,
+              currentUserId: currentUserId,
+              match_user1_id: match.user1_id,
+              match_user2_id: match.user2_id,
+              match_user1_vote: match.user1_vote,
+              match_user2_vote: match.user2_vote,
+              is_user1: currentUserId === match.user1_id,
+              is_user2: currentUserId === match.user2_id
+            })
             
             // Redirect based on whether user voted
             if (userVoted) {
               // User voted yes - redirect to /spinning (will be auto-spun)
+              console.log('⏰ Countdown expiration - User voted, redirecting to /spinning')
               router.push('/spinning')
             } else {
               // User didn't vote - redirect to /spin
+              console.log('⏰ Countdown expiration - User did not vote, redirecting to /spin')
               router.push('/spin')
             }
+          } else {
+            console.log('⏰ Countdown expiration - No match in response or API error', {
+              ok: response.ok,
+              hasMatch: !!data.match,
+              data: data
+            })
           }
         } catch (error) {
-          console.error('Error checking match status when countdown expired:', error)
+          console.error('⏰ Error checking match status when countdown expired:', error)
         }
         return
       }
