@@ -158,9 +158,11 @@ function VotingWindowContent() {
             const expiredBySeconds = Math.floor((now - expiresAt) / 1000)
             
             // Determine if current user voted by checking match votes
-            const currentUserId = statusData.user_id || (statusData as any).user_id
+            // statusData should include user_id from get_user_match_status (after migration)
+            const currentUserId = statusData.user_id
             const match = statusData.match
             
+            // Check if current user voted by comparing user_id with match.user1_id/user2_id
             const userVoted = currentUserId && match && (
               (match.user1_id === currentUserId && match.user1_vote) ||
               (match.user2_id === currentUserId && match.user2_vote)
