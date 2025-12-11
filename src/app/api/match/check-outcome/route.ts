@@ -46,14 +46,15 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Get match outcome
+    // Get match outcome - also get votes for debugging
     const { data: match, error: matchError } = await supabase
       .from('matches')
-      .select('outcome, status, user1_id, user2_id')
+      .select('outcome, status, user1_id, user2_id, user1_vote, user2_vote')
       .eq('match_id', matchId)
       .single()
     
     if (matchError || !match) {
+      console.log('❌ /api/match/check-outcome: Match not found', { matchId, error: matchError })
       return NextResponse.json(
         { error: 'Match not found' },
         { status: 404 }
@@ -62,11 +63,20 @@ export async function GET(request: NextRequest) {
     
     // Verify user is part of this match
     if (match.user1_id !== user.id && match.user2_id !== user.id) {
+      console.log('❌ /api/match/check-outcome: Unauthorized', { matchId, userId: user.id, matchUser1: match.user1_id, matchUser2: match.user2_id })
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
       )
     }
+    
+    console.log('✅ /api/match/check-outcome: Match found', { 
+      matchId, 
+      outcome: match.outcome, 
+      status: match.status,
+      user1_vote: match.user1_vote,
+      user2_vote: match.user2_vote
+    })
     
     return NextResponse.json({
       outcome: match.outcome,

@@ -1,0 +1,85 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/load-test-50males-20females.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+(node:43746) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against: https://speed-date-0e8k9s7m6-edward3099s-projects.vercel.app
+👤 Creating 1 male users via backend...
+✅ All 1 male users created
+👤 Creating 1 female users via backend...
+✅ All 1 female users created
+🌐 Opening browser contexts for all users...
+✅ Created 2 browser contexts
+🔐 Signing in all users (batched to avoid server overload)...
+  Signing in batch 1/1 (2 users)...
+❌ Failed to sign in user test-female-1765461585334-0@test.com: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('button').filter({ hasText: /start now/i }).first()
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 30000ms[22m
+[2m  - waiting for locator('button').filter({ hasText: /start now/i }).first()[22m
+
+❌ Failed to sign in user test-male-1765461585334-0@test.com: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('button').filter({ hasText: /start now/i }).first()
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 30000ms[22m
+[2m  - waiting for locator('button').filter({ hasText: /start now/i }).first()[22m
+
+❌ Failed to sign in user test-female-1765461585334-0@test.com: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('button').filter({ hasText: /start now/i }).first()
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 30000ms[22m
+[2m  - waiting for locator('button').filter({ hasText: /start now/i }).first()[22m
+
+❌ Failed to sign in user test-male-1765461585334-0@test.com: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('button').filter({ hasText: /start now/i }).first()
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 30000ms[22m
+[2m  - waiting for locator('button').filter({ hasText: /start now/i }).first()[22m
+
+❌ Failed to sign in user test-female-1765461585334-0@test.com: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('button').filter({ hasText: /start now/i }).first()
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 30000ms[22m
+[2m  - waiting for locator('button').filter({ hasText: /start now/i }).first()[22m
+
+❌ Failed to sign in user test-male-1765461585334-0@test.com: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('button').filter({ hasText: /start now/i }).first()
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 30000ms[22m
+[2m  - waiting for locator('button').filter({ hasText: /start now/i }).first()[22m
+
