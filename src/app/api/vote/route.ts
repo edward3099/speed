@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getPooledServiceClient } from '@/lib/supabase/pooled-client'
 import { validateRequestBody, validateEnum, validateUUID } from '@/lib/request-validation'
 import { handleApiError } from '@/lib/api-error-handler'
 import { cache, CacheKeys } from '@/lib/cache/simple-cache'
@@ -103,22 +104,40 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    // Call record_vote RPC (SECURITY DEFINER bypasses RLS)
-    const { data: voteData, error: voteError, status, statusText } = await supabase.rpc('record_vote', {
+    // Call record_vote RPC using service role client to ensure it has proper permissions
+    // Even though function is SECURITY DEFINER, using service role ensures no auth issues
+    const serviceClient = getPooledServiceClient()
+    const { data: voteData, error: voteError } = await serviceClient.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
       p_vote: vote
     })
     
-    console.log('📊 /api/vote: RPC response (fallback)', { 
+    console.log('📊 /api/vote: RPC response', { 
       voteData, 
       voteError: voteError?.message, 
       voteErrorCode: voteError?.code,
-      status,
-      statusText,
       hasError: !!voteError,
       hasData: !!voteData
     })
+    
+    // Verify vote was saved immediately after RPC call
+    if (!voteError && voteData && !voteData.error) {
+      const { data: verifyMatch } = await supabase
+        .from('matches')
+        .select('user1_vote, user2_vote, status, outcome')
+        .eq('match_id', match_id)
+        .single()
+      
+      console.log('🔍 /api/vote: Post-RPC verification', {
+        rpc_response: voteData,
+        db_state: verifyMatch,
+        vote_saved: verifyMatch && (
+          (user.id === matchInfo.user1_id && verifyMatch.user1_vote === vote) ||
+          (user.id === matchInfo.user2_id && verifyMatch.user2_vote === vote)
+        )
+      })
+    }
     
     // Invalidate cache for both users in the match when vote is recorded
     // This ensures polling detects vote changes immediately
