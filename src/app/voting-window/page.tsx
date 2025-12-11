@@ -253,43 +253,37 @@ function VotingWindowContent() {
           return
         }
 
-        // CRITICAL: If match_id was cleared (match ended), check outcome FIRST before redirecting
+        // CRITICAL: Always check outcome if we have a matchId (even if match is cleared from users_state)
         // When both_yes occurs, match_id is cleared from users_state, but match still exists with outcome
-        if (matchId && !data.match && (data.state === 'idle' || data.state === 'waiting')) {
-          // Match was cleared - could be both_yes, yes_pass, pass_pass, etc. Check the match directly
-          console.log('🔍 Polling detected match_id cleared, checking outcome...', { matchId, state: data.state })
+        if (matchId) {
+          // Check outcome regardless of whether match is in response
+          // This handles the case where match_id was cleared but outcome is both_yes
           try {
             const matchCheckResponse = await fetch(`/api/match/check-outcome?matchId=${matchId}`, {
-              cache: 'no-store', // Force fresh check
+              cache: 'no-store',
               headers: { 'Cache-Control': 'no-cache' }
             })
             
             if (matchCheckResponse.ok) {
               const matchCheckData = await matchCheckResponse.json()
-              console.log('📊 Polling check-outcome result:', matchCheckData, { matchId })
               
-              if (matchCheckData.outcome === 'both_yes') {
-                console.log('✅ Polling found: Match cleared but outcome is both_yes, redirecting to video-date', { matchId })
+              if (matchCheckData.outcome === 'both_yes' && matchCheckData.status === 'completed') {
+                console.log('✅ Polling found both_yes outcome, redirecting to video-date', { matchId, matchCheckData })
                 router.push(`/video-date?matchId=${matchId}`)
                 return
               } else if (matchCheckData.outcome && matchCheckData.status === 'completed') {
                 // Match completed with other outcome (yes_pass, pass_pass) - redirect to spinning
-                console.log('Match completed with outcome:', matchCheckData.outcome, 'redirecting to spinning')
+                console.log('Polling found completed match with outcome:', matchCheckData.outcome, 'redirecting to spinning')
                 router.push('/spinning')
                 return
-              } else {
-                console.log('⚠️ Match cleared but no completed outcome found:', matchCheckData)
               }
-            } else {
-              const errorText = await matchCheckResponse.text()
-              console.log('❌ Failed to check match outcome:', matchCheckResponse.status, errorText, { matchId })
             }
           } catch (error) {
-            console.error('❌ Error checking match outcome in polling:', error, { matchId })
+            console.error('Error checking match outcome in polling:', error, { matchId })
           }
         }
 
-        // If user is now idle or waiting and match exists, check outcome
+        // If user is now idle or waiting and match exists in response, check outcome
         if ((data.state === 'idle' || data.state === 'waiting') && data.match) {
           // Match still in response - check outcome
           if (data.match.outcome === 'both_yes') {
@@ -304,7 +298,7 @@ function VotingWindowContent() {
           }
         }
 
-        // If no match exists and user is waiting/idle (and we haven't checked outcome above)
+        // If no match exists and user is waiting/idle (and we don't have a matchId to check)
         // Only redirect if we don't have a stored matchId to check
         if (!data.match && !matchId && (data.state === 'waiting' || data.state === 'idle')) {
           console.log('No match found, user in waiting/idle, redirecting to spinning', { state: data.state })
