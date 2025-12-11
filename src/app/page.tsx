@@ -812,19 +812,42 @@ export default function landing() {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <MapPin className="w-5 h-5 text-teal-300" />
-                    <h2 className="text-lg sm:text-xl font-semibold text-teal-300">what country are you in?</h2>
+                    <h2 className="text-lg sm:text-xl font-semibold text-teal-300">Choose your country</h2>
                   </div>
-                  <LocationAutocomplete
-                    type="country"
-                    value={onboardingData.country}
-                    onChange={(country) => {
-                      setOnboardingData({
-                        ...onboardingData,
-                        country,
-                      })
-                    }}
-                    placeholder="start typing your country..."
-                  />
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() => {
+                        setOnboardingData({
+                          ...onboardingData,
+                          country: "United Kingdom",
+                        })
+                      }}
+                      className={`w-full p-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 touch-manipulation ${
+                        onboardingData.country === "United Kingdom"
+                          ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                          : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                      }`}
+                      style={{ minHeight: '52px' }}
+                    >
+                      United Kingdom
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOnboardingData({
+                          ...onboardingData,
+                          country: "Rest of world",
+                        })
+                      }}
+                      className={`w-full p-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 touch-manipulation ${
+                        onboardingData.country === "Rest of world"
+                          ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                          : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                      }`}
+                      style={{ minHeight: '52px' }}
+                    >
+                      Rest of world
+                    </button>
+                  </div>
                 </motion.div>
               )}
 
@@ -842,26 +865,95 @@ export default function landing() {
                     <MapPin className="w-5 h-5 text-teal-300" />
                     <h2 className="text-lg sm:text-xl font-semibold text-teal-300">what city are you in?</h2>
                   </div>
-                  <LocationAutocomplete
-                    type="city"
-                    country={onboardingData.country}
-                    value={onboardingData.city}
-                    onChange={(city, latitude, longitude) => {
-                      setOnboardingData({
-                        ...onboardingData,
-                        city,
-                        location: `${city}, ${onboardingData.country}`,
-                        latitude,
-                        longitude,
-                      })
-                    }}
-                    placeholder="start typing your city..."
-                  />
-                  {onboardingData.latitude !== 0 && onboardingData.longitude !== 0 && (
-                    <p className="text-xs text-teal-300/70 mt-1">
-                      ✓ Location saved with coordinates
-                    </p>
-                  )}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <button
+                      onClick={() => {
+                        setOnboardingData({
+                          ...onboardingData,
+                          city: "North England",
+                          location: `North England, ${onboardingData.country}`,
+                        })
+                      }}
+                      className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
+                        onboardingData.city === "North England"
+                          ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                          : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                      }`}
+                      style={{ minHeight: '44px' }}
+                    >
+                      North England
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOnboardingData({
+                          ...onboardingData,
+                          city: "Midlands",
+                          location: `Midlands, ${onboardingData.country}`,
+                        })
+                      }}
+                      className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
+                        onboardingData.city === "Midlands"
+                          ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                          : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                      }`}
+                      style={{ minHeight: '44px' }}
+                    >
+                      Midlands
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOnboardingData({
+                          ...onboardingData,
+                          city: "South England",
+                          location: `South England, ${onboardingData.country}`,
+                        })
+                      }}
+                      className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
+                        onboardingData.city === "South England"
+                          ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                          : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                      }`}
+                      style={{ minHeight: '44px' }}
+                    >
+                      South England
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOnboardingData({
+                          ...onboardingData,
+                          city: "London",
+                          location: `London, ${onboardingData.country}`,
+                        })
+                      }}
+                      className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
+                        onboardingData.city === "London"
+                          ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                          : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                      }`}
+                      style={{ minHeight: '44px' }}
+                    >
+                      London
+                    </button>
+                    <div className="col-span-2 flex justify-center">
+                      <button
+                        onClick={() => {
+                          setOnboardingData({
+                            ...onboardingData,
+                            city: "other",
+                            location: `other, ${onboardingData.country}`,
+                          })
+                        }}
+                        className={`px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
+                          onboardingData.city === "other"
+                            ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                            : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                        }`}
+                        style={{ minHeight: '44px' }}
+                      >
+                        other
+                      </button>
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
@@ -917,18 +1009,100 @@ export default function landing() {
                     </div>
                   </FilterInput>
 
-                  {/* Max Distance */}
+                  {/* City Selection */}
                   <FilterInput
-                    label="maximum distance"
+                    label="location"
                     icon={<MapPin className="w-4 h-4" />}
                   >
-                    <RangeInput
-                      min={1}
-                      max={100}
-                      value={onboardingData.maxDistance}
-                      onChange={(val) => setOnboardingData({ ...onboardingData, maxDistance: val })}
-                      label={`${onboardingData.maxDistance} miles`}
-                    />
+                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-2">
+                      <button
+                        onClick={() => {
+                          setOnboardingData({
+                            ...onboardingData,
+                            city: "North England",
+                            location: `North England, ${onboardingData.country}`,
+                          })
+                        }}
+                        className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                          onboardingData.city === "North England"
+                            ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                            : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                        }`}
+                        style={{ minHeight: '36px' }}
+                      >
+                        North England
+                      </button>
+                      <button
+                        onClick={() => {
+                          setOnboardingData({
+                            ...onboardingData,
+                            city: "Midlands",
+                            location: `Midlands, ${onboardingData.country}`,
+                          })
+                        }}
+                        className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                          onboardingData.city === "Midlands"
+                            ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                            : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                        }`}
+                        style={{ minHeight: '36px' }}
+                      >
+                        Midlands
+                      </button>
+                      <button
+                        onClick={() => {
+                          setOnboardingData({
+                            ...onboardingData,
+                            city: "South England",
+                            location: `South England, ${onboardingData.country}`,
+                          })
+                        }}
+                        className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                          onboardingData.city === "South England"
+                            ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                            : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                        }`}
+                        style={{ minHeight: '36px' }}
+                      >
+                        South England
+                      </button>
+                      <button
+                        onClick={() => {
+                          setOnboardingData({
+                            ...onboardingData,
+                            city: "London",
+                            location: `London, ${onboardingData.country}`,
+                          })
+                        }}
+                        className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                          onboardingData.city === "London"
+                            ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                            : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                        }`}
+                        style={{ minHeight: '36px' }}
+                      >
+                        London
+                      </button>
+                      <div className="col-span-2 flex justify-center">
+                        <button
+                          onClick={() => {
+                            setOnboardingData({
+                              ...onboardingData,
+                              city: "other",
+                              location: `other, ${onboardingData.country}`,
+                            })
+                          }}
+                          className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                            onboardingData.city === "other"
+                              ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                              : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                          }`}
+                          style={{ minHeight: '36px' }}
+                        >
+                          other
+                        </button>
+                      </div>
+                    </div>
                   </FilterInput>
                 </motion.div>
               )}
@@ -969,8 +1143,8 @@ export default function landing() {
                   }
                   // Validate city on step 7
                   if (onboardingStep === 7) {
-                    if (!onboardingData.city || onboardingData.latitude === 0 || onboardingData.longitude === 0) {
-                      showWarning("Please select a city from the suggestions")
+                    if (!onboardingData.city) {
+                      showWarning("Please select a location")
                       return
                     }
                   }

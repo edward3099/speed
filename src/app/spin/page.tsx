@@ -58,7 +58,7 @@ export default function spin() {
   const [preferences, setPreferences] = useState({
     minAge: 18,
     maxAge: 30,
-    maxDistance: 50,
+    city: '' as string,
     genderPreference: 'female' as 'male' | 'female'
   })
   const [showFilters, setShowFilters] = useState(false)
@@ -680,16 +680,78 @@ export default function spin() {
           </FilterInput>
 
           <FilterInput
-            label="maximum distance"
+            label="location"
             icon={<MapPin className="w-4 h-4" />}
           >
-            <RangeInput
-              min={1}
-              max={100}
-              value={preferences.maxDistance}
-              onChange={(val) => setPreferences(prev => ({ ...prev, maxDistance: val }))}
-              label={`${preferences.maxDistance} miles`}
-            />
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-2">
+              <button
+                onClick={() => {
+                  setPreferences(prev => ({ ...prev, city: "North England" }))
+                }}
+                className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                  preferences.city === "North England"
+                    ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                    : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                }`}
+                style={{ minHeight: '36px' }}
+              >
+                North England
+              </button>
+              <button
+                onClick={() => {
+                  setPreferences(prev => ({ ...prev, city: "Midlands" }))
+                }}
+                className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                  preferences.city === "Midlands"
+                    ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                    : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                }`}
+                style={{ minHeight: '36px' }}
+              >
+                Midlands
+              </button>
+              <button
+                onClick={() => {
+                  setPreferences(prev => ({ ...prev, city: "South England" }))
+                }}
+                className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                  preferences.city === "South England"
+                    ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                    : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                }`}
+                style={{ minHeight: '36px' }}
+              >
+                South England
+              </button>
+              <button
+                onClick={() => {
+                  setPreferences(prev => ({ ...prev, city: "London" }))
+                }}
+                className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                  preferences.city === "London"
+                    ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                    : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                }`}
+                style={{ minHeight: '36px' }}
+              >
+                London
+              </button>
+              <div className="col-span-2 flex justify-center">
+                <button
+                  onClick={() => {
+                    setPreferences(prev => ({ ...prev, city: "other" }))
+                  }}
+                  className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
+                    preferences.city === "other"
+                      ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
+                      : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
+                  }`}
+                  style={{ minHeight: '36px' }}
+                >
+                  other
+                </button>
+              </div>
+            </div>
           </FilterInput>
 
           <div className="flex gap-2.5 sm:gap-3 mt-3 sm:mt-4 pb-safe sm:pb-0">
@@ -698,7 +760,7 @@ export default function spin() {
                 setPreferences({
                   minAge: 18,
                   maxAge: 30,
-                  maxDistance: 50,
+                  city: '',
                   genderPreference: preferences.genderPreference
                 })
               }}
