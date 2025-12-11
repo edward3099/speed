@@ -387,18 +387,33 @@ function VotingWindowContent() {
             router.push(`/video-date?matchId=${data.match.match_id}`)
             return
           } else if (data.match.status === 'completed' && data.match.outcome !== 'both_yes') {
-            // Match completed with other outcome - redirect to spinning
-            console.log('Match completed (not both_yes), redirecting to spinning', { status: data.match.status, outcome: data.match.outcome })
-            router.push('/spinning')
+            // Match completed with other outcome - check user state to determine redirect
+            if (data.state === 'idle') {
+              // User is idle (didn't vote) - redirect to /spin
+              console.log('Match completed, user is idle (didn\'t vote), redirecting to /spin', { status: data.match.status, outcome: data.match.outcome, state: data.state })
+              router.push('/spin')
+            } else {
+              // User is waiting (voted and auto-spun) - redirect to /spinning
+              console.log('Match completed, user is waiting (voted), redirecting to /spinning', { status: data.match.status, outcome: data.match.outcome, state: data.state })
+              router.push('/spinning')
+            }
             return
           }
         }
 
         // If no match exists and user is waiting/idle (and we don't have a matchId to check)
         // Only redirect if we don't have a stored matchId to check
-        if (!data.match && !matchId && (data.state === 'waiting' || data.state === 'idle')) {
-          console.log('No match found, user in waiting/idle, redirecting to spinning', { state: data.state })
-          router.push('/spinning')
+        if (!data.match && !matchId) {
+          // Check user state to determine redirect
+          if (data.state === 'idle') {
+            // User is idle - redirect to /spin
+            console.log('No match found, user in idle state, redirecting to /spin', { state: data.state })
+            router.push('/spin')
+          } else if (data.state === 'waiting') {
+            // User is waiting - redirect to /spinning
+            console.log('No match found, user in waiting state, redirecting to /spinning', { state: data.state })
+            router.push('/spinning')
+          }
           return
         }
       } catch (error) {
