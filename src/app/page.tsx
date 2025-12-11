@@ -863,7 +863,7 @@ export default function landing() {
                 </motion.div>
               )}
 
-              {/* Step 7: City */}
+              {/* Step 7: City - Single selection only (user's actual location) */}
               {onboardingStep === 7 && (
                 <motion.div
                   key="step7"
@@ -881,19 +881,14 @@ export default function landing() {
                     <button
                       onClick={() => {
                         const city = "North England"
-                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
-                        const isSelected = currentCities.includes(city)
-                        const newCities = isSelected 
-                          ? currentCities.filter(c => c !== city)
-                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: newCities,
-                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                          city: [city], // Single selection - always set as array with one item
+                          location: `${city}, ${onboardingData.country}`,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("North England")
+                        (Array.isArray(onboardingData.city) ? onboardingData.city[0] : onboardingData.city) === "North England"
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -904,19 +899,14 @@ export default function landing() {
                     <button
                       onClick={() => {
                         const city = "Midlands"
-                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
-                        const isSelected = currentCities.includes(city)
-                        const newCities = isSelected 
-                          ? currentCities.filter(c => c !== city)
-                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: newCities,
-                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                          city: [city], // Single selection
+                          location: `${city}, ${onboardingData.country}`,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("Midlands")
+                        (Array.isArray(onboardingData.city) ? onboardingData.city[0] : onboardingData.city) === "Midlands"
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -927,19 +917,14 @@ export default function landing() {
                     <button
                       onClick={() => {
                         const city = "South England"
-                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
-                        const isSelected = currentCities.includes(city)
-                        const newCities = isSelected 
-                          ? currentCities.filter(c => c !== city)
-                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: newCities,
-                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                          city: [city], // Single selection
+                          location: `${city}, ${onboardingData.country}`,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("South England")
+                        (Array.isArray(onboardingData.city) ? onboardingData.city[0] : onboardingData.city) === "South England"
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -950,19 +935,14 @@ export default function landing() {
                     <button
                       onClick={() => {
                         const city = "London"
-                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
-                        const isSelected = currentCities.includes(city)
-                        const newCities = isSelected 
-                          ? currentCities.filter(c => c !== city)
-                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: newCities,
-                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                          city: [city], // Single selection
+                          location: `${city}, ${onboardingData.country}`,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("London")
+                        (Array.isArray(onboardingData.city) ? onboardingData.city[0] : onboardingData.city) === "London"
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -974,19 +954,14 @@ export default function landing() {
                       <button
                         onClick={() => {
                           const city = "other"
-                          const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
-                          const isSelected = currentCities.includes(city)
-                          const newCities = isSelected 
-                            ? currentCities.filter(c => c !== city)
-                            : [...currentCities, city]
                           setOnboardingData({
                             ...onboardingData,
-                            city: newCities,
-                            location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                            city: [city], // Single selection
+                            location: `${city}, ${onboardingData.country}`,
                           })
                         }}
                         className={`px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                          (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("other")
+                          (Array.isArray(onboardingData.city) ? onboardingData.city[0] : onboardingData.city) === "other"
                             ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                             : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                         }`}
@@ -1213,11 +1188,11 @@ export default function landing() {
                       return
                     }
                   }
-                  // Validate city on step 7
+                  // Validate city on step 7 (single selection required)
                   if (onboardingStep === 7) {
                     const cities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
                     if (cities.length === 0) {
-                      showWarning("Please select at least one location")
+                      showWarning("Please select your city")
                       return
                     }
                   }
