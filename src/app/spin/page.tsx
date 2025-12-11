@@ -275,9 +275,38 @@ export default function spin() {
     return
   }, [])
 
-  // UI only - no backend calls
+  // Save preferences to database
   const savePreferences = async () => {
-    setShowFilters(false)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        console.error('No authenticated user found')
+        return
+      }
+
+      const preferencesData = {
+        user_id: authUser.id,
+        min_age: preferences.minAge,
+        max_age: preferences.maxAge,
+        city: preferences.city || null,
+        gender_preference: preferences.genderPreference,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert(preferencesData, {
+          onConflict: 'user_id'
+        })
+
+      if (error) {
+        console.error('Error saving preferences:', error)
+      } else {
+        setShowFilters(false)
+      }
+    } catch (error) {
+      console.error('Error in savePreferences:', error)
+    }
   }
 
   // UI only - no backend calls
