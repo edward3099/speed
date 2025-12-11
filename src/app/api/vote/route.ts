@@ -103,13 +103,75 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    // CRITICAL TEST: Try direct UPDATE first to see if it works
+    const isUser1 = matchInfo.user1_id === user.id
+    const updateField = isUser1 ? 'user1_vote' : 'user2_vote'
+    
+    console.log('🧪 /api/vote: TESTING direct UPDATE before RPC', { isUser1, updateField, vote })
+    
+    const { data: directUpdateResult, error: directUpdateError } = await supabase
+      .from('matches')
+      .update({ [updateField]: vote, updated_at: new Date().toISOString() })
+      .eq('match_id', match_id)
+      .select('user1_vote, user2_vote, status, outcome')
+      .single()
+    
+    console.log('🧪 /api/vote: Direct UPDATE result', { 
+      directUpdateResult, 
+      directUpdateError: directUpdateError?.message,
+      success: !directUpdateError && directUpdateResult
+    })
+    
+    // If direct UPDATE works, use RPC for outcome resolution
+    if (!directUpdateError && directUpdateResult) {
+      // Now call RPC to check outcome and handle completion
+      const { data: voteData, error: voteError } = await supabase.rpc('record_vote', {
+        p_user_id: user.id,
+        p_match_id: match_id,
+        p_vote: vote
+      })
+      
+      console.log('📊 /api/vote: RPC response after direct UPDATE', { 
+        voteData, 
+        voteError: voteError?.message
+      })
+      
+      // If RPC returned an error but direct UPDATE worked, that's okay - vote is saved
+      // Return the outcome from RPC or construct our own
+      if (!voteError && voteData && !voteData.error) {
+        return NextResponse.json(voteData)
+      } else if (voteError) {
+        // RPC failed but UPDATE succeeded - check outcome manually
+        const { data: matchAfter } = await supabase
+          .from('matches')
+          .select('user1_vote, user2_vote, status, outcome')
+          .eq('match_id', match_id)
+          .single()
+        
+        if (matchAfter?.user1_vote && matchAfter?.user2_vote) {
+          // Both votes present - determine outcome
+          const outcome = 
+            matchAfter.user1_vote === 'yes' && matchAfter.user2_vote === 'yes' ? 'both_yes' :
+            (matchAfter.user1_vote === 'yes' || matchAfter.user2_vote === 'yes') ? 'yes_pass' :
+            'pass_pass'
+          
+          console.log('✅ /api/vote: Both votes saved via direct UPDATE, outcome:', outcome)
+          return NextResponse.json({ outcome, completed: true })
+        }
+        
+        // Only one vote so far
+        return NextResponse.json({ completed: false, message: 'Waiting for partner to vote' })
+      }
+    }
+    
+    // Fallback: Use RPC as before if direct UPDATE didn't work
     const { data: voteData, error: voteError, status, statusText } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
       p_vote: vote
     })
     
-    console.log('📊 /api/vote: RPC response', { 
+    console.log('📊 /api/vote: RPC response (fallback)', { 
       voteData, 
       voteError: voteError?.message, 
       voteErrorCode: voteError?.code,
@@ -118,49 +180,6 @@ export async function POST(request: NextRequest) {
       hasError: !!voteError,
       hasData: !!voteData
     })
-    
-    // Verify vote was actually saved by checking database directly
-    if (!voteError && voteData && !voteData.error) {
-      // Wait a moment for transaction to commit
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      const { data: matchCheck, error: checkError } = await supabase
-        .from('matches')
-        .select('user1_vote, user2_vote, status, outcome, user1_id, user2_id')
-        .eq('match_id', match_id)
-        .single()
-      
-      console.log('🔍 /api/vote: Database verification after RPC call', {
-        match_id,
-        user_id: user.id,
-        db_votes: matchCheck,
-        rpc_response: voteData,
-        check_error: checkError,
-        vote_saved: matchCheck && (
-          (user.id === matchCheck.user1_id && matchCheck.user1_vote === vote) ||
-          (user.id === matchCheck.user2_id && matchCheck.user2_vote === vote)
-        )
-      })
-      
-      // If vote wasn't saved but RPC returned success, this is a problem!
-      if (matchCheck && !checkError) {
-        const voteShouldBeSaved = 
-          (user.id === matchCheck.user1_id && matchCheck.user1_vote === vote) ||
-          (user.id === matchCheck.user2_id && matchCheck.user2_vote === vote)
-        
-        if (!voteShouldBeSaved) {
-          console.error('🚨 CRITICAL: RPC returned success but vote was NOT saved to database!', {
-            user_id: user.id,
-            vote,
-            db_user1_id: matchCheck.user1_id,
-            db_user2_id: matchCheck.user2_id,
-            db_user1_vote: matchCheck.user1_vote,
-            db_user2_vote: matchCheck.user2_vote,
-            rpc_response: voteData
-          })
-        }
-      }
-    }
     
     // Invalidate cache for both users in the match when vote is recorded
     // This ensures polling detects vote changes immediately
