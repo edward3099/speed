@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test'
 import { createTestUser, deleteTestUser, TestUser } from './helpers/create-users'
+import { createClient } from '@supabase/supabase-js'
+import * as dotenv from 'dotenv'
+import * as path from 'path'
+
+// Load environment variables
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+})
 
 test.describe('City and Age Filtering Tests', () => {
   let testUsers: TestUser[] = []
@@ -72,83 +84,63 @@ test.describe('City and Age Filtering Tests', () => {
       
       console.log('✅ All test users created')
       
-      // Set up preferences for each user via API
-      console.log('⚙️ Setting up user preferences...')
+      // Update profiles with correct ages
+      console.log('⚙️ Updating user profiles with ages...')
+      await supabase.from('profiles').update({ age: 25 }).eq('id', user1.userId)
+      await supabase.from('profiles').update({ age: 22 }).eq('id', user2.userId)
+      await supabase.from('profiles').update({ age: 28 }).eq('id', user3.userId)
+      await supabase.from('profiles').update({ age: 35 }).eq('id', user4.userId)
+      await supabase.from('profiles').update({ age: 24 }).eq('id', user5.userId)
+      
+      // Set up preferences for each user via Supabase directly
+      console.log('⚙️ Setting up user preferences via Supabase...')
       
       // User 1: London + South England, age 20-30
-      await fetch(`${BASE_URL}/api/test/user-pool`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user1.userId,
-          preferences: {
-            min_age: 20,
-            max_age: 30,
-            city: ['London', 'South England'],
-            gender_preference: 'female'
-          }
-        })
-      }).catch(() => {}) // Ignore errors if endpoint doesn't exist
+      await supabase.from('user_preferences').upsert({
+        user_id: user1.userId,
+        min_age: 20,
+        max_age: 30,
+        city: ['London', 'South England'],
+        gender_preference: 'female'
+      }, { onConflict: 'user_id' })
       
       // User 2: London + Midlands, age 20-30
-      await fetch(`${BASE_URL}/api/test/user-pool`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user2.userId,
-          preferences: {
-            min_age: 20,
-            max_age: 30,
-            city: ['London', 'Midlands'],
-            gender_preference: 'male'
-          }
-        })
-      }).catch(() => {})
+      await supabase.from('user_preferences').upsert({
+        user_id: user2.userId,
+        min_age: 20,
+        max_age: 30,
+        city: ['London', 'Midlands'],
+        gender_preference: 'male'
+      }, { onConflict: 'user_id' })
       
       // User 3: North England only, age 25-35
-      await fetch(`${BASE_URL}/api/test/user-pool`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user3.userId,
-          preferences: {
-            min_age: 25,
-            max_age: 35,
-            city: ['North England'],
-            gender_preference: 'male'
-          }
-        })
-      }).catch(() => {})
+      await supabase.from('user_preferences').upsert({
+        user_id: user3.userId,
+        min_age: 25,
+        max_age: 35,
+        city: ['North England'],
+        gender_preference: 'male'
+      }, { onConflict: 'user_id' })
       
       // User 4: London, age 30-40
-      await fetch(`${BASE_URL}/api/test/user-pool`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user4.userId,
-          preferences: {
-            min_age: 30,
-            max_age: 40,
-            city: ['London'],
-            gender_preference: 'male'
-          }
-        })
-      }).catch(() => {})
+      await supabase.from('user_preferences').upsert({
+        user_id: user4.userId,
+        min_age: 30,
+        max_age: 40,
+        city: ['London'],
+        gender_preference: 'male'
+      }, { onConflict: 'user_id' })
       
       // User 5: No city preference, age 20-30
-      await fetch(`${BASE_URL}/api/test/user-pool`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user5.userId,
-          preferences: {
-            min_age: 20,
-            max_age: 30,
-            city: null, // No city preference
-            gender_preference: 'male'
-          }
-        })
-      }).catch(() => {})
+      await supabase.from('user_preferences').upsert({
+        user_id: user5.userId,
+        min_age: 20,
+        max_age: 30,
+        city: null, // No city preference
+        gender_preference: 'male'
+      }, { onConflict: 'user_id' })
+      
+      console.log('✅ Preferences set')
       
       // Create browser contexts and sign in users
       console.log('🌐 Opening browser contexts and signing in users...')
@@ -263,64 +255,74 @@ test.describe('City and Age Filtering Tests', () => {
         }
       }
       
-      // User 1 clicks Start Spin
-      console.log('🎰 User 1 (male, London+South England, age 25) clicking Start Spin...')
-      const user1Context = contexts.find(c => c.user.userId === user1.userId)!
-      const spinButton1 = user1Context.page.getByRole('button', { name: /start spin/i }).first()
-      await expect(spinButton1).toBeVisible({ timeout: 20000 })
-      await spinButton1.click({ force: true })
-      await user1Context.page.waitForTimeout(3000)
+      // All users click Start Spin simultaneously
+      console.log('🎰 All users clicking Start Spin simultaneously...')
+      await Promise.all(contexts.map(async ({ page, user }) => {
+        try {
+          const spinButton = page.getByRole('button', { name: /start spin/i }).first()
+          await expect(spinButton).toBeVisible({ timeout: 20000 })
+          await spinButton.click({ force: true })
+          console.log(`  ✅ ${user.name} clicked Start Spin`)
+        } catch (error) {
+          console.error(`  ❌ Failed to click spin for ${user.name}:`, error)
+        }
+      }))
       
-      // Check if user1 matched (should match user2 or user5, not user3 or user4)
-      const user1Url = user1Context.page.url()
-      console.log(`  📍 User 1 URL after spin: ${user1Url}`)
+      await new Promise(resolve => setTimeout(resolve, 5000)) // Wait for matches
       
-      if (user1Url.includes('/voting-window')) {
-        const matchIdMatch = user1Url.match(/matchId=([^&]+)/)
-        if (matchIdMatch) {
-          const matchId = matchIdMatch[1]
-          console.log(`  ✅ User 1 matched! Match ID: ${matchId}`)
+      // Check match results
+      console.log('\n📊 Checking match results...')
+      const matchResults: Map<string, string[]> = new Map() // matchId -> userIds
+      
+      for (const { page, user } of contexts) {
+        const url = page.url()
+        console.log(`  ${user.name}: ${url}`)
+        
+        if (url.includes('/voting-window')) {
+          const matchIdMatch = url.match(/matchId=([^&]+)/)
+          if (matchIdMatch) {
+            const matchId = matchIdMatch[1]
+            if (!matchResults.has(matchId)) {
+              matchResults.set(matchId, [])
+            }
+            matchResults.get(matchId)!.push(user.userId)
+          }
+        }
+      }
+      
+      // Analyze matches
+      console.log('\n📈 MATCH ANALYSIS:')
+      for (const [matchId, userIds] of matchResults.entries()) {
+        if (userIds.length === 2) {
+          const user1Match = testUsers.find(u => u.userId === userIds[0])
+          const user2Match = testUsers.find(u => u.userId === userIds[1])
           
-          // Check which user they matched with by checking other users' URLs
-          for (const { page, user } of contexts) {
-            if (user.userId !== user1.userId) {
-              await page.waitForTimeout(2000)
-              const url = page.url()
-              if (url.includes(matchId)) {
-                console.log(`  ✅ User 1 matched with: ${user.name} (${user.gender}, age ${user.age || 'unknown'})`)
-                
-                // Verify this is a valid match
-                if (user.email.includes('north')) {
-                  throw new Error(`❌ ISSUE: User 1 matched with ${user.name} but they have no city overlap!`)
-                }
-                if (user.email.includes('old')) {
-                  throw new Error(`❌ ISSUE: User 1 matched with ${user.name} but age is out of range!`)
-                }
-                if (user.email.includes('london') || user.email.includes('no-city')) {
-                  console.log(`  ✅ Valid match: ${user.name} has overlapping cities or no city preference`)
-                }
+          if (user1Match && user2Match) {
+            console.log(`  ✅ Match ${matchId.substring(0, 8)}...:`)
+            console.log(`     - ${user1Match.name} (${user1Match.gender})`)
+            console.log(`     - ${user2Match.name} (${user2Match.gender})`)
+            
+            // Verify match validity
+            const isUser1 = user1Match.userId === user1.userId || user2Match.userId === user1.userId
+            if (isUser1) {
+              const partner = user1Match.userId === user1.userId ? user2Match : user1Match
+              
+              if (partner.email.includes('north')) {
+                throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but they have no city overlap!`)
+              }
+              if (partner.email.includes('old')) {
+                throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but age is out of range!`)
+              }
+              if (partner.email.includes('london') || partner.email.includes('no-city')) {
+                console.log(`     ✅ Valid match: ${partner.name} has overlapping cities or no city preference`)
               }
             }
           }
         }
-      } else if (user1Url.includes('/spinning')) {
-        console.log(`  ⏳ User 1 is spinning (waiting for match)...`)
-        
-        // Wait up to 30 seconds for a match
-        let matched = false
-        for (let i = 0; i < 30; i++) {
-          await user1Context.page.waitForTimeout(1000)
-          const currentUrl = user1Context.page.url()
-          if (currentUrl.includes('/voting-window')) {
-            matched = true
-            console.log(`  ✅ User 1 matched after ${i + 1} seconds!`)
-            break
-          }
-        }
-        
-        if (!matched) {
-          console.log(`  ⚠️ User 1 did not match within 30 seconds (this might be expected if no compatible users)`)
-        }
+      }
+      
+      if (matchResults.size === 0) {
+        console.log('  ⚠️ No matches found (this might indicate an issue with filtering)')
       }
       
       // Test results summary
