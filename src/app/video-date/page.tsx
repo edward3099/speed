@@ -4809,6 +4809,25 @@ function VideoDateContent() {
 
                   {/* Control buttons - moved next to timer */}
                   <div className="flex items-center gap-1.5 sm:gap-2.5">
+                    {/* Enable Camera & Mic Button - Show if not enabled yet */}
+                    {!cameraMicEnabled && !localVideoTrack && !localAudioTrack && (
+                      <motion.button
+                        onClick={enableCameraAndMic}
+                        className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border-2 border-teal-300/50 bg-teal-300/20 text-teal-300 hover:bg-teal-300/30 hover:border-teal-300 transition-all duration-300 shadow-lg shadow-teal-300/20"
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.95 }}
+                        title="Enable camera and microphone"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                      >
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <Video className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <span className="text-xs sm:text-sm font-semibold">Enable</span>
+                        </div>
+                      </motion.button>
+                    )}
+                    
                     <motion.button
                       onClick={toggleMute}
                       className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg touch-manipulation ${
