@@ -336,20 +336,39 @@ function VotingWindowContent() {
 
     try {
       console.log('📤 Sending vote:', { matchId, voteType })
+      
+      // Set userVote AFTER starting the fetch to prevent double-clicks, but don't block
       setUserVote(voteType)
 
-      const response = await fetch('/api/vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match_id: matchId,
-          vote: voteType
-        })
-      })
+      let response: Response
+      let data: any
       
-      console.log('📥 Vote response:', { status: response.status, ok: response.ok })
-
-      const data = await response.json()
+      try {
+        response = await fetch('/api/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            match_id: matchId,
+            vote: voteType
+          })
+        })
+        
+        console.log('📥 Vote response:', { status: response.status, ok: response.ok, statusText: response.statusText })
+        
+        try {
+          data = await response.json()
+          console.log('📥 Vote response data:', data)
+        } catch (jsonError) {
+          const text = await response.text()
+          console.error('❌ Failed to parse vote response as JSON:', text)
+          setUserVote(null)
+          return
+        }
+      } catch (fetchError: any) {
+        console.error('❌ Fetch error when sending vote:', fetchError)
+        setUserVote(null)
+        return
+      }
 
       if (!response.ok) {
         console.error('Failed to record vote - Full response:', {
@@ -365,6 +384,13 @@ function VotingWindowContent() {
         return
       }
 
+      // Handle API response - record_vote returns { outcome, completed, message? } OR { error }
+      if (data.error) {
+        console.error('❌ Vote API returned error:', data.error, data.details)
+        setUserVote(null)
+        return
+      }
+      
       // New API response format: { outcome, completed, message? }
       if (data.completed && data.outcome) {
         // Match completed - handle outcome immediately
