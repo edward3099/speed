@@ -217,3 +217,8 @@ COMMENT ON TABLE matches IS 'Match records with outcome. Status: paired (just ma
 COMMENT ON TABLE match_history IS 'Permanent record of all matches (prevents rematching). Constraint ensures user1_id < user2_id for consistent ordering';
 
 
+
+
+
+
+

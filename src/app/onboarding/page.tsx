@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { RangeInput } from "@/components/ui/range-input"
 
 export default function onboarding() {
   const [step, setStep] = useState(1)
+  const [age, setAge] = useState(25)
   const total = 5
 
   const next = () => {
@@ -76,15 +78,15 @@ export default function onboarding() {
 
         {step === 3 && (
           <div className="flex flex-col gap-5 sm:gap-6">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-teal-300 text-center sm:text-left">select your age range</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-teal-300 text-center sm:text-left">select your age</h1>
 
             <div className="py-4">
-              <input 
-                type="range" 
-                min="18" 
-                max="60" 
-                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer touch-manipulation" 
-                style={{ minHeight: '44px' }}
+              <RangeInput
+                min={18}
+                max={100}
+                value={age}
+                onChange={setAge}
+                label={`${age} years old`}
               />
             </div>
 

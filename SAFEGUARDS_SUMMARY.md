@@ -103,3 +103,8 @@ VALUES (gen_random_uuid(), '...', '...', 'active');
 ✅ **This will NEVER happen again** - Multiple redundant safeguards ensure matches always have vote windows initialized.
 
 
+
+
+
+
+

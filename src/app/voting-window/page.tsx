@@ -674,7 +674,7 @@ function VotingWindowContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          {partner.photo && (
+          {partner.photo ? (
             <motion.img
               src={partner.photo}
               alt={partner.name}
@@ -682,13 +682,34 @@ function VotingWindowContent() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.3 }}
+              onError={(e) => {
+                // Fallback to placeholder if image fails to load
+                const target = e.target as HTMLImageElement
+                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(partner.name)}&size=160&background=0ea5e9&color=fff&bold=true`
+              }}
             />
+          ) : (
+            <motion.div
+              className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-teal-300 flex items-center justify-center border-4 border-teal-300"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.3 }}
+            >
+              <span className="text-3xl sm:text-4xl font-bold text-black">
+                {partner.name.charAt(0).toUpperCase()}
+              </span>
+            </motion.div>
           )}
           <div className="text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-teal-300">
               {partner.name}
               {partner.age && `, ${partner.age}`}
             </h2>
+            {partner.location && (
+              <p className="mt-1 text-sm sm:text-base text-teal-200/80">
+                {partner.location}
+              </p>
+            )}
             {partner.bio && (
               <p className="mt-2 text-sm sm:text-base opacity-80">{partner.bio}</p>
             )}

@@ -150,6 +150,11 @@ div, section, main, article, aside, header, footer, nav {
   overscroll-behavior: none;
 }
 
+/* Allow range inputs to be slidable on mobile */
+input[type="range"] {
+  touch-action: pan-x !important;
+}
+
 /* Prevent fixed/absolute elements from causing overflow */
 [class*="fixed"],
 [class*="absolute"] {

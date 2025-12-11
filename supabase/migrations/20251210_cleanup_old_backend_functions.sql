@@ -26,3 +26,8 @@ DROP FUNCTION IF EXISTS refresh_matching_pool() CASCADE;
 COMMENT ON SCHEMA public IS 'Zero Issues Architecture: Event-driven matching, minimal state machine, database constraints. Old functions removed.';
 
 
+
+
+
+
+

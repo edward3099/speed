@@ -145,3 +145,8 @@ Add to `vercel.json` or external scheduler:
 - Verify trigger is active: `SELECT * FROM pg_trigger WHERE tgname = 'trigger_ensure_vote_window_initialized';`
 
 
+
+
+
+
+

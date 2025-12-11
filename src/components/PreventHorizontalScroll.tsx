@@ -16,6 +16,14 @@ export function PreventHorizontalScroll() {
         if (target.closest('[data-allow-scroll]')) {
           return
         }
+        // Allow touch on range inputs (sliders) - they need horizontal panning
+        if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'range') {
+          return
+        }
+        // Also allow if the touch is on a range input's parent container
+        if (target.closest('input[type="range"]')) {
+          return
+        }
       }
       // Prevent all touch scrolling
       e.preventDefault()

@@ -41,7 +41,7 @@ export function RangeInput({
           style={{
             background: `linear-gradient(to right, rgba(94,234,212,0.5) 0%, rgba(94,234,212,0.5) ${percentage}%, rgba(255,255,255,0.1) ${percentage}%, rgba(255,255,255,0.1) 100%)`,
             WebkitAppearance: 'none',
-            touchAction: 'none',
+            touchAction: 'pan-x', // Allow horizontal panning for slider interaction
           }}
         />
         {/* Custom thumb overlay - visual indicator only, positioned behind input */}

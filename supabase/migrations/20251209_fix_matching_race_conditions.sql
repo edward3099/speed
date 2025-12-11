@@ -267,3 +267,8 @@ $$;
 COMMENT ON FUNCTION process_matching IS 'CRITICAL FIX: Added advisory locks to prevent race conditions. Locks are acquired BEFORE any checks (lock-first pattern). Prevents duplicate matches and users matched multiple times. Prioritizes fairness and waiting time over activity priority.';
 
 
+
+
+
+
+
