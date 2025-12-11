@@ -42,7 +42,7 @@ export default function landing() {
     bio: "",
     photo: "",
     country: "",
-    city: "",
+    city: [] as string[], // Changed to array to support multiple cities
     location: "",
     latitude: 0,
     longitude: 0,
@@ -187,7 +187,13 @@ export default function landing() {
         age: onboardingData.age,
         bio: onboardingData.bio,
         photo: photoUrl,
-        location: onboardingData.location || (onboardingData.city && onboardingData.country ? `${onboardingData.city}, ${onboardingData.country}` : onboardingData.country || ''),
+        location: onboardingData.location || (() => {
+          const cities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+          if (cities.length > 0 && onboardingData.country) {
+            return `${cities.join(', ')}, ${onboardingData.country}`
+          }
+          return onboardingData.country || ''
+        })(),
         latitude: onboardingData.latitude,
         longitude: onboardingData.longitude,
         gender: onboardingData.gender,
@@ -263,10 +269,16 @@ export default function landing() {
       // Male users prefer Female, Female users prefer Male
       const genderPreference = onboardingData.gender === 'male' ? 'female' : 'male'
       
+      // Convert city to array format for preferences
+      const cityArray = Array.isArray(onboardingData.city) 
+        ? (onboardingData.city.length > 0 ? onboardingData.city : null)
+        : (onboardingData.city ? [onboardingData.city] : null)
+      
       const preferencesData = {
         user_id: userId,
         min_age: onboardingData.minAge,
         max_age: onboardingData.maxAge,
+        city: cityArray, // Save as array or null
         max_distance: onboardingData.maxDistance,
         gender_preference: genderPreference,
         updated_at: new Date().toISOString()
@@ -835,17 +847,17 @@ export default function landing() {
                       onClick={() => {
                         setOnboardingData({
                           ...onboardingData,
-                          country: "Rest of world",
+                          country: "Other",
                         })
                       }}
                       className={`w-full p-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 touch-manipulation ${
-                        onboardingData.country === "Rest of world"
+                        onboardingData.country === "Other"
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
                       style={{ minHeight: '52px' }}
                     >
-                      Rest of world
+                      Other
                     </button>
                   </div>
                 </motion.div>
@@ -868,14 +880,20 @@ export default function landing() {
                   <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <button
                       onClick={() => {
+                        const city = "North England"
+                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+                        const isSelected = currentCities.includes(city)
+                        const newCities = isSelected 
+                          ? currentCities.filter(c => c !== city)
+                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: "North England",
-                          location: `North England, ${onboardingData.country}`,
+                          city: newCities,
+                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        onboardingData.city === "North England"
+                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("North England")
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -885,14 +903,20 @@ export default function landing() {
                     </button>
                     <button
                       onClick={() => {
+                        const city = "Midlands"
+                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+                        const isSelected = currentCities.includes(city)
+                        const newCities = isSelected 
+                          ? currentCities.filter(c => c !== city)
+                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: "Midlands",
-                          location: `Midlands, ${onboardingData.country}`,
+                          city: newCities,
+                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        onboardingData.city === "Midlands"
+                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("Midlands")
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -902,14 +926,20 @@ export default function landing() {
                     </button>
                     <button
                       onClick={() => {
+                        const city = "South England"
+                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+                        const isSelected = currentCities.includes(city)
+                        const newCities = isSelected 
+                          ? currentCities.filter(c => c !== city)
+                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: "South England",
-                          location: `South England, ${onboardingData.country}`,
+                          city: newCities,
+                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        onboardingData.city === "South England"
+                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("South England")
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -919,14 +949,20 @@ export default function landing() {
                     </button>
                     <button
                       onClick={() => {
+                        const city = "London"
+                        const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+                        const isSelected = currentCities.includes(city)
+                        const newCities = isSelected 
+                          ? currentCities.filter(c => c !== city)
+                          : [...currentCities, city]
                         setOnboardingData({
                           ...onboardingData,
-                          city: "London",
-                          location: `London, ${onboardingData.country}`,
+                          city: newCities,
+                          location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
                         })
                       }}
                       className={`p-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                        onboardingData.city === "London"
+                        (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("London")
                           ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                           : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                       }`}
@@ -937,14 +973,20 @@ export default function landing() {
                     <div className="col-span-2 flex justify-center">
                       <button
                         onClick={() => {
+                          const city = "other"
+                          const currentCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+                          const isSelected = currentCities.includes(city)
+                          const newCities = isSelected 
+                            ? currentCities.filter(c => c !== city)
+                            : [...currentCities, city]
                           setOnboardingData({
                             ...onboardingData,
-                            city: "other",
-                            location: `other, ${onboardingData.country}`,
+                            city: newCities,
+                            location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
                           })
                         }}
                         className={`px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-300 touch-manipulation ${
-                          onboardingData.city === "other"
+                          (Array.isArray(onboardingData.city) ? onboardingData.city : []).includes("other")
                             ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                             : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                         }`}
@@ -1143,8 +1185,9 @@ export default function landing() {
                   }
                   // Validate city on step 7
                   if (onboardingStep === 7) {
-                    if (!onboardingData.city) {
-                      showWarning("Please select a location")
+                    const cities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+                    if (cities.length === 0) {
+                      showWarning("Please select at least one location")
                       return
                     }
                   }
