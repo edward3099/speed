@@ -164,12 +164,13 @@ export async function POST(request: NextRequest) {
     
     // Invalidate cache for both users in the match when vote is recorded
     // This ensures polling detects vote changes immediately
-    if (matchInfo) {
-      // Invalidate cache for both users (regardless of vote error - cache should be cleared)
-      cache.delete(CacheKeys.userMatchStatus(matchInfo.user1_id))
-      cache.delete(CacheKeys.userMatchStatus(matchInfo.user2_id))
-      console.log('🗑️ /api/vote: Cache invalidated for both users')
-    }
+    // Use matchInfo from earlier query (already verified)
+    cache.delete(CacheKeys.userMatchStatus(matchInfo.user1_id))
+    cache.delete(CacheKeys.userMatchStatus(matchInfo.user2_id))
+    console.log('🗑️ /api/vote: Cache invalidated for both users', {
+      user1_id: matchInfo.user1_id,
+      user2_id: matchInfo.user2_id
+    })
     
     if (voteError) {
       console.error('❌ /api/vote: Vote error', { 
