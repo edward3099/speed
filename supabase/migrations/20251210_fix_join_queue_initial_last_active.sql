@@ -142,3 +142,5 @@ END;
 $$;
 
 COMMENT ON FUNCTION join_queue IS 'CRITICAL FIX: Sets last_active on initial join for immediate matching eligibility. After join, only heartbeat should update last_active to maintain eligibility.';
+
+

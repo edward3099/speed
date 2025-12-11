@@ -102,11 +102,13 @@ export async function POST(request: NextRequest) {
     
     // CRITICAL: Invalidate cache for this user (match status changed)
     // This ensures the spinning page gets fresh data and redirects correctly
+    // ALWAYS invalidate, even if no match (user joined queue, status changed)
     cache.delete(CacheKeys.userMatchStatus(user.id))
     
-    // If matched, also invalidate partner's cache
+    // If matched, also invalidate partner's cache IMMEDIATELY
+    // This is critical - partner must see match status change instantly
     if (matchId) {
-      // Get partner ID from match
+      // Get partner ID from match - use the match data we already have
       const { data: matchData, error: matchDataError } = await supabase
         .from('matches')
         .select('user1_id, user2_id')
@@ -115,7 +117,14 @@ export async function POST(request: NextRequest) {
       
       if (!matchDataError && matchData) {
         const partnerId = matchData.user1_id === user.id ? matchData.user2_id : matchData.user1_id
+        // CRITICAL: Invalidate partner's cache immediately so they see the match
         cache.delete(CacheKeys.userMatchStatus(partnerId))
+        
+        // Also invalidate any related cache keys (defensive)
+        // This ensures no stale data persists
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Cache invalidated for both users: ${user.id} and ${partnerId}`)
+        }
       }
     }
     

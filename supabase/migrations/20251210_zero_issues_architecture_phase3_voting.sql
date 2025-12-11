@@ -378,3 +378,5 @@ END;
 $$;
 
 COMMENT ON FUNCTION resolve_expired_votes IS 'Handle expired vote windows (idle+idle case). Called by cron every 10 seconds. Returns count of resolved matches.';
+
+

@@ -93,3 +93,5 @@
 5. `20251210_update_get_user_match_status.sql` - Updated status function
 
 All migrations have been applied successfully.
+
+

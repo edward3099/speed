@@ -215,3 +215,5 @@ END $$;
 COMMENT ON TABLE users_state IS 'Single source of truth for all user state. Queue is just: SELECT * FROM users_state WHERE state=''waiting'' AND last_active > NOW() - INTERVAL ''10 seconds''';
 COMMENT ON TABLE matches IS 'Match records with outcome. Status: paired (just matched), active (voting window), completed (outcome determined), cancelled';
 COMMENT ON TABLE match_history IS 'Permanent record of all matches (prevents rematching). Constraint ensures user1_id < user2_id for consistent ordering';
+
+

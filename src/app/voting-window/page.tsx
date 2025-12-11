@@ -53,6 +53,36 @@ function VotingWindowContent() {
           return
         }
 
+        // Check if vote window has expired (before checking other states)
+        if (statusData.match?.vote_window_expires_at) {
+          const expiresAt = new Date(statusData.match.vote_window_expires_at).getTime()
+          const now = Date.now()
+          
+          if (now >= expiresAt && statusData.match?.status !== 'completed') {
+            // Vote window expired - record metric and redirect
+            const expiredBySeconds = Math.floor((now - expiresAt) / 1000)
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Vote window expired, redirecting to spinning', {
+                expiredBy: expiredBySeconds + ' seconds'
+              })
+            }
+            
+            // Record metric: window expired before user could vote
+            fetch('/api/match/metrics', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                match_id: matchId,
+                metric_type: 'window_expired_before_seen',
+                value: { expired_by_seconds: expiredBySeconds }
+              })
+            }).catch(() => {})
+            
+            router.push('/spinning')
+            return
+          }
+        }
+
         // If user is already re-queued (waiting) or idle, redirect to spinning
         if (statusData.state === 'waiting' || statusData.state === 'idle') {
           router.push('/spinning')
@@ -83,35 +113,76 @@ function VotingWindowContent() {
           }
         }
 
-        // If in matched state (status='paired'), acknowledge
-        if (statusData.state === 'matched' && statusData.match?.status === 'paired') {
+        // Unified flow: Vote windows are always auto-started, acknowledgments are for tracking only
+        // Check if vote window exists (auto-started or manually started)
+        if (statusData.match?.vote_window_expires_at) {
+          // Check if vote window has expired
+          const expiresAt = new Date(statusData.match.vote_window_expires_at).getTime()
+          const now = Date.now()
+          
+          if (now >= expiresAt) {
+            // Vote window expired - redirect to spinning
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Vote window expired, redirecting to spinning', {
+                expiresAt: new Date(expiresAt).toISOString(),
+                now: new Date(now).toISOString(),
+                expiredBy: Math.floor((now - expiresAt) / 1000) + ' seconds'
+              })
+            }
+            router.push('/spinning')
+            return
+          }
+          
+          // Vote window is active - start countdown and optionally acknowledge (for tracking)
+          startCountdown(statusData.match.vote_window_expires_at)
+          
+          // Record acknowledgment for analytics (optional, doesn't affect vote window)
+          // Only acknowledge once per page load
+          if (!acknowledged) {
+            setAcknowledged(true)
+            // Fire-and-forget acknowledgment (for analytics)
+            fetch('/api/match/acknowledge', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ match_id: matchId })
+            }).catch(() => {
+              // Ignore errors - acknowledgment is optional for analytics
+            })
+          }
+        } else if (statusData.match?.status === 'paired') {
+          // Legacy flow: Match is paired but vote window not started yet
+          // This shouldn't happen with auto-start, but handle gracefully
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Match is paired but vote window not started - this indicates a mismatch. Attempting to acknowledge.')
+          }
+          
+          // Try to acknowledge (may start vote window in legacy flow)
           const ackResponse = await fetch('/api/match/acknowledge', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ match_id: matchId })
           })
 
-          if (!ackResponse.ok) {
-            router.push('/spin')
-            return
+          if (ackResponse.ok) {
+            const ackData = await ackResponse.json()
+            if (ackData.vote_window_expires_at) {
+              startCountdown(ackData.vote_window_expires_at)
+              setAcknowledged(true)
+            } else {
+              // Waiting for partner - will be handled by polling
+              setAcknowledged(false)
+            }
           }
-
-          const ackData = await ackResponse.json()
-
-          // New API returns vote_window_expires_at directly
-          if (ackData.vote_window_expires_at) {
-            startCountdown(ackData.vote_window_expires_at)
-            setAcknowledged(true)
-          } else {
-            // Waiting for partner to acknowledge
-            setAcknowledged(false)
+        } else {
+          // No vote window and not paired - invalid state, redirect to spin
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Invalid match state - no vote window and not paired', {
+              status: statusData.match?.status,
+              state: statusData.state
+            })
           }
-        }
-        
-        // If match status is 'active' (voting window already started)
-        if (statusData.match?.status === 'active' && statusData.match?.vote_window_expires_at) {
-          startCountdown(statusData.match.vote_window_expires_at)
-          setAcknowledged(true)
+          router.push('/spin')
+          return
         }
 
         setLoading(false)
@@ -182,39 +253,60 @@ function VotingWindowContent() {
           return
         }
 
-        // CRITICAL: If user is now idle or waiting (match ended, re-queued)
-        // BUT only redirect to spinning if we're sure it's not both_yes
-        // If match_id was cleared but we're in idle state, it could be both_yes (check via stored matchId)
-        if (data.state === 'idle' || data.state === 'waiting') {
-          // If we have a stored matchId but no match in response, check if it was both_yes
-          if (matchId && !data.match) {
-            // Match was cleared - could be both_yes or pass. Check the match directly
-            try {
-              const matchCheckResponse = await fetch(`/api/match/check-outcome?matchId=${matchId}`)
-              if (matchCheckResponse.ok) {
-                const matchCheckData = await matchCheckResponse.json()
-                if (matchCheckData.outcome === 'both_yes') {
-                  console.log('Match cleared but outcome is both_yes, redirecting to video-date', { matchId })
-                  router.push(`/video-date?matchId=${matchId}`)
-                  return
-                }
+        // CRITICAL: If match_id was cleared (match ended), check outcome FIRST before redirecting
+        // When both_yes occurs, match_id is cleared from users_state, but match still exists with outcome
+        if (matchId && !data.match && (data.state === 'idle' || data.state === 'waiting')) {
+          // Match was cleared - could be both_yes, yes_pass, pass_pass, etc. Check the match directly
+          console.log('🔍 Polling detected match_id cleared, checking outcome...', { matchId, state: data.state })
+          try {
+            const matchCheckResponse = await fetch(`/api/match/check-outcome?matchId=${matchId}`, {
+              cache: 'no-store', // Force fresh check
+              headers: { 'Cache-Control': 'no-cache' }
+            })
+            
+            if (matchCheckResponse.ok) {
+              const matchCheckData = await matchCheckResponse.json()
+              console.log('📊 Polling check-outcome result:', matchCheckData, { matchId })
+              
+              if (matchCheckData.outcome === 'both_yes') {
+                console.log('✅ Polling found: Match cleared but outcome is both_yes, redirecting to video-date', { matchId })
+                router.push(`/video-date?matchId=${matchId}`)
+                return
+              } else if (matchCheckData.outcome && matchCheckData.status === 'completed') {
+                // Match completed with other outcome (yes_pass, pass_pass) - redirect to spinning
+                console.log('Match completed with outcome:', matchCheckData.outcome, 'redirecting to spinning')
+                router.push('/spinning')
+                return
+              } else {
+                console.log('⚠️ Match cleared but no completed outcome found:', matchCheckData)
               }
-            } catch (error) {
-              console.error('Error checking match outcome:', error)
+            } else {
+              const errorText = await matchCheckResponse.text()
+              console.log('❌ Failed to check match outcome:', matchCheckResponse.status, errorText, { matchId })
             }
+          } catch (error) {
+            console.error('❌ Error checking match outcome in polling:', error, { matchId })
           }
-          
-          // Only redirect to spinning if match is definitely not both_yes
-          if (data.match?.outcome !== 'both_yes') {
-            console.log('Match ended - user re-queued, redirecting to spinning', { state: data.state, match: data.match })
+        }
+
+        // If user is now idle or waiting and match exists, check outcome
+        if ((data.state === 'idle' || data.state === 'waiting') && data.match) {
+          // Match still in response - check outcome
+          if (data.match.outcome === 'both_yes') {
+            console.log('Match outcome is both_yes, redirecting to video-date', { matchId: data.match.match_id })
+            router.push(`/video-date?matchId=${data.match.match_id}`)
+            return
+          } else if (data.match.status === 'completed' && data.match.outcome !== 'both_yes') {
+            // Match completed with other outcome - redirect to spinning
+            console.log('Match completed (not both_yes), redirecting to spinning', { status: data.match.status, outcome: data.match.outcome })
             router.push('/spinning')
             return
           }
         }
 
-        // If no match exists and user is waiting/idle, redirect to spinning
-        // (but only if we've already checked for both_yes above)
-        if (!data.match && (data.state === 'waiting' || data.state === 'idle')) {
+        // If no match exists and user is waiting/idle (and we haven't checked outcome above)
+        // Only redirect if we don't have a stored matchId to check
+        if (!data.match && !matchId && (data.state === 'waiting' || data.state === 'idle')) {
           console.log('No match found, user in waiting/idle, redirecting to spinning', { state: data.state })
           router.push('/spinning')
           return
@@ -224,9 +316,9 @@ function VotingWindowContent() {
       }
     }
 
-    // Poll immediately, then every 1 second (faster polling for better responsiveness)
+    // Poll immediately, then every 500ms (faster polling for better vote detection)
     pollMatchStatus()
-    pollingRef.current = setInterval(pollMatchStatus, 1000)
+    pollingRef.current = setInterval(pollMatchStatus, 500)
 
     return () => {
       if (pollingRef.current) {
@@ -237,9 +329,13 @@ function VotingWindowContent() {
 
   // Handle vote
   const handleVote = async (voteType: 'yes' | 'pass') => {
-    if (!matchId || userVote !== null) return
+    if (!matchId || userVote !== null) {
+      console.log('⚠️ handleVote early return:', { matchId, userVote, voteType })
+      return
+    }
 
     try {
+      console.log('📤 Sending vote:', { matchId, voteType })
       setUserVote(voteType)
 
       const response = await fetch('/api/vote', {
@@ -250,6 +346,8 @@ function VotingWindowContent() {
           vote: voteType
         })
       })
+      
+      console.log('📥 Vote response:', { status: response.status, ok: response.ok })
 
       const data = await response.json()
 
@@ -269,10 +367,10 @@ function VotingWindowContent() {
 
       // New API response format: { outcome, completed, message? }
       if (data.completed && data.outcome) {
-        // Match completed - handle outcome
+        // Match completed - handle outcome immediately
         if (data.outcome === 'both_yes') {
           // Both yes → redirect to video-date
-          console.log('Both users voted yes, redirecting to video-date', { outcome: data.outcome, matchId })
+          console.log('✅ Both users voted yes, redirecting to video-date immediately', { outcome: data.outcome, matchId })
           router.push(`/video-date?matchId=${matchId}`)
           return
         } else if (data.outcome === 'yes_pass' || data.outcome === 'pass_pass') {
@@ -283,9 +381,53 @@ function VotingWindowContent() {
         }
         // Other outcomes (pass_idle, yes_idle, idle_idle) handled by polling
       } else if (!data.completed) {
-        // Waiting for partner - keep polling
-        console.log('Waiting for partner to vote', { message: data.message })
-        // Don't redirect, just wait
+        // Not completed yet - check if partner just voted (race condition)
+        // The second voter's vote completes the match, but first voter gets this response
+        console.log('⏳ Waiting for partner to vote', { message: data.message, matchId })
+        
+        // Check outcome immediately - partner might have just voted in parallel
+        const checkOutcomeNow = async () => {
+          try {
+            console.log('🔍 Checking match outcome immediately after vote...', { matchId })
+            const checkResponse = await fetch(`/api/match/check-outcome?matchId=${matchId}`, {
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' }
+            })
+            
+            if (checkResponse.ok) {
+              const checkData = await checkResponse.json()
+              console.log('📊 Match outcome check result:', checkData)
+              
+              if (checkData.outcome === 'both_yes') {
+                console.log('✅ FOUND: Partner voted - outcome is both_yes, redirecting to video-date', { matchId })
+                router.push(`/video-date?matchId=${matchId}`)
+                return true
+              } else if (checkData.outcome && checkData.status === 'completed') {
+                console.log('Match completed with outcome:', checkData.outcome)
+              }
+            } else {
+              console.log('❌ Failed to check outcome:', checkResponse.status, await checkResponse.text())
+            }
+          } catch (error) {
+            console.error('❌ Error checking outcome:', error)
+          }
+          return false
+        }
+        
+        // Check immediately (handle race condition where votes happen simultaneously)
+        checkOutcomeNow().then((redirected) => {
+          if (!redirected) {
+            // Check again after short delays
+            setTimeout(() => {
+              console.log('🔍 Re-checking outcome after 300ms...', { matchId })
+              checkOutcomeNow()
+            }, 300)
+            setTimeout(() => {
+              console.log('🔍 Re-checking outcome after 1000ms...', { matchId })
+              checkOutcomeNow()
+            }, 1000)
+          }
+        })
       }
     } catch (error) {
       console.error('Error recording vote:', error)

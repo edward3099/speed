@@ -226,3 +226,5 @@ END;
 $$;
 
 COMMENT ON FUNCTION handle_disconnect IS 'Handle user going offline. Handles all 3 disconnect scenarios: during spinning, during voting, at match formation. Returns scenario and resulting states.';
+
+

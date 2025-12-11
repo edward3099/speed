@@ -499,10 +499,10 @@ export default function spin() {
                 <div className="text-center">
                   <h2 className="text-2xl sm:text-3xl font-bold text-teal-300">
                     {currentMatch?.partner_name}
-                    {currentMatch?.partner_age && `, ${currentMatch.partner_age}`}
+                    {currentMatch?.partner_age && `, ${currentMatch?.partner_age}`}
                   </h2>
                   {currentMatch?.partner_bio && (
-                    <p className="mt-2 text-sm sm:text-base opacity-80">{currentMatch.partner_bio}</p>
+                    <p className="mt-2 text-sm sm:text-base opacity-80">{currentMatch?.partner_bio}</p>
                   )}
                 </div>
               </motion.div>

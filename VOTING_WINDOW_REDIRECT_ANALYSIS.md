@@ -42,3 +42,5 @@ Check if:
 - ❓ Both users were redirected to `/voting-window` (unknown)
 - ❓ Both users called `/api/match/acknowledge` (need to check acknowledged_at)
 - ❓ Vote window started (vote_window_expires_at should be set)
+
+

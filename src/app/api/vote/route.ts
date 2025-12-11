@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { validateRequestBody, validateEnum, validateUUID } from '@/lib/request-validation'
 import { handleApiError } from '@/lib/api-error-handler'
+import { cache, CacheKeys } from '@/lib/cache/simple-cache'
 
 /**
  * POST /api/vote
@@ -55,12 +56,27 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Get match info first to know both user IDs for cache invalidation
+    const { data: matchInfo } = await supabase
+      .from('matches')
+      .select('user1_id, user2_id')
+      .eq('match_id', match_id)
+      .single()
+    
     // Call record_vote function (new zero-issues architecture)
     const { data: voteData, error: voteError } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
       p_vote: vote
     })
+    
+    // Invalidate cache for both users in the match when vote is recorded
+    // This ensures polling detects vote changes immediately
+    if (matchInfo) {
+      // Invalidate cache for both users (regardless of vote error - cache should be cleared)
+      cache.delete(CacheKeys.userMatchStatus(matchInfo.user1_id))
+      cache.delete(CacheKeys.userMatchStatus(matchInfo.user2_id))
+    }
     
     if (voteError) {
       // Extract error message from various possible locations

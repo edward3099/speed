@@ -382,3 +382,5 @@ COMMENT ON FUNCTION process_matching IS 'CRITICAL FIX: Added advisory locks to p
 -- STEP 7: Refresh matching_pool to reflect cleanup
 -- ============================================================================
 REFRESH MATERIALIZED VIEW matching_pool;
+
+

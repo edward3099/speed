@@ -66,10 +66,9 @@ export async function GET(request: NextRequest) {
       return statusData
     })
     
-    // Cache the result (15 second TTL - very aggressive caching)
-    // Status changes are infrequent (only when matched/voted), so 15s is safe
-    // This significantly reduces network latency issues
-    cache.set(cacheKey, result, 15000)
+    // Cache the result (3 second TTL - shorter for real-time vote detection)
+    // Status changes when matched/voted, need faster detection for voting
+    cache.set(cacheKey, result, 3000)
     
     // Return response with cache headers for browser/CDN caching
     const response = NextResponse.json(result)

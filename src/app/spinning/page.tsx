@@ -33,59 +33,123 @@ export default function SpinningPage() {
       return user?.id
     }
 
-    // One-time initial status check (not polling)
+    // Initial status check - retry multiple times to catch matches
+    // CRITICAL: This catches matches created before page load or if WebSocket is delayed
     const checkInitialStatus = async () => {
       if (!isMounted) return
-      try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000)
+      
+      // Check multiple times with increasing delays to catch matches that happen during page load
+      const checks = [500, 1000, 2000, 3000] // Check at 0.5s, 1s, 2s, 3s
+      
+      for (const delay of checks) {
+        if (!isMounted) return
+        
+        await new Promise(resolve => setTimeout(resolve, delay))
+        
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-        const response = await fetch('/api/match/status', {
-          signal: controller.signal,
-          cache: 'no-store',
-        })
+          const response = await fetch('/api/match/status', {
+            signal: controller.signal,
+            cache: 'no-store',
+          })
 
-        clearTimeout(timeoutId)
+          clearTimeout(timeoutId)
 
-        if (!response.ok) {
-          if (response.status === 401) {
+          if (!response.ok) {
+            if (response.status === 401) {
+              setIsSpinning(false)
+              router.push('/')
+              return
+            }
+            continue // Try next check
+          }
+
+          const data = await response.json()
+
+          // If already matched, redirect immediately (highest priority)
+          if (data.match?.match_id) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Match found on initial check, redirecting immediately', { 
+                matchId: data.match.match_id,
+                status: data.match.status,
+                state: data.state,
+                checkDelay: delay
+              })
+            }
             setIsSpinning(false)
-            router.push('/')
+            router.push(`/voting-window?matchId=${data.match.match_id}`)
             return
           }
-          return
-        }
 
-        const data = await response.json()
-
-        // If already matched, redirect immediately
-        if (data.match?.match_id) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Match found on initial check, redirecting', { matchId: data.match.match_id })
+          // If idle (not in queue), redirect to spin page
+          if (data.state === 'idle') {
+            setIsSpinning(false)
+            router.push('/spin')
+            return
           }
-          setIsSpinning(false)
-          router.push(`/voting-window?matchId=${data.match.match_id}`)
-          return
-        }
-
-        // If idle (not in queue), redirect to spin page
-        if (data.state === 'idle') {
-          setIsSpinning(false)
-          router.push('/spin')
-          return
-        }
-        
-        // If matched, redirect to voting window
-        if (data.state === 'matched' && data.match?.match_id) {
-          setIsSpinning(false)
-          router.push(`/voting-window?matchId=${data.match.match_id}`)
-          return
-        }
-      } catch (error: any) {
-        if (error.name !== 'AbortError' && process.env.NODE_ENV === 'development') {
-          console.warn('Initial status check failed, continuing with WebSocket', { error: error.message })
+          
+          // If matched state but match_id missing (shouldn't happen, but handle gracefully)
+          if (data.state === 'matched' && !data.match?.match_id && process.env.NODE_ENV === 'development') {
+            console.warn('State is matched but no match_id found - this may indicate a state inconsistency')
+          }
+        } catch (error: any) {
+          if (error.name !== 'AbortError' && process.env.NODE_ENV === 'development') {
+            console.warn(`Initial status check ${delay}ms failed, continuing`, { error: error.message })
+          }
         }
       }
+    }
+    
+    // Aggressive polling as backup - runs alongside WebSocket (dual strategy)
+    // Starts immediately after initial checks, polls every 1.5 seconds
+    // This ensures we catch matches even if WebSocket has issues
+    let pollInterval: NodeJS.Timeout | null = null
+    const startAggressivePolling = () => {
+      if (pollInterval) return // Already polling
+      
+      // Start polling immediately (runs alongside WebSocket for redundancy)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Starting aggressive polling as backup (runs alongside WebSocket)')
+      }
+      
+      // First poll after 2 seconds (after initial checks)
+      setTimeout(() => {
+        if (!isMounted) return
+        
+        // Start continuous polling
+        pollInterval = setInterval(async () => {
+          if (!isMounted) {
+            if (pollInterval) clearInterval(pollInterval)
+            return
+          }
+          
+          try {
+            const response = await fetch('/api/match/status', {
+              cache: 'no-store',
+            })
+            
+            if (response.ok) {
+              const data = await response.json()
+              if (data.match?.match_id) {
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('Match found via polling, redirecting', { matchId: data.match.match_id })
+                }
+                setIsSpinning(false)
+                if (pollInterval) {
+                  clearInterval(pollInterval)
+                  pollInterval = null
+                }
+                router.push(`/voting-window?matchId=${data.match.match_id}`)
+                return
+              }
+            }
+          } catch (error) {
+            // Silently fail - polling will retry
+          }
+        }, 1500) // Poll every 1.5 seconds
+      }, 2000) // Start after 2 seconds (after initial checks complete)
     }
 
     // Set up real-time subscription for instant match notifications (100% WebSocket)
@@ -111,32 +175,16 @@ export default function SpinningPage() {
             // Reset reconnect attempts on successful update
             reconnectAttempts = 0
 
-            // If matched, fetch full status and redirect
+            // If matched, redirect immediately (no need to fetch status - we have match_id)
             if (updatedState.match_id) {
-              try {
-                const response = await fetch('/api/match/status', {
-                  signal: AbortSignal.timeout(5000),
-                })
-                if (response.ok) {
-                  const data = await response.json()
-                  if (data.match?.match_id) {
-                    setTimeout(() => {
-                      if (process.env.NODE_ENV === 'development') {
-                        console.log('Match found via WebSocket, redirecting', { matchId: data.match.match_id })
-                      }
-                      setIsSpinning(false)
-                      router.push(`/voting-window?matchId=${data.match.match_id}`)
-                    }, 0)
-                    return
-                  }
-                }
-              } catch (error) {
-                if (process.env.NODE_ENV === 'development') {
-                  setTimeout(() => {
-                    console.error('Error fetching match status after real-time update', { error })
-                  }, 0)
-                }
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Match found via WebSocket, redirecting immediately', { matchId: updatedState.match_id })
               }
+              setIsSpinning(false)
+              // Redirect immediately - don't wait for status fetch
+              // Voting window page will fetch status and handle expired windows if needed
+              router.push(`/voting-window?matchId=${updatedState.match_id}`)
+              return
             }
           },
           onError: (error) => {
@@ -184,14 +232,18 @@ export default function SpinningPage() {
       }
     }
 
-    // Run initial check and setup WebSocket
+    // Run initial check, setup WebSocket, and start aggressive polling
     checkInitialStatus()
     setupRealtime()
+    startAggressivePolling()
 
     return () => {
       isMounted = false
       if (realtimeSubRef.current) {
         realtimeSubRef.current.cleanup()
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval)
       }
     }
   }, [router])

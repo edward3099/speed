@@ -74,3 +74,5 @@ export function getSystemHealthScore(): number {
   // Average of CPU and memory scores
   return (cpuScore + memScore) / 2
 }
+
+

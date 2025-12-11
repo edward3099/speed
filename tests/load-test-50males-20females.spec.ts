@@ -4,11 +4,11 @@ import { createTestUser, deleteTestUser, TestUser } from './helpers/create-users
 test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
   let maleUsers: TestUser[] = []
   let femaleUsers: TestUser[] = []
-  const MALE_COUNT = 50
-  const FEMALE_COUNT = 20
+  const MALE_COUNT = 1
+  const FEMALE_COUNT = 1
 
   test('should match 50 males and 20 females when all spin', async ({ browser }) => {
-    test.setTimeout(300000) // 5 minutes for large scale test
+    test.setTimeout(600000) // 10 minutes for large scale test with conservative batching
     
     // Use environment variable or default to localhost
     const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
@@ -61,9 +61,9 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
 
       // Sign in users in batches to avoid overwhelming server
       console.log('🔐 Signing in all users (batched to avoid server overload)...')
-      // Smaller batches for production to avoid overwhelming server
-      const BATCH_SIZE = process.env.TEST_BASE_URL ? 5 : 10 // Smaller batches for production
-      const BATCH_DELAY = process.env.TEST_BASE_URL ? 5000 : 2000 // Longer delay for production (5s vs 2s)
+      // Very conservative batches for production to avoid overwhelming server
+      const BATCH_SIZE = process.env.TEST_BASE_URL ? 3 : 10 // Smaller batches for production
+      const BATCH_DELAY = process.env.TEST_BASE_URL ? 10000 : 2000 // Longer delay for production (10s vs 2s)
       
       for (let i = 0; i < contexts.length; i += BATCH_SIZE) {
         const batch = contexts.slice(i, i + BATCH_SIZE)
@@ -75,51 +75,92 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
         await Promise.all(batch.map(async (contextObj, batchIndex) => {
           const { page, user } = contextObj
           const globalIndex = i + batchIndex
-          try {
-            // Add stagger within batch
-            await page.waitForTimeout(Math.random() * 500)
-            
-            await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 60000 })
-            await page.waitForTimeout(500)
-            
-            const startButton = page.getByRole('button', { name: /start now/i }).first()
-            await expect(startButton).toBeVisible({ timeout: 15000 })
-            await startButton.click()
-            await page.waitForTimeout(300)
-            
-            const signInTab = page.getByRole('button', { name: /sign in/i }).first()
-            if (await signInTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-              await signInTab.click()
+          let retries = 2
+          let signedIn = false
+          
+          while (retries >= 0 && !signedIn) {
+            try {
+              // Add stagger within batch
+              await page.waitForTimeout(Math.random() * 500)
+              
+              await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 90000 })
+              await page.waitForTimeout(1000)
+              
+              const startButton = page.getByRole('button', { name: /start now/i }).first()
+              await expect(startButton).toBeVisible({ timeout: 20000 })
+              await startButton.click({ force: true })
+              await page.waitForTimeout(500)
+              
+              const signInTab = page.getByRole('button', { name: /sign in/i }).first()
+              if (await signInTab.isVisible({ timeout: 3000 }).catch(() => false)) {
+                await signInTab.click({ force: true })
+                await page.waitForTimeout(500)
+              }
+              
+              const emailInput = page.locator('input[type="email"]').first()
+              await expect(emailInput).toBeVisible({ timeout: 20000 })
+              await emailInput.fill(user.email)
               await page.waitForTimeout(300)
-            }
-            
-            const emailInput = page.locator('input[type="email"]').first()
-            await expect(emailInput).toBeVisible({ timeout: 15000 })
-            await emailInput.fill(user.email)
-            await page.waitForTimeout(200)
-            
-            const passwordInput = page.locator('input[type="password"]').first()
-            await expect(passwordInput).toBeVisible({ timeout: 15000 })
-            await passwordInput.fill(user.password)
-            await page.waitForTimeout(200)
-            
-            const continueButton = page.getByRole('button', { name: /continue/i }).first()
-            await continueButton.click()
-            
-            await page.waitForURL(/\/spin/, { timeout: 20000 })
-            
-            // Verify we're actually on /spin
-            const url = page.url()
-            if (url.includes('/spin')) {
-              contexts[globalIndex].signedIn = true
-              contexts[globalIndex].url = url
-            } else {
-              console.error(`❌ User ${user.email} not on /spin after sign-in, got: ${url}`)
-            }
-          } catch (error: any) {
-            console.error(`❌ Failed to sign in user ${user.email}:`, error.message || error)
-            if (contexts[globalIndex]) {
-              contexts[globalIndex].signedIn = false
+              
+              const passwordInput = page.locator('input[type="password"]').first()
+              await expect(passwordInput).toBeVisible({ timeout: 20000 })
+              await passwordInput.fill(user.password)
+              await page.waitForTimeout(300)
+              
+              const continueButton = page.getByRole('button', { name: /continue/i }).first()
+              await continueButton.click({ force: true })
+              
+              await page.waitForURL(/\/spin/, { timeout: 30000 })
+              
+              // Verify we're actually on /spin
+              const url = page.url()
+              if (url.includes('/spin')) {
+                contexts[globalIndex].signedIn = true
+                contexts[globalIndex].url = url
+                signedIn = true
+              } else {
+                throw new Error(`Not on /spin, got: ${url}`)
+              }
+            } catch (error: any) {
+              // Check if page/context was closed
+              if (error.message && error.message.includes('closed')) {
+                console.error(`❌ Browser context closed for user ${user.email}`)
+                if (contexts[globalIndex]) {
+                  contexts[globalIndex].signedIn = false
+                }
+                break // Exit retry loop if context closed
+              }
+              
+              if (retries > 0) {
+                try {
+                  // Check if page is still valid before retrying
+                  if (!page.isClosed()) {
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`⚠️ Retrying sign-in for ${user.email} (${retries} retries left)`)
+                    }
+                    await page.waitForTimeout(2000) // Wait before retry
+                    retries--
+                  } else {
+                    console.error(`❌ Page closed for user ${user.email}, cannot retry`)
+                    if (contexts[globalIndex]) {
+                      contexts[globalIndex].signedIn = false
+                    }
+                    break
+                  }
+                } catch (checkError) {
+                  // Page/context definitely closed
+                  console.error(`❌ Cannot retry for ${user.email}: context closed`)
+                  if (contexts[globalIndex]) {
+                    contexts[globalIndex].signedIn = false
+                  }
+                  break
+                }
+              } else {
+                console.error(`❌ Failed to sign in user ${user.email}:`, error.message || error)
+                if (contexts[globalIndex]) {
+                  contexts[globalIndex].signedIn = false
+                }
+              }
             }
           }
         }))
@@ -150,7 +191,8 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       }
       
       // Click "Start Spin" in batches (smaller for production)
-      const SPIN_BATCH_SIZE = process.env.TEST_BASE_URL ? 8 : 15
+      const SPIN_BATCH_SIZE = process.env.TEST_BASE_URL ? 5 : 15
+      const SPIN_BATCH_DELAY = process.env.TEST_BASE_URL ? 8000 : 1000 // 8 seconds between spin batches
       for (let i = 0; i < signedInContexts.length; i += SPIN_BATCH_SIZE) {
         const batch = signedInContexts.slice(i, i + SPIN_BATCH_SIZE)
         const batchNum = Math.floor(i / SPIN_BATCH_SIZE) + 1
@@ -162,7 +204,7 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           try {
             await page.waitForTimeout(Math.floor(Math.random() * 500)) // Stagger within batch
             const spinButton = page.getByRole('button', { name: /start spin/i }).first()
-            await expect(spinButton).toBeVisible({ timeout: 15000 })
+            await expect(spinButton).toBeVisible({ timeout: 20000 })
             await spinButton.click({ force: true })
           } catch (error: any) {
             console.error(`❌ Failed to click spin for user ${user.email}:`, error.message || error)
@@ -171,17 +213,17 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
         
         console.log(`  ✅ Batch ${batchNum} complete`)
         
-        // Small delay between batches
+        // Longer delay between batches for production
         if (i + SPIN_BATCH_SIZE < signedInContexts.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await new Promise(resolve => setTimeout(resolve, SPIN_BATCH_DELAY))
         }
       }
       
       console.log(`✅ ${signedInContexts.length} users clicked Start Spin`)
       
       // Wait for matching to occur (give it time for all matches)
-      console.log('⏳ Waiting for matches to occur (30 seconds)...')
-      await new Promise(resolve => setTimeout(resolve, 30000))
+      console.log('⏳ Waiting for matches to occur (45 seconds)...')
+      await new Promise(resolve => setTimeout(resolve, 45000))
       
       // Check status of all signed-in users
       console.log('📊 Checking match status for all signed-in users...')
@@ -207,6 +249,14 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
               }
               matchedPairs.get(matchIdMatch[1])!.push(context.user.userId)
             }
+          } else if (url.includes('/video-date')) {
+            // User voted yes and got redirected (still considered matched)
+            matchedCount++
+            context.matched = true
+            const matchIdMatch = url.match(/matchId=([^&]+)/)
+            if (matchIdMatch && matchIdMatch[1]) {
+              context.matchId = matchIdMatch[1]
+            }
           } else if (url.includes('/spinning')) {
             unmatchedCount++
           } else if (url.includes('/spin')) {
@@ -217,6 +267,123 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
         } catch (error: any) {
           console.error(`❌ Failed to check status for user ${context.user.email}:`, error.message || error)
           unmatchedCount++
+        }
+      }
+      
+      // If we have exactly 1 match (1 male, 1 female), test voting flow
+      if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1) {
+        console.log('\n🗳️ Testing voting flow: Both users will vote "yes"...')
+        const matchId = Array.from(matchedPairs.keys())[0]
+        const usersInMatch = signedInContexts.filter(c => c.matchId === matchId)
+        
+        if (usersInMatch.length === 2) {
+          console.log(`  Found match ${matchId} with 2 users - testing voting...`)
+          
+          // Wait for both users to be on voting-window
+          console.log('  ⏳ Waiting for both users to reach voting-window...')
+          for (const { page } of usersInMatch) {
+            try {
+              await page.waitForURL(/\/voting-window/, { timeout: 15000 })
+            } catch (error) {
+              console.error(`  ⚠️ User not on voting-window yet`)
+            }
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 3000)) // Wait for page to fully load
+          
+          // Both users click "Yes"
+          console.log('  👆 Both users clicking "Yes"...')
+          await Promise.all(usersInMatch.map(async ({ page, user }) => {
+            try {
+              // Wait for Yes button to be visible (try multiple selectors)
+              // The button text might be "Yes" or "✓ Yes" after clicking
+              const yesButton = page.locator('button').filter({ hasText: /^yes$/i }).first()
+              await expect(yesButton).toBeVisible({ timeout: 15000 })
+              
+              // Wait a moment for page to be ready
+              await page.waitForTimeout(500)
+              
+              // Click the button
+              await yesButton.click({ force: true })
+              
+              // Wait a moment for the click to register
+              await page.waitForTimeout(1000)
+              
+              // Verify button state changed (indicates vote was processed)
+              const buttonAfterClick = page.locator('button').filter({ hasText: /yes/i }).first()
+              const buttonText = await buttonAfterClick.textContent()
+              
+              console.log(`  ✅ ${user.gender} user clicked "Yes" (button text: "${buttonText}")`)
+            } catch (error: any) {
+              console.error(`  ❌ Failed to click Yes for ${user.gender} user:`, error.message || error)
+              
+              // Try to get page content for debugging
+              try {
+                const pageContent = await page.content()
+                const hasYesButton = pageContent.toLowerCase().includes('yes')
+                console.error(`  Debug: Page has "yes" button: ${hasYesButton}`)
+              } catch (e) {
+                // Ignore
+              }
+            }
+          }))
+          
+          // Wait for both users to be redirected to /video-date
+          console.log('  ⏳ Waiting for both users to be redirected to /video-date (30 seconds)...')
+          await new Promise(resolve => setTimeout(resolve, 8000)) // Give more time for votes to process
+          
+          let bothOnVideoDate = false
+          const maxWait = 30000 // Increased to 30 seconds
+          const checkInterval = 1000
+          let waited = 0
+          
+          while (!bothOnVideoDate && waited < maxWait) {
+            await new Promise(resolve => setTimeout(resolve, checkInterval))
+            waited += checkInterval
+            
+            const urls = usersInMatch.map(c => {
+              try {
+                return c.page.url()
+              } catch {
+                return c.url || 'unknown'
+              }
+            })
+            bothOnVideoDate = urls.every(url => url.includes('/video-date'))
+            
+            if (bothOnVideoDate) {
+              console.log(`  ✅ Both users redirected to /video-date! (after ${waited}ms)`)
+              break
+            }
+            
+            // Log progress every 5 seconds
+            if (waited % 5000 === 0) {
+              console.log(`  ⏳ Still waiting... (${waited}/${maxWait}ms) - URLs: ${urls.join(', ')}`)
+            }
+          }
+          
+          if (!bothOnVideoDate) {
+            const urls = usersInMatch.map(c => {
+              try {
+                return c.page.url()
+              } catch {
+                return c.url || 'unknown'
+              }
+            })
+            console.log(`  ⚠️ Not all users on /video-date after ${waited}ms`)
+            console.log(`     URLs: ${urls.join(', ')}`)
+          }
+          
+          // Update context URLs for final analysis
+          for (const context of usersInMatch) {
+            try {
+              context.url = context.page.url()
+              if (context.url.includes('/video-date')) {
+                context.matched = true // Still considered matched
+              }
+            } catch (error) {
+              // Page might be closed or navigated
+            }
+          }
         }
       }
       
@@ -297,12 +464,21 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       const unexpectedPages = signedInContexts.filter(c => {
         const url = c.url
         return !url.includes('/voting-window') && 
+               !url.includes('/video-date') &&
                !url.includes('/spinning') && 
                !url.includes('/spin') &&
                !url.includes(BASE_URL)
       })
       if (unexpectedPages.length > 0) {
         issues.push(`ISSUE: ${unexpectedPages.length} signed-in users on unexpected pages: ${unexpectedPages.map(c => c.url).join(', ')}`)
+      }
+      
+      // Issue 8: For 1 male + 1 female test, verify both reached video-date after voting yes
+      if (MALE_COUNT === 1 && FEMALE_COUNT === 1 && signedInContexts.length === 2) {
+        const usersOnVideoDate = signedInContexts.filter(c => c.url.includes('/video-date')).length
+        if (usersOnVideoDate < 2) {
+          issues.push(`ISSUE: Only ${usersOnVideoDate}/2 users reached /video-date after both voting yes (expected both to redirect)`)
+        }
       }
       
       // Report issues

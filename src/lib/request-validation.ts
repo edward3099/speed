@@ -95,3 +95,5 @@ export function validateUUID(value: any, fieldName: string = 'id'): ValidationRe
 
   return { valid: true, errors: [] }
 }
+
+
