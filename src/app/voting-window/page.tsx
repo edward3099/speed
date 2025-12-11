@@ -21,6 +21,7 @@ function VotingWindowContent() {
     age: number | null
     photo: string
     bio: string
+    location: string | null
   } | null>(null)
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null)
   const [userVote, setUserVote] = useState<'yes' | 'pass' | null>(null)
