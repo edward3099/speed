@@ -1,0 +1,59 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/load-test-50males-20females.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  write to custom object with { processEnv: myObject }
+(node:53563) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-mby368f4y-eds-projects-934496ce.vercel.app
+👤 Creating 1 male users via backend...
+✅ All 1 male users created
+👤 Creating 1 female users via backend...
+✅ All 1 female users created
+🌐 Opening browser contexts for all users...
+✅ Created 2 browser contexts
+🔐 Signing in all users (batched to avoid server overload)...
+  Signing in batch 1/1 (2 users)...
+  ✅ Batch 1 complete: 2/2 users signed in
+✅ Sign-in complete: 2/2 users successfully signed in
+🎰 2 users clicking Start Spin (in batches)...
+  Batch 1/1: 2 users clicking Start Spin...
+  ✅ Batch 1 complete
+✅ 2 users clicked Start Spin
+⏳ Waiting for matches to occur (45 seconds)...
+📊 Checking match status for all signed-in users...
+
+📈 MATCH ANALYSIS:
+Total users created: 2
+Successfully signed in: 2
+Matched users: 0
+Unmatched users: 2
+Total matches created: 0
+Signed-in females: 1/1
+Signed-in males: 1/1
+Expected matches: 1 (one per signed-in female, limited by males)
+
+🔍 ISSUES FOUND:
+1. ISSUE: Only 0/1 signed-in females matched (1 females and 1 males signed in)
+2. ISSUE: 1 females stuck waiting (still on /spin or /spinning) - they should have matched
+3. ISSUE: Only 0/2 users reached /video-date after both voting yes (expected both to redirect)
+
+📋 DETAILED BREAKDOWN:
+Matched females: 0/1 (0 failed to sign in)
+Matched males: 0/1 (0 failed to sign in)
+Unmatched females: 1
+Unmatched males: 1
+
+👥 UNMATCHED SIGNED-IN USERS:
+  - male Test Male 1 - Current URL: https://speed-mby368f4y-eds-projects-934496ce.vercel.app/spin
+  - female Test Female 1 - Current URL: https://speed-mby368f4y-eds-projects-934496ce.vercel.app/spin
+
+🧹 Cleaning up all users...
+
+❌ TEST COMPLETED WITH 3 ISSUE(S) - See above for details
+🧹 Cleaning up test users...
+·
+  1 passed (1.1m)

@@ -218,12 +218,23 @@ export default function spin() {
       
       const data = await response.json()
       
+      // Debug logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Spin API response:', { matched: data.matched, match_id: data.match_id, data })
+      }
+      
       // Event-driven: API returns match status immediately
       if (data.matched && data.match_id) {
         // Matched immediately - redirect to voting window
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Redirecting to voting-window:', data.match_id)
+        }
         router.push(`/voting-window?matchId=${data.match_id}`)
       } else {
         // Not matched - redirect to spinning page
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Not matched, redirecting to spinning')
+        }
         router.push('/spinning')
       }
     } catch (error) {

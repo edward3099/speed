@@ -250,7 +250,53 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
             await page.waitForTimeout(Math.floor(Math.random() * 500)) // Stagger within batch
             const spinButton = page.getByRole('button', { name: /start spin/i }).first()
             await expect(spinButton).toBeVisible({ timeout: 20000 })
+            
+            // Track navigation and API calls
+            const initialUrl = page.url()
+            console.log(`    ${user.gender} ${user.name}: Clicking spin from ${initialUrl}`)
+            
+            // Set up console listener to capture API responses
+            const consoleMessages: string[] = []
+            page.on('console', msg => {
+              const text = msg.text()
+              if (text.includes('Spin API') || text.includes('Redirecting') || text.includes('spin') || text.includes('match')) {
+                consoleMessages.push(`[${user.gender}] ${text}`)
+              }
+            })
+            
+            // Wait for navigation after click
+            const navigationPromise = page.waitForURL(/\/spinning|\/voting-window/, { timeout: 10000 }).catch(() => null)
+            
             await spinButton.click({ force: true })
+            
+            // Wait a bit for API call to complete
+            await page.waitForTimeout(2000)
+            
+            // Check what the spin API actually returned
+            const spinApiResponse = await page.evaluate(async () => {
+              try {
+                // We can't directly get the response, but we can check the current state
+                const response = await fetch('/api/match/status', { cache: 'no-store' })
+                const data = await response.json()
+                return { 
+                  ok: response.ok, 
+                  state: data.state, 
+                  matched: !!data.match?.match_id, 
+                  matchId: data.match?.match_id,
+                  hasPartner: !!data.match?.partner
+                }
+              } catch (e) {
+                return { error: e.message }
+              }
+            })
+            
+            // Wait for navigation or timeout
+            const newUrl = await navigationPromise.then(() => page.url()).catch(() => page.url())
+            console.log(`    ${user.gender} ${user.name}: After click - URL: ${newUrl}, API state: ${spinApiResponse.state}, matched: ${spinApiResponse.matched}, hasPartner: ${spinApiResponse.hasPartner}`)
+            
+            if (consoleMessages.length > 0) {
+              console.log(`    ${user.gender} ${user.name} console:`, consoleMessages.join(' | '))
+            }
           } catch (error: any) {
             console.error(`❌ Failed to click spin for user ${user.email}:`, error.message || error)
           }
@@ -266,9 +312,49 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       
       console.log(`✅ ${signedInContexts.length} users clicked Start Spin`)
       
+      // Wait a bit for API calls to complete and redirects to happen
+      console.log('⏳ Waiting for spin API calls to complete (3 seconds)...')
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      // Check current URLs after spin
+      console.log('📍 Checking user URLs after spin:')
+      for (const context of signedInContexts) {
+        try {
+          const url = context.page.url()
+          console.log(`  - ${context.user.gender} ${context.user.name}: ${url}`)
+        } catch (e) {
+          console.log(`  - ${context.user.gender} ${context.user.name}: Error getting URL`)
+        }
+      }
+      
       // Wait for matching to occur (give it time for all matches)
       console.log('⏳ Waiting for matches to occur (45 seconds)...')
+      
+      // Check match status via API every 5 seconds during wait
+      const checkInterval = setInterval(async () => {
+        console.log('  🔍 Checking match status via API...')
+        for (const context of signedInContexts) {
+          try {
+            const statusResponse = await context.page.evaluate(async () => {
+              const response = await fetch('/api/match/status', { cache: 'no-store' })
+              const data = await response.json()
+              return { ok: response.ok, data }
+            })
+            
+            if (statusResponse.ok && statusResponse.data) {
+              const state = statusResponse.data.state
+              const hasMatch = !!statusResponse.data.match?.match_id
+              const matchId = statusResponse.data.match?.match_id
+              console.log(`    ${context.user.gender} ${context.user.name}: state=${state}, matched=${hasMatch}, matchId=${matchId || 'none'}`)
+            }
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+      }, 5000)
+      
       await new Promise(resolve => setTimeout(resolve, 45000))
+      clearInterval(checkInterval)
       
       // Check status of all signed-in users
       console.log('📊 Checking match status for all signed-in users...')

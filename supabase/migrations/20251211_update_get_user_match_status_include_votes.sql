@@ -10,6 +10,7 @@ DECLARE
   v_user_state RECORD;
   v_match RECORD;
   v_partner RECORD;
+  v_partner_user_id UUID;
   v_result JSONB;
 BEGIN
   -- Get user state
@@ -63,6 +64,19 @@ BEGIN
   END IF;
 
   -- Get partner info
+  -- FIXED: If partner_id is NULL, get partner from match user IDs (fallback)
+  -- Determine partner ID: if partner_id is set, use it; otherwise derive from match
+  IF v_user_state.partner_id IS NOT NULL THEN
+    v_partner_user_id := v_user_state.partner_id;
+  ELSE
+    -- Fallback: get partner ID from match (user1 or user2, whichever is not current user)
+    v_partner_user_id := CASE 
+      WHEN v_match.user1_id = p_user_id THEN v_match.user2_id
+      ELSE v_match.user1_id
+    END;
+  END IF;
+  
+  -- Get partner profile
   SELECT 
     id,
     name,
@@ -71,7 +85,7 @@ BEGIN
     bio
   INTO v_partner
   FROM profiles
-  WHERE id = v_user_state.partner_id;
+  WHERE id = v_partner_user_id;
 
   -- Build result
   v_result := jsonb_build_object(
@@ -81,7 +95,7 @@ BEGIN
       'match_id', v_match.match_id,
       'user1_id', v_match.user1_id,
       'user2_id', v_match.user2_id,
-      'partner_id', v_user_state.partner_id,
+      'partner_id', COALESCE(v_user_state.partner_id, v_partner_user_id),
       'partner', CASE 
         WHEN v_partner IS NOT NULL THEN jsonb_build_object(
           'id', v_partner.id,
