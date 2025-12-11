@@ -90,9 +90,12 @@ export async function POST(request: NextRequest) {
     
     // Verify vote was actually saved by checking database directly
     if (!voteError && voteData && !voteData.error) {
-      const { data: matchCheck } = await supabase
+      // Wait a moment for transaction to commit
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const { data: matchCheck, error: checkError } = await supabase
         .from('matches')
-        .select('user1_vote, user2_vote, status, outcome')
+        .select('user1_vote, user2_vote, status, outcome, user1_id, user2_id')
         .eq('match_id', match_id)
         .single()
       
@@ -100,8 +103,32 @@ export async function POST(request: NextRequest) {
         match_id,
         user_id: user.id,
         db_votes: matchCheck,
-        rpc_response: voteData
+        rpc_response: voteData,
+        check_error: checkError,
+        vote_saved: matchCheck && (
+          (user.id === matchCheck.user1_id && matchCheck.user1_vote === vote) ||
+          (user.id === matchCheck.user2_id && matchCheck.user2_vote === vote)
+        )
       })
+      
+      // If vote wasn't saved but RPC returned success, this is a problem!
+      if (matchCheck && !checkError) {
+        const voteShouldBeSaved = 
+          (user.id === matchCheck.user1_id && matchCheck.user1_vote === vote) ||
+          (user.id === matchCheck.user2_id && matchCheck.user2_vote === vote)
+        
+        if (!voteShouldBeSaved) {
+          console.error('🚨 CRITICAL: RPC returned success but vote was NOT saved to database!', {
+            user_id: user.id,
+            vote,
+            db_user1_id: matchCheck.user1_id,
+            db_user2_id: matchCheck.user2_id,
+            db_user1_vote: matchCheck.user1_vote,
+            db_user2_vote: matchCheck.user2_vote,
+            rpc_response: voteData
+          })
+        }
+      }
     }
     
     // Invalidate cache for both users in the match when vote is recorded
