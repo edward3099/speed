@@ -62,15 +62,46 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Get match info first to know both user IDs for cache invalidation
-    const { data: matchInfo } = await supabase
+    // Get match info first to know both user IDs for cache invalidation and verification
+    const { data: matchInfo, error: matchInfoError } = await supabase
       .from('matches')
-      .select('user1_id, user2_id')
+      .select('user1_id, user2_id, user1_vote, user2_vote, status')
       .eq('match_id', match_id)
       .single()
     
-    // Call record_vote function (new zero-issues architecture)
-    console.log('🔄 /api/vote: Calling record_vote RPC', { user_id: user.id, match_id, vote })
+    if (matchInfoError || !matchInfo) {
+      console.error('❌ /api/vote: Failed to get match info', { matchInfoError, match_id })
+      return NextResponse.json(
+        { error: 'Match not found' },
+        { status: 404 }
+      )
+    }
+    
+    // Verify user is part of this match
+    if (matchInfo.user1_id !== user.id && matchInfo.user2_id !== user.id) {
+      console.error('❌ /api/vote: User not part of match', {
+        user_id: user.id,
+        match_user1_id: matchInfo.user1_id,
+        match_user2_id: matchInfo.user2_id
+      })
+      return NextResponse.json(
+        { error: 'User not part of this match' },
+        { status: 403 }
+      )
+    }
+    
+    console.log('🔄 /api/vote: Calling record_vote RPC', { 
+      user_id: user.id, 
+      match_id, 
+      vote,
+      match_before: {
+        user1_id: matchInfo.user1_id,
+        user2_id: matchInfo.user2_id,
+        user1_vote: matchInfo.user1_vote,
+        user2_vote: matchInfo.user2_vote,
+        status: matchInfo.status
+      }
+    })
     
     const { data: voteData, error: voteError, status, statusText } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
