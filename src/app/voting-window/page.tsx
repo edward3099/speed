@@ -294,6 +294,45 @@ function VotingWindowContent() {
           return
         }
 
+        // CRITICAL: Check if vote window expired (before checking outcomes)
+        if (data.match?.vote_window_expires_at) {
+          const expiresAt = new Date(data.match.vote_window_expires_at).getTime()
+          const now = Date.now()
+          
+          if (now >= expiresAt && data.match?.status !== 'completed') {
+            // Vote window expired - check if user voted by looking at match votes
+            const expiredBySeconds = Math.floor((now - expiresAt) / 1000)
+            const currentUserId = data.user_id
+            const match = data.match
+            
+            // Check if current user voted by comparing user_id with match.user1_id/user2_id
+            const userVoted = currentUserId && match && (
+              (match.user1_id === currentUserId && match.user1_vote) ||
+              (match.user2_id === currentUserId && match.user2_vote)
+            )
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Polling detected vote window expired', {
+                expiredBy: expiredBySeconds + ' seconds',
+                userState: data.state,
+                userVoted: userVoted,
+                currentUserId: currentUserId
+              })
+            }
+            
+            // Redirect based on whether user voted
+            if (userVoted) {
+              // User voted yes - will be auto-spun to /spinning when cron resolves (yes_idle outcome)
+              router.push('/spinning')
+              return
+            } else {
+              // User didn't vote - redirect to /spin (idle state)
+              router.push('/spin')
+              return
+            }
+          }
+        }
+
         // CRITICAL: Check if match outcome is 'both_yes' - redirect to video-date
         // get_user_match_status now returns the match even if match_id is cleared (for both_yes)
         // This must be checked FIRST before checking idle/waiting state
