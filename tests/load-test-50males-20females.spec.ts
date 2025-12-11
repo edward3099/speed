@@ -10,8 +10,8 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
   test('should match 50 males and 20 females when all spin', async ({ browser }) => {
     test.setTimeout(600000) // 10 minutes for large scale test with conservative batching
     
-    // Use environment variable or default to localhost
-    const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
+    // Use environment variable or default to production URL
+    const BASE_URL = process.env.TEST_BASE_URL || 'https://speed-date-xi.vercel.app'
     console.log(`🌐 Testing against: ${BASE_URL}`)
     
     const timestamp = Date.now()
