@@ -59,36 +59,59 @@ function VotingWindowContent() {
           const now = Date.now()
           
           if (now >= expiresAt && statusData.match?.status !== 'completed') {
-            // Vote window expired - check user state to determine redirect
-            // If user is idle, redirect to /spin (they didn't vote)
-            // If user is waiting, redirect to /spinning (they voted and were auto-spun)
+            // Vote window expired - check match votes to determine if user voted
+            // Get current user ID to check their vote
             const expiredBySeconds = Math.floor((now - expiresAt) / 1000)
-            if (process.env.NODE_ENV === 'development') {
-              console.log('Vote window expired', {
-                expiredBy: expiredBySeconds + ' seconds',
-                userState: statusData.state
-              })
-            }
             
-            // Record metric: window expired before user could vote
-            fetch('/api/match/metrics', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                match_id: matchId,
-                metric_type: 'window_expired_before_seen',
-                value: { expired_by_seconds: expiredBySeconds }
-              })
-            }).catch(() => {})
-            
-            // Check user state to determine redirect
-            if (statusData.state === 'idle') {
-              // User didn't vote - redirect to /spin
-              router.push('/spin')
-            } else {
-              // User voted (waiting state after auto-spin) - redirect to /spinning
-              router.push('/spinning')
-            }
+            // Check if user voted by looking at match votes
+            // We need to get current user ID from auth
+            fetch('/api/match/status').then(async (response) => {
+              const data = await response.json()
+              const currentUserId = data.user_id // From get_user_match_status
+              
+              // Determine if this user voted
+              const userVoted = (
+                (data.match?.user1_id === currentUserId && data.match?.user1_vote) ||
+                (data.match?.user2_id === currentUserId && data.match?.user2_vote)
+              )
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Vote window expired', {
+                  expiredBy: expiredBySeconds + ' seconds',
+                  userState: statusData.state,
+                  userVoted: userVoted,
+                  currentUserId: currentUserId,
+                  match: data.match
+                })
+              }
+              
+              // Record metric: window expired
+              fetch('/api/match/metrics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  match_id: matchId,
+                  metric_type: userVoted ? 'window_expired_after_vote' : 'window_expired_before_vote',
+                  value: { expired_by_seconds: expiredBySeconds }
+                })
+              }).catch(() => {})
+              
+              // Redirect based on whether user voted
+              if (userVoted) {
+                // User voted yes - will be auto-spun to /spinning when cron resolves
+                router.push('/spinning')
+              } else {
+                // User didn't vote - redirect to /spin
+                router.push('/spin')
+              }
+            }).catch(() => {
+              // Fallback: check user state
+              if (statusData.state === 'idle') {
+                router.push('/spin')
+              } else {
+                router.push('/spinning')
+              }
+            })
             return
           }
         }
@@ -131,15 +154,37 @@ function VotingWindowContent() {
           const now = Date.now()
           
           if (now >= expiresAt) {
-            // Vote window expired - redirect to spinning
+            // Vote window expired - check if user voted by looking at match votes
+            const expiredBySeconds = Math.floor((now - expiresAt) / 1000)
+            
+            // Determine if current user voted by checking match votes
+            const currentUserId = statusData.user_id || (statusData as any).user_id
+            const match = statusData.match
+            
+            const userVoted = currentUserId && match && (
+              (match.user1_id === currentUserId && match.user1_vote) ||
+              (match.user2_id === currentUserId && match.user2_vote)
+            )
+            
             if (process.env.NODE_ENV === 'development') {
-              console.log('Vote window expired, redirecting to spinning', {
+              console.log('Vote window expired', {
                 expiresAt: new Date(expiresAt).toISOString(),
                 now: new Date(now).toISOString(),
-                expiredBy: Math.floor((now - expiresAt) / 1000) + ' seconds'
+                expiredBy: expiredBySeconds + ' seconds',
+                userState: statusData.state,
+                userVoted: userVoted,
+                currentUserId: currentUserId
               })
             }
-            router.push('/spinning')
+            
+            // Redirect based on whether user voted
+            if (userVoted) {
+              // User voted yes - will be auto-spun to /spinning when cron resolves (yes_idle outcome)
+              router.push('/spinning')
+            } else {
+              // User didn't vote - redirect to /spin (idle state)
+              router.push('/spin')
+            }
             return
           }
           
