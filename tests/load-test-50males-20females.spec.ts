@@ -351,8 +351,18 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           
           // Wait for voting window page to be fully loaded (partner data loaded, buttons visible)
           console.log('  ⏳ Waiting for voting window to be fully loaded...')
-          for (const { page } of usersInMatch) {
+          for (let i = 0; i < usersInMatch.length; i++) {
+            const { page } = usersInMatch[i]
             try {
+              // Check current URL
+              const currentUrl = page.url()
+              console.log(`  📍 User ${i} current URL: ${currentUrl}`)
+              
+              if (!currentUrl.includes('/voting-window')) {
+                console.log(`  ⚠️ User ${i} is not on voting-window page, current URL: ${currentUrl}`)
+                continue
+              }
+              
               // Wait for "Loading..." to disappear (page is no longer loading)
               await page.waitForFunction(
                 () => {
@@ -362,17 +372,34 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
                 { timeout: 10000 }
               ).catch(() => {}) // Ignore if already loaded
               
+              // Check what's on the page
+              const pageContent = await page.textContent('body')
+              console.log(`  📄 User ${i} page content preview: ${pageContent?.substring(0, 200)}...`)
+              
               // Wait for partner name (h2) or countdown to appear (indicates page is ready)
-              await page.waitForSelector('h2', { timeout: 15000 }).catch(() => {})
+              await page.waitForSelector('h2', { timeout: 15000 }).catch(() => {
+                console.log(`  ⚠️ User ${i}: h2 (partner name) not found`)
+              })
+              
+              // Check for buttons on the page
+              const allButtons = await page.locator('button').all()
+              console.log(`  🔘 User ${i}: Found ${allButtons.length} buttons on page`)
+              for (let j = 0; j < Math.min(allButtons.length, 5); j++) {
+                const buttonText = await allButtons[j].textContent()
+                const isVisible = await allButtons[j].isVisible().catch(() => false)
+                console.log(`    Button ${j}: "${buttonText?.trim()}", visible: ${isVisible}`)
+              }
               
               // Wait for vote buttons to be visible - use getByRole for better reliability
               const yesButton = page.getByRole('button', { name: /yes/i })
-              await yesButton.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {})
+              await yesButton.waitFor({ state: 'visible', timeout: 20000 }).catch((e) => {
+                console.log(`  ⚠️ User ${i}: Yes button not found - ${e.message}`)
+              })
               
               // Additional wait for animations to complete
               await page.waitForTimeout(1000)
             } catch (error) {
-              console.error(`  ⚠️ Error waiting for voting window to load:`, error)
+              console.error(`  ⚠️ Error waiting for voting window to load for user ${i}:`, error)
             }
           }
           
@@ -382,6 +409,12 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           
           // Only user1 votes "yes"
           try {
+            // Verify we're still on voting-window page
+            const currentUrl = user1.page.url()
+            if (!currentUrl.includes('/voting-window')) {
+              throw new Error(`User is not on voting-window page. Current URL: ${currentUrl}`)
+            }
+            
             // Use getByRole for more reliable button selection
             const yesButton = user1.page.getByRole('button', { name: /yes/i })
             
@@ -413,6 +446,15 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
             console.log(`  ✅ ${user1.user.gender} user clicked "Yes" (button text: "${buttonText?.trim()}", disabled: ${isDisabledAfter})`)
           } catch (error: any) {
             console.error(`  ❌ Failed to click Yes for ${user1.user.gender} user:`, error.message || error)
+            // Log page state for debugging
+            try {
+              const url = user1.page.url()
+              const title = await user1.page.title()
+              const bodyText = await user1.page.textContent('body')
+              console.error(`  📄 Debug info - URL: ${url}, Title: ${title}, Body preview: ${bodyText?.substring(0, 300)}`)
+            } catch (e) {
+              console.error(`  ⚠️ Could not get debug info:`, e)
+            }
           }
           
           // User2 does NOT vote - wait for vote window to expire (60 seconds)

@@ -132,6 +132,22 @@ function VotingWindowContent() {
         // Set partner info
         if (statusData.match.partner) {
           setPartner(statusData.match.partner)
+        } else if (statusData.match && !statusData.match.partner) {
+          // Match exists but partner data is missing - log for debugging
+          console.warn('⚠️ Match exists but partner data is missing', {
+            match_id: statusData.match.match_id,
+            status: statusData.match.status,
+            user1_id: statusData.match.user1_id,
+            user2_id: statusData.match.user2_id,
+            current_user_id: statusData.user_id,
+            match_keys: Object.keys(statusData.match)
+          })
+          
+          // This is a critical issue - without partner data, we can't show the voting UI
+          // Redirect to spin page as fallback
+          console.error('❌ Cannot display voting window without partner data - redirecting to /spin')
+          router.push('/spin')
+          return
         }
 
         // If match is already completed, handle outcome
