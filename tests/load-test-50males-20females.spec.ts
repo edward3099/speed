@@ -84,113 +84,86 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
               await page.waitForTimeout(Math.random() * 500)
               
               // Navigate to homepage and wait for it to fully load
-              await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle', timeout: 90000 })
-              await page.waitForTimeout(3000) // Give page time to fully render with animations
+              await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle', timeout: 15000 })
+              await page.waitForTimeout(1000) // Give page time to render
               
-              // Wait for page to be interactive
-              await page.waitForLoadState('domcontentloaded')
-              await page.waitForLoadState('networkidle')
-              
-              // Debug: Log page title and URL
-              const pageTitle = await page.title()
+              // Check if we got a 404 or error page
               const currentUrl = page.url()
-              console.log(`  🔍 Page loaded: ${pageTitle}, URL: ${currentUrl}`)
+              const pageTitle = await page.title().catch(() => 'Unknown')
+              const statusCode = await page.evaluate(() => {
+                // Check for common error indicators
+                if (document.body.textContent?.includes('404')) return 404
+                if (document.body.textContent?.includes('NOT_FOUND')) return 404
+                return 200
+              }).catch(() => 200)
+              
+              if (statusCode === 404 || pageTitle.includes('404') || currentUrl.includes('404')) {
+                throw new Error(`❌ Platform Issue: Vercel deployment returns 404 at ${BASE_URL}. Please check if the deployment is live and the URL is correct.`)
+              }
               
               // Try multiple selectors for the "start now" button
-              // The button text might be "start now" (lowercase) or have different casing
               let startButton = page.locator('button').filter({ hasText: /start now/i }).first()
               
-              // If not found, try case-insensitive search for any button containing "start"
-              if (!(await startButton.isVisible({ timeout: 2000 }).catch(() => false))) {
-                console.log(`  🔍 Trying alternative selector for start button...`)
+              // If not found, try alternative selectors
+              if (!(await startButton.isVisible({ timeout: 3000 }).catch(() => false))) {
                 startButton = page.getByRole('button', { name: /start/i }).first()
               }
               
-              // If still not found, try to find by text content
-              if (!(await startButton.isVisible({ timeout: 2000 }).catch(() => false))) {
-                console.log(`  🔍 Trying text-based selector...`)
+              if (!(await startButton.isVisible({ timeout: 3000 }).catch(() => false))) {
                 startButton = page.locator('button:has-text("start")').first()
               }
               
-              // Debug: Get all buttons on page
-              const allButtons = await page.locator('button').all()
-              console.log(`  🔍 Found ${allButtons.length} buttons on page`)
-              for (let i = 0; i < Math.min(allButtons.length, 5); i++) {
-                const buttonText = await allButtons[i].textContent()
-                console.log(`  🔍 Button ${i}: "${buttonText}"`)
-              }
-              
-              await expect(startButton).toBeVisible({ timeout: 30000 })
+              await expect(startButton).toBeVisible({ timeout: 10000 })
               await startButton.click({ force: true })
               await page.waitForTimeout(1000) // Wait for modal to open
               
               // Modal should now be open - look for sign in tab/button
-              // The modal has tabs: "sign in" and "sign up"
               const signInTab = page.getByRole('button', { name: /sign in/i }).first()
-              await expect(signInTab).toBeVisible({ timeout: 10000 })
+              await expect(signInTab).toBeVisible({ timeout: 5000 })
               
-              // Click sign in tab if it's not already active (modal might default to sign up)
+              // Click sign in tab if needed
               const isActive = await signInTab.evaluate((el) => {
-                return el.classList.contains('bg-teal-300') || 
-                       el.style.backgroundColor.includes('teal') ||
-                       el.classList.contains('border-teal-300')
+                return el.classList.contains('bg-teal-300') || el.classList.contains('border-teal-300')
               }).catch(() => false)
               
               if (!isActive) {
                 await signInTab.click({ force: true })
-                await page.waitForTimeout(500)
+                await page.waitForTimeout(300)
               }
               
-              // Fill in email - look for input in the modal
-              const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first()
-              await expect(emailInput).toBeVisible({ timeout: 20000 })
+              // Fill in email
+              const emailInput = page.locator('input[type="email"]').first()
+              await expect(emailInput).toBeVisible({ timeout: 5000 })
               await emailInput.fill(user.email)
-              await page.waitForTimeout(300)
+              await page.waitForTimeout(200)
               
               // Fill in password
-              const passwordInput = page.locator('input[type="password"], input[placeholder*="password" i]').first()
-              await expect(passwordInput).toBeVisible({ timeout: 20000 })
+              const passwordInput = page.locator('input[type="password"]').first()
+              await expect(passwordInput).toBeVisible({ timeout: 5000 })
               await passwordInput.fill(user.password)
-              await page.waitForTimeout(300)
+              await page.waitForTimeout(200)
               
               // Click continue button
               const continueButton = page.getByRole('button', { name: /continue/i }).first()
-              await expect(continueButton).toBeVisible({ timeout: 10000 })
+              await expect(continueButton).toBeVisible({ timeout: 5000 })
               await continueButton.click({ force: true })
               
-              // Wait for redirect to /spin (or onboarding if first time)
-              // The page might go to /spin directly or show onboarding modal
-              await page.waitForTimeout(2000) // Give time for auth to process
+              // Wait for redirect to /spin
+              await page.waitForURL(/\/spin/, { timeout: 10000 }).catch(async () => {
+                // If not redirected, check if onboarding is showing
+                const onboardingVisible = await page.locator('text=/what\'s your name|how old are you/i').isVisible({ timeout: 2000 }).catch(() => false)
+                if (onboardingVisible) {
+                  throw new Error(`Onboarding modal is showing - user onboarding not completed`)
+                }
+              })
               
               const url = page.url()
               if (url.includes('/spin')) {
-                // Successfully signed in and redirected to spin
                 contexts[globalIndex].signedIn = true
                 contexts[globalIndex].url = url
                 signedIn = true
-              } else if (url.includes('/') && !url.includes('/auth') && !url.includes('/login')) {
-                // Might be on homepage still, check if onboarding modal is showing
-                // If user has completed onboarding, should redirect to /spin
-                // Otherwise, might need to complete onboarding
-                const onboardingVisible = await page.locator('text=/what\'s your name|how old are you|tell us about yourself/i').isVisible({ timeout: 5000 }).catch(() => false)
-                if (onboardingVisible) {
-                  // Onboarding is showing - for test users, they should already have completed it
-                  // But if showing, we need to handle it - for now, consider it a failure
-                  throw new Error(`Onboarding modal is showing - user may not have completed onboarding`)
-                } else {
-                  // Should have redirected but didn't - wait a bit more
-                  await page.waitForTimeout(3000)
-                  const finalUrl = page.url()
-                  if (finalUrl.includes('/spin')) {
-                    contexts[globalIndex].signedIn = true
-                    contexts[globalIndex].url = finalUrl
-                    signedIn = true
-                  } else {
-                    throw new Error(`Not redirected to /spin after sign in. Current URL: ${finalUrl}`)
-                  }
-                }
               } else {
-                throw new Error(`Not on /spin, got: ${url}`)
+                throw new Error(`Not on /spin after sign in. Current URL: ${url}`)
               }
             } catch (error: any) {
               // Check if page/context was closed
@@ -202,25 +175,23 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
                 break // Exit retry loop if context closed
               }
               
+              // Check if this is a platform issue (404)
+              if (error.message && error.message.includes('Platform Issue')) {
+                throw error // Don't retry platform issues
+              }
+              
               if (retries > 0) {
                 try {
-                  // Check if page is still valid before retrying
                   if (!page.isClosed()) {
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log(`⚠️ Retrying sign-in for ${user.email} (${retries} retries left)`)
-                    }
-                    await page.waitForTimeout(2000) // Wait before retry
+                    await page.waitForTimeout(1000) // Shorter wait before retry
                     retries--
                   } else {
-                    console.error(`❌ Page closed for user ${user.email}, cannot retry`)
                     if (contexts[globalIndex]) {
                       contexts[globalIndex].signedIn = false
                     }
                     break
                   }
                 } catch (checkError) {
-                  // Page/context definitely closed
-                  console.error(`❌ Cannot retry for ${user.email}: context closed`)
                   if (contexts[globalIndex]) {
                     contexts[globalIndex].signedIn = false
                   }
