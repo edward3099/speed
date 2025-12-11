@@ -403,13 +403,13 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
       
       // If we have exactly 1 match (1 male, 1 female), test voting flow
       if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1) {
-        // Test scenario: one votes yes, other doesn't vote (vote window expires)
-        console.log('\n🗳️ Testing voting flow: One user votes "yes", other doesn\'t vote (vote window expires)...')
         const matchId = Array.from(matchedPairs.keys())[0]
         const usersInMatch = signedInContexts.filter(c => c.matchId === matchId)
         
         if (usersInMatch.length === 2) {
-          console.log(`  Found match ${matchId} with 2 users - testing yes_idle scenario (vote window expires)...`)
+          // Test scenario: BOTH users vote "yes" → should redirect to /video-date
+          console.log('\n🗳️ Testing voting flow: BOTH users vote "yes" → should redirect to /video-date...')
+          console.log(`  Found match ${matchId} with 2 users - testing both_yes scenario...`)
           
           // Wait for both users to be on voting-window
           console.log('  ⏳ Waiting for both users to reach voting-window...')
@@ -426,7 +426,7 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           for (const { page } of usersInMatch) {
             page.on('console', msg => {
               const text = msg.text()
-              if (text.includes('vote') || text.includes('error') || text.includes('Error') || text.includes('Vote') || text.includes('expired') || text.includes('countdown')) {
+              if (text.includes('vote') || text.includes('error') || text.includes('Error') || text.includes('Vote') || text.includes('expired') || text.includes('countdown') || text.includes('video-date') || text.includes('both_yes')) {
                 consoleMessages.push(`[${usersInMatch.findIndex(u => u.page === page)}] ${text}`)
               }
             })
@@ -458,23 +458,10 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
                 { timeout: 10000 }
               ).catch(() => {}) // Ignore if already loaded
               
-              // Check what's on the page
-              const pageContent = await page.textContent('body')
-              console.log(`  📄 User ${i} page content preview: ${pageContent?.substring(0, 200)}...`)
-              
               // Wait for partner name (h2) or countdown to appear (indicates page is ready)
               await page.waitForSelector('h2', { timeout: 15000 }).catch(() => {
                 console.log(`  ⚠️ User ${i}: h2 (partner name) not found`)
               })
-              
-              // Check for buttons on the page
-              const allButtons = await page.locator('button').all()
-              console.log(`  🔘 User ${i}: Found ${allButtons.length} buttons on page`)
-              for (let j = 0; j < Math.min(allButtons.length, 5); j++) {
-                const buttonText = await allButtons[j].textContent()
-                const isVisible = await allButtons[j].isVisible().catch(() => false)
-                console.log(`    Button ${j}: "${buttonText?.trim()}", visible: ${isVisible}`)
-              }
               
               // Wait for vote buttons to be visible - use getByRole for better reliability
               const yesButton = page.getByRole('button', { name: /yes/i })
@@ -489,75 +476,84 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
             }
           }
           
-          // First user votes "yes", second user does NOT vote (will wait for expiration)
+          // BOTH users vote "yes"
           const [user1, user2] = usersInMatch
-          console.log(`  👆 ${user1.user.gender} user clicking "Yes", ${user2.user.gender} user NOT voting (will wait for countdown to expire)...`)
+          console.log(`  👆 Both users clicking "Yes" - ${user1.user.gender} user and ${user2.user.gender} user...`)
           
-          // Only user1 votes "yes"
+          // User1 votes "yes"
           try {
-            // Verify we're still on voting-window page
             const currentUrl = user1.page.url()
             if (!currentUrl.includes('/voting-window')) {
-              throw new Error(`User is not on voting-window page. Current URL: ${currentUrl}`)
+              throw new Error(`User1 is not on voting-window page. Current URL: ${currentUrl}`)
             }
             
-            // Use getByRole for more reliable button selection
-            const yesButton = user1.page.getByRole('button', { name: /yes/i })
+            const yesButton1 = user1.page.getByRole('button', { name: /yes/i })
+            await expect(yesButton1).toBeVisible({ timeout: 30000 })
+            await expect(yesButton1).toBeEnabled({ timeout: 5000 })
             
-            // Wait for button to be visible with longer timeout
-            await expect(yesButton).toBeVisible({ timeout: 30000 })
-            
-            // Wait for button to be enabled (not disabled) - buttons are disabled if userVote !== null
-            await expect(yesButton).toBeEnabled({ timeout: 5000 })
-            
-            // Additional check: ensure button is not disabled
-            const isDisabled = await yesButton.isDisabled()
-            if (isDisabled) {
-              throw new Error('Yes button is disabled - user may have already voted or page is not ready')
+            const isDisabled1 = await yesButton1.isDisabled()
+            if (isDisabled1) {
+              throw new Error('User1 Yes button is disabled - user may have already voted or page is not ready')
             }
             
             await user1.page.waitForTimeout(500)
             console.log(`  🔘 ${user1.user.gender} user: Clicking Yes button...`)
             
-            await yesButton.scrollIntoViewIfNeeded()
-            await yesButton.click({ force: true, timeout: 10000 })
+            await yesButton1.scrollIntoViewIfNeeded()
+            await yesButton1.click({ force: true, timeout: 10000 })
             
             await user1.page.waitForTimeout(2000)
             
-            // Verify button state after click
-            const buttonAfterClick = user1.page.getByRole('button', { name: /yes/i })
-            const buttonText = await buttonAfterClick.textContent()
-            const isDisabledAfter = await buttonAfterClick.isDisabled()
+            const buttonAfterClick1 = user1.page.getByRole('button', { name: /yes/i })
+            const buttonText1 = await buttonAfterClick1.textContent()
+            const isDisabledAfter1 = await buttonAfterClick1.isDisabled()
             
-            console.log(`  ✅ ${user1.user.gender} user clicked "Yes" (button text: "${buttonText?.trim()}", disabled: ${isDisabledAfter})`)
+            console.log(`  ✅ ${user1.user.gender} user clicked "Yes" (button text: "${buttonText1?.trim()}", disabled: ${isDisabledAfter1})`)
           } catch (error: any) {
             console.error(`  ❌ Failed to click Yes for ${user1.user.gender} user:`, error.message || error)
-            // Log page state for debugging
-            try {
-              const url = user1.page.url()
-              const title = await user1.page.title()
-              const bodyText = await user1.page.textContent('body')
-              console.error(`  📄 Debug info - URL: ${url}, Title: ${title}, Body preview: ${bodyText?.substring(0, 300)}`)
-            } catch (e) {
-              console.error(`  ⚠️ Could not get debug info:`, e)
+          }
+          
+          // User2 votes "yes" (after a short delay to simulate real user behavior)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
+          try {
+            const currentUrl = user2.page.url()
+            if (!currentUrl.includes('/voting-window')) {
+              throw new Error(`User2 is not on voting-window page. Current URL: ${currentUrl}`)
             }
+            
+            const yesButton2 = user2.page.getByRole('button', { name: /yes/i })
+            await expect(yesButton2).toBeVisible({ timeout: 30000 })
+            await expect(yesButton2).toBeEnabled({ timeout: 5000 })
+            
+            const isDisabled2 = await yesButton2.isDisabled()
+            if (isDisabled2) {
+              throw new Error('User2 Yes button is disabled - user may have already voted or page is not ready')
+            }
+            
+            await user2.page.waitForTimeout(500)
+            console.log(`  🔘 ${user2.user.gender} user: Clicking Yes button...`)
+            
+            await yesButton2.scrollIntoViewIfNeeded()
+            await yesButton2.click({ force: true, timeout: 10000 })
+            
+            await user2.page.waitForTimeout(2000)
+            
+            const buttonAfterClick2 = user2.page.getByRole('button', { name: /yes/i })
+            const buttonText2 = await buttonAfterClick2.textContent()
+            const isDisabledAfter2 = await buttonAfterClick2.isDisabled()
+            
+            console.log(`  ✅ ${user2.user.gender} user clicked "Yes" (button text: "${buttonText2?.trim()}", disabled: ${isDisabledAfter2})`)
+          } catch (error: any) {
+            console.error(`  ❌ Failed to click Yes for ${user2.user.gender} user:`, error.message || error)
           }
           
-          // User2 does NOT vote - wait for vote window to expire (60 seconds)
-          console.log(`  ⏳ Waiting for vote window to expire (60 seconds)... User2 (${user2.user.gender}) will NOT vote.`)
+          // Wait for both votes to be processed and redirect to /video-date
+          console.log(`  ⏳ Waiting for both votes to be processed and redirect to /video-date (10 seconds)...`)
+          await new Promise(resolve => setTimeout(resolve, 10000))
           
-          // Wait for vote window to expire (60 seconds + buffer)
-          const expirationWaitTime = 65000 // 65 seconds to ensure expiration
-          console.log(`  ⏳ Waiting ${expirationWaitTime/1000} seconds for vote window expiration...`)
-          await new Promise(resolve => setTimeout(resolve, expirationWaitTime))
-          
-          // Log all console messages
-          if (consoleMessages.length > 0) {
-            console.log('  📋 Browser console messages:', consoleMessages.join(' | '))
-          }
-          
-          // Check final states: user1 (voted yes) should be on /spinning (auto-spun), user2 (didn't vote) should be on /spin
-          console.log('  ⏳ Checking final user states after vote window expiration...')
+          // Check if both users are redirected to /video-date
+          console.log('  ⏳ Checking if both users are redirected to /video-date...')
           await new Promise(resolve => setTimeout(resolve, 5000)) // Give time for redirects
           
           const urls = usersInMatch.map(c => {
@@ -568,27 +564,34 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
             }
           })
           
-          console.log(`  📍 Final URLs: User1 (${user1.user.gender}, voted yes): ${urls[0]}, User2 (${user2.user.gender}, didn't vote): ${urls[1]}`)
+          console.log(`  📍 Final URLs after both voting yes:`)
+          console.log(`     - ${user1.user.gender} user: ${urls[0]}`)
+          console.log(`     - ${user2.user.gender} user: ${urls[1]}`)
           
-          const user1OnSpinning = urls[0].includes('/spinning')
-          const user2OnSpin = urls[1].includes('/spin') || urls[1].includes('/spinning')
+          const user1OnVideoDate = urls[0].includes('/video-date')
+          const user2OnVideoDate = urls[1].includes('/video-date')
           
-          if (user1OnSpinning && user2OnSpin) {
-            console.log(`  ✅ Correct redirects after vote window expiration:`)
-            console.log(`     - ${user1.user.gender} user (voted yes) → /spinning (auto-spun) ✓`)
-            console.log(`     - ${user2.user.gender} user (didn't vote) → /spin or /spinning ✓`)
+          if (user1OnVideoDate && user2OnVideoDate) {
+            console.log(`  ✅ CORRECT: Both users redirected to /video-date after both voting yes!`)
+            console.log(`     - ${user1.user.gender} user → /video-date ✓`)
+            console.log(`     - ${user2.user.gender} user → /video-date ✓`)
           } else {
-            console.log(`  ⚠️ Unexpected redirects:`)
-            console.log(`     - ${user1.user.gender} user (voted yes): Expected /spinning, got ${urls[0]}`)
-            console.log(`     - ${user2.user.gender} user (didn't vote): Expected /spin or /spinning, got ${urls[1]}`)
+            console.log(`  ❌ ISSUE: Not both users redirected to /video-date:`)
+            console.log(`     - ${user1.user.gender} user: Expected /video-date, got ${urls[0]} ${user1OnVideoDate ? '✓' : '✗'}`)
+            console.log(`     - ${user2.user.gender} user: Expected /video-date, got ${urls[1]} ${user2OnVideoDate ? '✓' : '✗'}`)
+          }
+          
+          // Log all console messages for debugging
+          if (consoleMessages.length > 0) {
+            console.log('  📋 Browser console messages:', consoleMessages.join(' | '))
           }
           
           // Update context URLs for final analysis
           for (const context of usersInMatch) {
             try {
               context.url = context.page.url()
-              if (context.url.includes('/spinning') || context.url.includes('/spin')) {
-                context.matched = false // Reset matched status
+              if (context.url.includes('/video-date')) {
+                context.matched = true // Keep matched status for video-date
               }
             } catch (error) {
               // Page might be closed or navigated
