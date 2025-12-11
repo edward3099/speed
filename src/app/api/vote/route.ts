@@ -103,68 +103,7 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    // CRITICAL TEST: Try direct UPDATE first to see if it works
-    const isUser1 = matchInfo.user1_id === user.id
-    const updateField = isUser1 ? 'user1_vote' : 'user2_vote'
-    
-    console.log('🧪 /api/vote: TESTING direct UPDATE before RPC', { isUser1, updateField, vote })
-    
-    const { data: directUpdateResult, error: directUpdateError } = await supabase
-      .from('matches')
-      .update({ [updateField]: vote, updated_at: new Date().toISOString() })
-      .eq('match_id', match_id)
-      .select('user1_vote, user2_vote, status, outcome')
-      .single()
-    
-    console.log('🧪 /api/vote: Direct UPDATE result', { 
-      directUpdateResult, 
-      directUpdateError: directUpdateError?.message,
-      success: !directUpdateError && directUpdateResult
-    })
-    
-    // If direct UPDATE works, use RPC for outcome resolution
-    if (!directUpdateError && directUpdateResult) {
-      // Now call RPC to check outcome and handle completion
-      const { data: voteData, error: voteError } = await supabase.rpc('record_vote', {
-        p_user_id: user.id,
-        p_match_id: match_id,
-        p_vote: vote
-      })
-      
-      console.log('📊 /api/vote: RPC response after direct UPDATE', { 
-        voteData, 
-        voteError: voteError?.message
-      })
-      
-      // If RPC returned an error but direct UPDATE worked, that's okay - vote is saved
-      // Return the outcome from RPC or construct our own
-      if (!voteError && voteData && !voteData.error) {
-        return NextResponse.json(voteData)
-      } else if (voteError) {
-        // RPC failed but UPDATE succeeded - check outcome manually
-        const { data: matchAfter } = await supabase
-          .from('matches')
-          .select('user1_vote, user2_vote, status, outcome')
-          .eq('match_id', match_id)
-          .single()
-        
-        if (matchAfter?.user1_vote && matchAfter?.user2_vote) {
-          // Both votes present - determine outcome
-          const outcome = 
-            matchAfter.user1_vote === 'yes' && matchAfter.user2_vote === 'yes' ? 'both_yes' :
-            (matchAfter.user1_vote === 'yes' || matchAfter.user2_vote === 'yes') ? 'yes_pass' :
-            'pass_pass'
-          
-          console.log('✅ /api/vote: Both votes saved via direct UPDATE, outcome:', outcome)
-          return NextResponse.json({ outcome, completed: true })
-        }
-        
-        // Only one vote so far
-        return NextResponse.json({ completed: false, message: 'Waiting for partner to vote' })
-      }
-    }
-    
-    // Fallback: Use RPC as before if direct UPDATE didn't work
+    // Call record_vote RPC (SECURITY DEFINER bypasses RLS)
     const { data: voteData, error: voteError, status, statusText } = await supabase.rpc('record_vote', {
       p_user_id: user.id,
       p_match_id: match_id,
