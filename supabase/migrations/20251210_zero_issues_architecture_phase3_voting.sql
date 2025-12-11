@@ -158,15 +158,20 @@ BEGIN
     UPDATE matches
     SET user1_vote = p_vote, updated_at = NOW()
     WHERE match_id = p_match_id;
-    v_match.user1_vote := p_vote;
   ELSE
     UPDATE matches
     SET user2_vote = p_vote, updated_at = NOW()
     WHERE match_id = p_match_id;
-    v_match.user2_vote := p_vote;
   END IF;
 
-  -- Check if both votes received
+  -- CRITICAL: Re-read from database to get current vote state (handles race conditions)
+  -- Both users might vote simultaneously, so we need to check the actual database state
+  SELECT user1_vote, user2_vote
+  INTO v_match.user1_vote, v_match.user2_vote
+  FROM matches
+  WHERE match_id = p_match_id;
+
+  -- Check if both votes received (using fresh database values)
   IF v_match.user1_vote IS NOT NULL AND v_match.user2_vote IS NOT NULL THEN
     -- Both voted, determine outcome immediately
     v_outcome := CASE
