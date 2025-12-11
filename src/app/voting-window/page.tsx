@@ -162,10 +162,10 @@ function VotingWindowContent() {
             const currentUserId = statusData.user_id
             const match = statusData.match
             
-            // Check if current user voted by comparing user_id with match.user1_id/user2_id
+            // Check if current user voted (must be non-null vote value)
             const userVoted = currentUserId && match && (
-              (match.user1_id === currentUserId && match.user1_vote) ||
-              (match.user2_id === currentUserId && match.user2_vote)
+              (match.user1_id === currentUserId && match.user1_vote && match.user1_vote !== null) ||
+              (match.user2_id === currentUserId && match.user2_vote && match.user2_vote !== null)
             )
             
             if (process.env.NODE_ENV === 'development') {
@@ -369,10 +369,10 @@ function VotingWindowContent() {
             const currentUserId = data.user_id
             const match = data.match
             
-            // Check if current user voted by comparing user_id with match.user1_id/user2_id
+            // Check if current user voted (must be non-null vote value)
             const userVoted = currentUserId && match && (
-              (match.user1_id === currentUserId && match.user1_vote) ||
-              (match.user2_id === currentUserId && match.user2_vote)
+              (match.user1_id === currentUserId && match.user1_vote && match.user1_vote !== null) ||
+              (match.user2_id === currentUserId && match.user2_vote && match.user2_vote !== null)
             )
             
             if (process.env.NODE_ENV === 'development') {
