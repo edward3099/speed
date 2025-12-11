@@ -430,9 +430,17 @@ function VotingWindowContent() {
                 return true
               } else if (checkData.outcome && checkData.status === 'completed') {
                 console.log('Match completed with outcome:', checkData.outcome)
+                if (checkData.outcome === 'both_yes' && checkData.status === 'completed') {
+                  console.log('✅ Match completed with both_yes - redirecting to video-date', { matchId })
+                  router.push(`/video-date?matchId=${matchId}`)
+                  return true
+                }
+              } else {
+                console.log('Match not completed yet:', checkData)
               }
             } else {
-              console.log('❌ Failed to check outcome:', checkResponse.status, await checkResponse.text())
+              const errorText = await checkResponse.text()
+              console.log('❌ Failed to check outcome:', checkResponse.status, errorText)
             }
           } catch (error) {
             console.error('❌ Error checking outcome:', error)
