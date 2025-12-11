@@ -490,11 +490,11 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
         // yes_idle is validated in the voting flow test section
       }
       
-      // Issue 1b: Auto-spin check (for yes_pass scenario)
-      if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1) {
+      // Issue 1b: Auto-spin check (for yes_pass scenario only - skip if yes_idle)
+      if (matchedPairs.size === 1 && signedInContexts.length === 2 && MALE_COUNT === 1 && FEMALE_COUNT === 1 && !isYesIdleScenario) {
         const matchId = Array.from(matchedPairs.keys())[0]
         const usersInMatch = signedInContexts.filter(c => c.matchId === matchId)
-        if (usersInMatch.length === 2) {
+        if (usersInMatch.length === 2 && isYesPassScenario) {
           const urls = usersInMatch.map(c => {
             try {
               return c.page?.url() || c.url || 'unknown'
