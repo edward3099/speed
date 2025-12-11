@@ -10,8 +10,8 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
   test('should match 50 males and 20 females when all spin', async ({ browser }) => {
     test.setTimeout(600000) // 10 minutes for large scale test with conservative batching
     
-    // Use environment variable or default to production URL
-    const BASE_URL = process.env.TEST_BASE_URL || 'https://speed-date-xi.vercel.app'
+    // Use environment variable or default to localhost
+    const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
     console.log(`🌐 Testing against: ${BASE_URL}`)
     
     const timestamp = Date.now()
@@ -84,21 +84,21 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
               await page.waitForTimeout(Math.random() * 500)
               
               // Navigate to homepage and wait for it to fully load
-              await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle', timeout: 15000 })
+              const response = await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle', timeout: 15000 })
               await page.waitForTimeout(1000) // Give page time to render
               
-              // Check if we got a 404 or error page
+              // Check actual HTTP status code from response
               const currentUrl = page.url()
-              const pageTitle = await page.title().catch(() => 'Unknown')
-              const statusCode = await page.evaluate(() => {
-                // Check for common error indicators
-                if (document.body.textContent?.includes('404')) return 404
-                if (document.body.textContent?.includes('NOT_FOUND')) return 404
-                return 200
-              }).catch(() => 200)
+              const httpStatus = response?.status() || 200
               
-              if (statusCode === 404 || pageTitle.includes('404') || currentUrl.includes('404')) {
-                throw new Error(`❌ Platform Issue: Vercel deployment returns 404 at ${BASE_URL}. Please check if the deployment is live and the URL is correct.`)
+              // Only fail on actual HTTP 404, not based on page content detection
+              if (httpStatus === 404) {
+                throw new Error(`❌ Platform Issue: Vercel deployment returns HTTP 404 at ${BASE_URL}. Please check if the deployment is live and the URL is correct.`)
+              }
+              
+              // Log status for debugging
+              if (httpStatus !== 200) {
+                console.log(`  ⚠️ HTTP Status: ${httpStatus} (continuing anyway)`)
               }
               
               // Try multiple selectors for the "start now" button
