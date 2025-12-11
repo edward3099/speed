@@ -548,7 +548,14 @@ function VotingWindowContent() {
             {userVote === 'pass' ? '✓ Respin' : 'Respin'}
           </motion.button>
           <motion.button
-            onClick={() => handleVote('yes')}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('🔘 Yes button clicked', { matchId, userVote })
+              handleVote('yes').catch((error) => {
+                console.error('❌ Error in handleVote:', error)
+              })
+            }}
             disabled={userVote !== null}
             className="flex-1 px-6 py-4 rounded-xl bg-teal-300 text-black hover:bg-teal-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg"
             whileHover={{ scale: userVote === null ? 1.05 : 1 }}

@@ -293,27 +293,57 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
           
           // Both users click "Yes"
           console.log('  👆 Both users clicking "Yes"...')
-          await Promise.all(usersInMatch.map(async ({ page, user }) => {
+          
+          // Set up console listener to capture any errors
+          const consoleMessages: string[] = []
+          for (const { page } of usersInMatch) {
+            page.on('console', msg => {
+              const text = msg.text()
+              if (text.includes('vote') || text.includes('error') || text.includes('Error') || text.includes('Vote')) {
+                consoleMessages.push(`[${usersInMatch.findIndex(u => u.page === page)}] ${text}`)
+              }
+            })
+            page.on('pageerror', error => {
+              consoleMessages.push(`[ERROR] ${error.message}`)
+            })
+          }
+          
+          await Promise.all(usersInMatch.map(async ({ page, user }, index) => {
             try {
               // Wait for Yes button to be visible (try multiple selectors)
               // The button text might be "Yes" or "✓ Yes" after clicking
               const yesButton = page.locator('button').filter({ hasText: /^yes$/i }).first()
               await expect(yesButton).toBeVisible({ timeout: 15000 })
               
+              // Check if button is disabled
+              const isDisabled = await yesButton.isDisabled()
+              if (isDisabled) {
+                console.log(`  ⚠️ ${user.gender} user's Yes button is disabled`)
+                return
+              }
+              
               // Wait a moment for page to be ready
               await page.waitForTimeout(500)
               
               // Click the button
+              console.log(`  🔘 ${user.gender} user: Clicking Yes button...`)
               await yesButton.click({ force: true })
               
-              // Wait a moment for the click to register
-              await page.waitForTimeout(1000)
+              // Wait for API call to complete (check for network request)
+              await page.waitForTimeout(2000)
               
               // Verify button state changed (indicates vote was processed)
               const buttonAfterClick = page.locator('button').filter({ hasText: /yes/i }).first()
               const buttonText = await buttonAfterClick.textContent()
+              const isDisabledAfter = await buttonAfterClick.isDisabled()
               
-              console.log(`  ✅ ${user.gender} user clicked "Yes" (button text: "${buttonText}")`)
+              console.log(`  ✅ ${user.gender} user clicked "Yes" (button text: "${buttonText}", disabled: ${isDisabledAfter})`)
+              
+              // Check for any console errors
+              const userErrors = consoleMessages.filter(msg => msg.includes(`[${index}]`))
+              if (userErrors.length > 0) {
+                console.log(`  📋 ${user.gender} user console messages:`, userErrors.join('; '))
+              }
             } catch (error: any) {
               console.error(`  ❌ Failed to click Yes for ${user.gender} user:`, error.message || error)
               
@@ -327,6 +357,11 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
               }
             }
           }))
+          
+          // Log all console messages
+          if (consoleMessages.length > 0) {
+            console.log('  📋 Browser console messages:', consoleMessages.join(' | '))
+          }
           
           // Wait for both users to be redirected to /video-date
           console.log('  ⏳ Waiting for both users to be redirected to /video-date (30 seconds)...')
