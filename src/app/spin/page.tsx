@@ -58,7 +58,7 @@ export default function spin() {
   const [preferences, setPreferences] = useState({
     minAge: 18,
     maxAge: 30,
-    city: '' as string,
+    city: [] as string[], // Changed to array to support multiple cities
     genderPreference: 'female' as 'male' | 'female'
   })
   const [showFilters, setShowFilters] = useState(false)
@@ -120,7 +120,7 @@ export default function spin() {
           setPreferences({
             minAge: prefs.min_age,
             maxAge: prefs.max_age,
-            city: prefs.city || '',
+            city: Array.isArray(prefs.city) ? prefs.city : (prefs.city ? [prefs.city] : []), // Handle both array and legacy string format
             genderPreference: (prefs.gender_preference || 'female') as 'male' | 'female'
           })
         }
@@ -288,7 +288,7 @@ export default function spin() {
         user_id: authUser.id,
         min_age: preferences.minAge,
         max_age: preferences.maxAge,
-        city: preferences.city || null,
+        city: Array.isArray(preferences.city) && preferences.city.length > 0 ? preferences.city : null, // Save as array or null
         gender_preference: preferences.genderPreference,
         updated_at: new Date().toISOString()
       }
@@ -726,10 +726,20 @@ export default function spin() {
             <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-2">
               <button
                 onClick={() => {
-                  setPreferences(prev => ({ ...prev, city: "North England" }))
+                  setPreferences(prev => {
+                    const city = "North England"
+                    const currentCities = Array.isArray(prev.city) ? prev.city : (prev.city ? [prev.city] : [])
+                    const isSelected = currentCities.includes(city)
+                    return {
+                      ...prev,
+                      city: isSelected 
+                        ? currentCities.filter(c => c !== city) // Remove if already selected
+                        : [...currentCities, city] // Add if not selected
+                    }
+                  })
                 }}
                 className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
-                  preferences.city === "North England"
+                  (Array.isArray(preferences.city) ? preferences.city : []).includes("North England")
                     ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                     : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                 }`}
@@ -739,10 +749,20 @@ export default function spin() {
               </button>
               <button
                 onClick={() => {
-                  setPreferences(prev => ({ ...prev, city: "Midlands" }))
+                  setPreferences(prev => {
+                    const city = "Midlands"
+                    const currentCities = Array.isArray(prev.city) ? prev.city : (prev.city ? [prev.city] : [])
+                    const isSelected = currentCities.includes(city)
+                    return {
+                      ...prev,
+                      city: isSelected 
+                        ? currentCities.filter(c => c !== city)
+                        : [...currentCities, city]
+                    }
+                  })
                 }}
                 className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
-                  preferences.city === "Midlands"
+                  (Array.isArray(preferences.city) ? preferences.city : []).includes("Midlands")
                     ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                     : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                 }`}
@@ -752,10 +772,20 @@ export default function spin() {
               </button>
               <button
                 onClick={() => {
-                  setPreferences(prev => ({ ...prev, city: "South England" }))
+                  setPreferences(prev => {
+                    const city = "South England"
+                    const currentCities = Array.isArray(prev.city) ? prev.city : (prev.city ? [prev.city] : [])
+                    const isSelected = currentCities.includes(city)
+                    return {
+                      ...prev,
+                      city: isSelected 
+                        ? currentCities.filter(c => c !== city)
+                        : [...currentCities, city]
+                    }
+                  })
                 }}
                 className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
-                  preferences.city === "South England"
+                  (Array.isArray(preferences.city) ? preferences.city : []).includes("South England")
                     ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                     : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                 }`}
@@ -765,10 +795,20 @@ export default function spin() {
               </button>
               <button
                 onClick={() => {
-                  setPreferences(prev => ({ ...prev, city: "London" }))
+                  setPreferences(prev => {
+                    const city = "London"
+                    const currentCities = Array.isArray(prev.city) ? prev.city : (prev.city ? [prev.city] : [])
+                    const isSelected = currentCities.includes(city)
+                    return {
+                      ...prev,
+                      city: isSelected 
+                        ? currentCities.filter(c => c !== city)
+                        : [...currentCities, city]
+                    }
+                  })
                 }}
                 className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
-                  preferences.city === "London"
+                  (Array.isArray(preferences.city) ? preferences.city : []).includes("London")
                     ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                     : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                 }`}
@@ -779,10 +819,20 @@ export default function spin() {
               <div className="col-span-2 flex justify-center">
                 <button
                   onClick={() => {
-                    setPreferences(prev => ({ ...prev, city: "other" }))
+                    setPreferences(prev => {
+                      const city = "other"
+                      const currentCities = Array.isArray(prev.city) ? prev.city : (prev.city ? [prev.city] : [])
+                      const isSelected = currentCities.includes(city)
+                      return {
+                        ...prev,
+                        city: isSelected 
+                          ? currentCities.filter(c => c !== city)
+                          : [...currentCities, city]
+                      }
+                    })
                   }}
                   className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
-                    preferences.city === "other"
+                    (Array.isArray(preferences.city) ? preferences.city : []).includes("other")
                       ? "bg-teal-300 text-black shadow-lg shadow-teal-300/30"
                       : "bg-white/20 text-white hover:bg-white/25 focus:bg-white/25 focus:border-2 focus:border-teal-300/50"
                   }`}
@@ -800,7 +850,7 @@ export default function spin() {
                 setPreferences({
                   minAge: 18,
                   maxAge: 30,
-                  city: '',
+                  city: [], // Reset to empty array
                   genderPreference: preferences.genderPreference
                 })
               }}

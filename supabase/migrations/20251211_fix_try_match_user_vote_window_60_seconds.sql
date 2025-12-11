@@ -53,6 +53,7 @@ BEGIN
 
   -- Find best partner
   -- FIXED: Partner must also be actively waiting (same relaxed criteria)
+  -- NEW: Filter by city preferences (overlapping cities) and age range
   SELECT 
     us.user_id,
     us.fairness,
@@ -61,6 +62,8 @@ BEGIN
   FROM users_state us
   INNER JOIN profiles p1 ON us.user_id = p1.id
   INNER JOIN profiles p2 ON v_user_state.user_id = p2.id
+  LEFT JOIN user_preferences up1 ON us.user_id = up1.user_id -- Partner's preferences
+  LEFT JOIN user_preferences up2 ON v_user_state.user_id = up2.user_id -- Current user's preferences
   WHERE us.state = 'waiting'
     AND us.user_id != p_user_id
     -- Partner must have joined queue recently OR have recent activity
@@ -75,6 +78,38 @@ BEGIN
     AND p1.gender != p2.gender
     AND p1.gender IS NOT NULL
     AND p2.gender IS NOT NULL
+    -- City preference matching: users match if they have at least one city in common
+    -- OR if either user has no city preference (NULL or empty array)
+    AND (
+      -- Both have no city preference (match anyone)
+      (up1.city IS NULL OR array_length(up1.city, 1) IS NULL)
+      AND (up2.city IS NULL OR array_length(up2.city, 1) IS NULL)
+      OR
+      -- Current user has no city preference (match anyone)
+      (up2.city IS NULL OR array_length(up2.city, 1) IS NULL)
+      OR
+      -- Partner has no city preference (match anyone)
+      (up1.city IS NULL OR array_length(up1.city, 1) IS NULL)
+      OR
+      -- Both have city preferences - check for overlap (at least one city in common)
+      EXISTS (
+        SELECT 1
+        FROM unnest(COALESCE(up1.city, ARRAY[]::TEXT[])) AS city1
+        WHERE city1 = ANY(COALESCE(up2.city, ARRAY[]::TEXT[]))
+      )
+    )
+    -- Age range matching: user's age must be within partner's min_age/max_age
+    -- AND partner's age must be within user's min_age/max_age
+    AND (
+      -- Current user's age is within partner's age range
+      (up1.min_age IS NULL OR p2.age >= up1.min_age)
+      AND (up1.max_age IS NULL OR p2.age <= up1.max_age)
+    )
+    AND (
+      -- Partner's age is within current user's age range
+      (up2.min_age IS NULL OR p1.age >= up2.min_age)
+      AND (up2.max_age IS NULL OR p1.age <= up2.max_age)
+    )
     -- No match history (bidirectional check)
     AND NOT EXISTS (
       SELECT 1 FROM match_history mh
