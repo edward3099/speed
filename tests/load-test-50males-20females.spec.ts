@@ -335,8 +335,6 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
             }
           }
           
-          await new Promise(resolve => setTimeout(resolve, 3000)) // Wait for page to fully load
-          
           // Set up console listener to capture any errors
           const consoleMessages: string[] = []
           for (const { page } of usersInMatch) {
@@ -351,40 +349,68 @@ test.describe('Load Test: 50 Males and 20 Females Spinning', () => {
             })
           }
           
+          // Wait for voting window page to be fully loaded (partner data loaded, buttons visible)
+          console.log('  ⏳ Waiting for voting window to be fully loaded...')
+          for (const { page } of usersInMatch) {
+            try {
+              // Wait for "Loading..." to disappear (page is no longer loading)
+              await page.waitForFunction(
+                () => {
+                  const bodyText = document.body.textContent || '';
+                  return !bodyText.includes('Loading...');
+                },
+                { timeout: 10000 }
+              ).catch(() => {}) // Ignore if already loaded
+              
+              // Wait for partner name (h2) or countdown to appear (indicates page is ready)
+              await page.waitForSelector('h2', { timeout: 15000 }).catch(() => {})
+              
+              // Wait for vote buttons to be visible - use getByRole for better reliability
+              const yesButton = page.getByRole('button', { name: /yes/i })
+              await yesButton.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {})
+              
+              // Additional wait for animations to complete
+              await page.waitForTimeout(1000)
+            } catch (error) {
+              console.error(`  ⚠️ Error waiting for voting window to load:`, error)
+            }
+          }
+          
           // First user votes "yes", second user does NOT vote (will wait for expiration)
           const [user1, user2] = usersInMatch
           console.log(`  👆 ${user1.user.gender} user clicking "Yes", ${user2.user.gender} user NOT voting (will wait for countdown to expire)...`)
           
           // Only user1 votes "yes"
           try {
-            await user1.page.waitForTimeout(1000)
+            // Use getByRole for more reliable button selection
+            const yesButton = user1.page.getByRole('button', { name: /yes/i })
             
-            let yesButton = user1.page.locator('button').filter({ hasText: /^yes$/i }).first()
+            // Wait for button to be visible with longer timeout
+            await expect(yesButton).toBeVisible({ timeout: 30000 })
             
-            if (!(await yesButton.isVisible({ timeout: 2000 }).catch(() => false))) {
-              yesButton = user1.page.locator('button').filter({ hasText: /yes/i }).first()
-            }
+            // Wait for button to be enabled (not disabled) - buttons are disabled if userVote !== null
+            await expect(yesButton).toBeEnabled({ timeout: 5000 })
             
-            await expect(yesButton).toBeVisible({ timeout: 20000 })
-            
+            // Additional check: ensure button is not disabled
             const isDisabled = await yesButton.isDisabled()
             if (isDisabled) {
-              console.log(`  ⚠️ ${user1.user.gender} user's Yes button is disabled`)
-            } else {
-              await user1.page.waitForTimeout(500)
-              console.log(`  🔘 ${user1.user.gender} user: Clicking Yes button...`)
-              
-              await yesButton.scrollIntoViewIfNeeded()
-              await yesButton.click({ force: true, timeout: 10000 })
-              
-              await user1.page.waitForTimeout(2000)
-              
-              const buttonAfterClick = user1.page.locator('button').filter({ hasText: /yes/i }).first()
-              const buttonText = await buttonAfterClick.textContent()
-              const isDisabledAfter = await buttonAfterClick.isDisabled()
-              
-              console.log(`  ✅ ${user1.user.gender} user clicked "Yes" (button text: "${buttonText?.trim()}", disabled: ${isDisabledAfter})`)
+              throw new Error('Yes button is disabled - user may have already voted or page is not ready')
             }
+            
+            await user1.page.waitForTimeout(500)
+            console.log(`  🔘 ${user1.user.gender} user: Clicking Yes button...`)
+            
+            await yesButton.scrollIntoViewIfNeeded()
+            await yesButton.click({ force: true, timeout: 10000 })
+            
+            await user1.page.waitForTimeout(2000)
+            
+            // Verify button state after click
+            const buttonAfterClick = user1.page.getByRole('button', { name: /yes/i })
+            const buttonText = await buttonAfterClick.textContent()
+            const isDisabledAfter = await buttonAfterClick.isDisabled()
+            
+            console.log(`  ✅ ${user1.user.gender} user clicked "Yes" (button text: "${buttonText?.trim()}", disabled: ${isDisabledAfter})`)
           } catch (error: any) {
             console.error(`  ❌ Failed to click Yes for ${user1.user.gender} user:`, error.message || error)
           }
