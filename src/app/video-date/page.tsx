@@ -443,7 +443,8 @@ function VideoDateContent() {
 
         // Generate LiveKit room name and tokens
         const roomName = `date-${matchId}`
-        const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
+        // Trim whitespace/newlines from URL (common issue when setting env vars)
+        const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL?.trim()
 
         if (!wsUrl) {
           console.error('❌ LiveKit URL not configured')
@@ -483,12 +484,42 @@ function VideoDateContent() {
         
         if (!initialTokenResponse.ok) {
           const errorText = await initialTokenResponse.text()
-          throw new Error(`Failed to fetch initial token: ${initialTokenResponse.status} ${errorText}`)
+          let errorMessage = `Failed to fetch initial token: ${initialTokenResponse.status} ${errorText}`
+          
+          // If it's a 500 error, check diagnostics
+          if (initialTokenResponse.status === 500) {
+            try {
+              const diagnosticsResponse = await fetch('/api/livekit-token/diagnostics')
+              const diagnostics = await diagnosticsResponse.json()
+              if (diagnostics.errors && diagnostics.errors.length > 0) {
+                errorMessage = `LiveKit configuration error: ${diagnostics.errors.join(', ')}. ${diagnostics.recommendations?.join(' ')}`
+                console.error('❌ LiveKit diagnostics:', diagnostics)
+              }
+            } catch (diagError) {
+              console.warn('Could not fetch diagnostics:', diagError)
+            }
+          }
+          
+          await logVideoError('token_fetch_failed', 'Failed to fetch LiveKit token', {
+            status: initialTokenResponse.status,
+            errorText,
+            roomName
+          })
+          showError(new Error(errorMessage))
+          router.push('/spin')
+          return
         }
         
         const initialTokenData = await initialTokenResponse.json()
         if (!initialTokenData.token) {
-          throw new Error('No token in initial token response')
+          const errorMessage = 'No token in initial token response. Check LiveKit configuration in Vercel environment variables.'
+          await logVideoError('token_missing', 'No token in response', {
+            response: initialTokenData,
+            roomName
+          })
+          showError(new Error(errorMessage))
+          router.push('/spin')
+          return
         }
         
         console.log('✅ Initial token pre-fetched successfully')
@@ -1264,9 +1295,56 @@ function VideoDateContent() {
           // Check if error is related to media devices
           const errorMessage = connectError?.message || String(connectError)
           const errorName = connectError?.name || ''
+          const errorCode = (connectError as any)?.code
+          const errorStatus = (connectError as any)?.status
+          
           const isMediaError = errorMessage.includes('getUserMedia') || 
                                errorMessage.includes('mediaDevices') ||
                                errorMessage.includes('navigator')
+          
+          // Check if error is related to token/authorization (401 = invalid API key)
+          const isAuthError = errorStatus === 401 || 
+                             errorCode === 1 || 
+                             errorMessage.includes('invalid API key') ||
+                             errorMessage.includes('401') ||
+                             errorMessage.includes('unauthorized') ||
+                             errorMessage.includes('authentication')
+          
+          if (isAuthError) {
+            console.error('❌ LiveKit authentication error - checking configuration...')
+            try {
+              const diagnosticsResponse = await fetch('/api/livekit-token/diagnostics')
+              const diagnostics = await diagnosticsResponse.json()
+              let userMessage = 'LiveKit connection failed: Invalid API key. '
+              if (diagnostics.errors && diagnostics.errors.length > 0) {
+                userMessage += diagnostics.errors.join(', ') + '. '
+              }
+              if (diagnostics.recommendations && diagnostics.recommendations.length > 0) {
+                userMessage += diagnostics.recommendations.join(' ')
+              } else {
+                userMessage += 'Please check that LIVEKIT_API_KEY and LIVEKIT_API_SECRET are set in Vercel environment variables.'
+              }
+              
+              await logVideoError('livekit_auth_error', 'LiveKit authentication failed', {
+                error: errorMessage,
+                errorName,
+                errorCode,
+                errorStatus,
+                diagnostics
+              })
+              showError(new Error(userMessage))
+            } catch (diagError) {
+              await logVideoError('livekit_auth_error', 'LiveKit authentication failed', {
+                error: errorMessage,
+                errorName,
+                errorCode,
+                errorStatus
+              })
+              showError(new Error('LiveKit connection failed: Invalid API key. Please check environment variables in Vercel.'))
+            }
+            router.push('/spin')
+            return
+          }
           
           // Check if error is related to token/authorization
           const isTokenError = errorMessage.includes('invalid authorization token') ||
