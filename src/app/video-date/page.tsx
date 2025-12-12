@@ -3675,7 +3675,7 @@ function VideoDateContent() {
       await enableWithRetry(1)
       
       // Wait for tracks to be published - longer wait for iPhone
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Get local tracks with more aggressive retries
       let tracksFound = false
@@ -3692,26 +3692,50 @@ function VideoDateContent() {
           return
         }
         
-        // Get video track
+        // Get video track - check all publications
         const videoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
-        const videoPub = videoPubs.find(pub => pub.track)
-        if (videoPub?.track) {
-          console.log('✅ Video track found:', videoPub.track.mediaStreamTrack.id)
+        console.log(`📹 Found ${videoPubs.length} video publications`)
+        const videoPub = videoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+        if (videoPub?.track?.mediaStreamTrack) {
+          const trackId = videoPub.track.mediaStreamTrack.id
+          console.log('✅ Video track found:', trackId, 'enabled:', videoPub.track.mediaStreamTrack.enabled)
+          // Ensure track is enabled
+          if (!videoPub.track.mediaStreamTrack.enabled) {
+            videoPub.track.mediaStreamTrack.enabled = true
+          }
           setLocalVideoTrack(videoPub.track.mediaStreamTrack)
           tracksFound = true
+          
+          // Immediately attach to video element if available
+          if (localVideoRef.current) {
+            console.log('📹 Immediately attaching video track to local video element')
+            const stream = new MediaStream([videoPub.track.mediaStreamTrack])
+            localVideoRef.current.srcObject = stream
+            localVideoRef.current.play().catch(err => {
+              if (err.name !== 'NotAllowedError') {
+                console.error('Error playing local video immediately:', err)
+              }
+            })
+          }
         } else {
-          console.log('⚠️ No video track found yet')
+          console.log('⚠️ No video track found yet (checked', videoPubs.length, 'publications)')
         }
 
         // Get audio track
         const audioPubs = Array.from(room.localParticipant.audioTrackPublications.values())
-        const audioPub = audioPubs.find(pub => pub.track)
-        if (audioPub?.track) {
-          console.log('✅ Audio track found:', audioPub.track.mediaStreamTrack.id)
+        console.log(`🎤 Found ${audioPubs.length} audio publications`)
+        const audioPub = audioPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+        if (audioPub?.track?.mediaStreamTrack) {
+          const trackId = audioPub.track.mediaStreamTrack.id
+          console.log('✅ Audio track found:', trackId, 'enabled:', audioPub.track.mediaStreamTrack.enabled)
+          // Ensure track is enabled
+          if (!audioPub.track.mediaStreamTrack.enabled) {
+            audioPub.track.mediaStreamTrack.enabled = true
+          }
           setLocalAudioTrack(audioPub.track.mediaStreamTrack)
           tracksFound = true
         } else {
-          console.log('⚠️ No audio track found yet')
+          console.log('⚠️ No audio track found yet (checked', audioPubs.length, 'publications)')
         }
 
         // If we found at least one track, mark as enabled
@@ -3727,13 +3751,14 @@ function VideoDateContent() {
       setTimeout(() => updateLocalTracks(2), 500)
       setTimeout(() => updateLocalTracks(3), 1000)
       setTimeout(() => updateLocalTracks(4), 2000)
+      setTimeout(() => updateLocalTracks(5), 3000)
       setTimeout(() => {
         if (!tracksFound) {
-          console.warn('⚠️ Tracks not found after 3 seconds, but marking as enabled anyway')
+          console.warn('⚠️ Tracks not found after 4 seconds, but marking as enabled anyway')
           setCameraMicEnabled(true)
           setHasUserInteracted(true)
         }
-      }, 3000)
+      }, 4000)
 
     } catch (error: any) {
       console.error('❌ Error enabling camera/microphone:', {
