@@ -2190,7 +2190,7 @@ function VideoDateContent() {
       if (remaining === null) {
         // RPC failed - don't update countdown, will retry on next interval
         // This ensures we don't use client-side calculation which causes drift
-        console.warn('⚠️ Countdown RPC failed, keeping current value, will retry...')
+        // Retry logic handles this, don't log to avoid ErrorDebugger noise
         return
       }
       

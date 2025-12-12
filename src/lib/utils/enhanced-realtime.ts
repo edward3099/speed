@@ -115,9 +115,9 @@ export class EnhancedRealtimeSubscription {
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
             // Only warn on actual errors, not normal CLOSED events during reconnection
             if (status === 'CHANNEL_ERROR') {
-              console.warn(`⚠️ Real-time subscription error: ${this.channelName}`)
+              // CHANNEL_ERROR is transient - reconnection handles this, don't log
             } else if (status === 'TIMED_OUT') {
-              console.warn(`⚠️ Real-time subscription timed out: ${this.channelName}`)
+              // TIMED_OUT is transient - reconnection handles this, don't log
             } else if (status === 'CLOSED' && process.env.NODE_ENV === 'development') {
               // CLOSED is often expected during reconnection, only log in dev
               console.log(`🔄 Real-time subscription closed: ${this.channelName} (reconnecting...)`)
@@ -138,7 +138,7 @@ export class EnhancedRealtimeSubscription {
           }
         })
     } catch (error) {
-      console.error('❌ Failed to subscribe:', error)
+      // Failed to subscribe - reconnection logic handles this
       if (this.config.onError) {
         this.config.onError(error as Error)
       }
