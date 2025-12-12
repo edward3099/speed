@@ -1273,6 +1273,15 @@ function VideoDateContent() {
 
         // Connect to room with error handling using token source for automatic refresh
         try {
+          // Log connection details for debugging (without exposing token)
+          console.log('🔗 Attempting LiveKit connection:', {
+            wsUrl: wsUrl.replace(/\/\/.*@/, '//***@'),
+            roomName,
+            username: authUser.id,
+            tokenLength: token.length,
+            tokenPrefix: token.substring(0, 20) + '...'
+          })
+          
           await livekitRoom.connect(wsUrl, token, {
             autoSubscribe: true,
             ...(authUser.id ? { participantName: authUser.id } as any : {}),
