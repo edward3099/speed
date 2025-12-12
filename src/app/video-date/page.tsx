@@ -2037,6 +2037,85 @@ function VideoDateContent() {
     }
   }, [remoteAudioTrack, hasUserInteracted, room])
 
+  // Comprehensive cleanup function to stop all tracks and disconnect
+  const cleanupAllTracksAndDisconnect = async () => {
+    // Stop all local tracks
+    if (localVideoTrack) {
+      localVideoTrack.stop()
+      setLocalVideoTrack(null)
+    }
+    if (localAudioTrack) {
+      localAudioTrack.stop()
+      setLocalAudioTrack(null)
+    }
+    
+    // Stop all remote tracks
+    if (remoteVideoTrack) {
+      remoteVideoTrack.stop()
+      setRemoteVideoTrack(null)
+    }
+    if (remoteAudioTrack) {
+      remoteAudioTrack.stop()
+      setRemoteAudioTrack(null)
+    }
+    
+    // Stop all tracks from room if connected
+    if (room && room.state !== 'disconnected') {
+      try {
+        // Stop all local participant tracks
+        room.localParticipant.trackPublications.forEach((publication) => {
+          if (publication.track) {
+            publication.track.stop()
+          }
+        })
+        
+        // Unpublish all tracks
+        await room.localParticipant.unpublishAllTracks()
+      } catch (err) {
+        // Ignore errors during cleanup
+      }
+    }
+    
+    // Clear video/audio element srcObjects
+    if (localVideoRef.current) {
+      if (localVideoRef.current.srcObject) {
+        const stream = localVideoRef.current.srcObject as MediaStream
+        stream.getTracks().forEach(track => track.stop())
+        localVideoRef.current.srcObject = null
+      }
+    }
+    
+    if (remoteVideoRef.current) {
+      if (remoteVideoRef.current.srcObject) {
+        const stream = remoteVideoRef.current.srcObject as MediaStream
+        stream.getTracks().forEach(track => track.stop())
+        remoteVideoRef.current.srcObject = null
+      }
+    }
+    
+    if (remoteAudioRef.current) {
+      if (remoteAudioRef.current.srcObject) {
+        const stream = remoteAudioRef.current.srcObject as MediaStream
+        stream.getTracks().forEach(track => track.stop())
+        remoteAudioRef.current.srcObject = null
+      }
+      remoteAudioRef.current.pause()
+    }
+    
+    // Clear stream refs
+    remoteVideoStreamRef.current = null
+    remoteAudioStreamRef.current = null
+    
+    // Disconnect from room
+    if (room) {
+      try {
+        await room.disconnect()
+      } catch (err) {
+        // Room may already be disconnected - this is fine
+      }
+    }
+  }
+
   // Handle early exit
   const handleEarlyExit = async () => {
     if (!videoDateId || !user || !partner) return
@@ -2060,21 +2139,8 @@ function VideoDateContent() {
       user_id: authUser.id
     })
 
-    // Disconnect from room gracefully
-    if (room) {
-      // Clean up tracks before disconnecting
-      setLocalVideoTrack(null)
-      setLocalAudioTrack(null)
-      setRemoteVideoTrack(null)
-      setRemoteAudioTrack(null)
-      
-      try {
-        await room.disconnect()
-      } catch (err) {
-        // Room may already be disconnected - this is fine
-        console.log('Room already disconnected or error during disconnect:', err)
-      }
-    }
+    // Clean up all tracks and disconnect
+    await cleanupAllTracksAndDisconnect()
 
     // Show pass modal and return to spin
     setShowPassModal(true)
@@ -2700,21 +2766,8 @@ function VideoDateContent() {
     const startTime = countdownComplete ? Date.now() - ((300 - timeLeft) * 1000) : Date.now()
     const duration = Math.floor((Date.now() - startTime) / 1000)
     
-    // Disconnect from LiveKit room gracefully
-    if (room) {
-      // Clean up tracks before disconnecting
-      setLocalVideoTrack(null)
-      setLocalAudioTrack(null)
-      setRemoteVideoTrack(null)
-      setRemoteAudioTrack(null)
-      
-      try {
-        await room.disconnect()
-      } catch (err) {
-        // Room may already be disconnected - this is fine
-        console.log('Room already disconnected or error during disconnect:', err)
-      }
-    }
+    // Clean up all tracks and disconnect
+    await cleanupAllTracksAndDisconnect()
 
     // Update video date status
     if (videoDateId) {
