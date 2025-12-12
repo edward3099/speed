@@ -1163,8 +1163,21 @@ function VideoDateContent() {
             console.log('📹 Local track published:', publication.kind, publication.trackSid, publication.track.mediaStreamTrack.id)
             if (publication.kind === 'video') {
               console.log('✅ Setting local video track from TrackPublished event')
-              setLocalVideoTrack(publication.track.mediaStreamTrack)
+              const videoTrack = publication.track.mediaStreamTrack
+              setLocalVideoTrack(videoTrack)
               setCameraMicEnabled(true) // Mark as enabled when we get a track
+              
+              // Immediately attach to video element if available
+              if (localVideoRef.current && videoTrack) {
+                console.log('📹 Immediately attaching video track to local video element from TrackPublished')
+                const stream = new MediaStream([videoTrack])
+                localVideoRef.current.srcObject = stream
+                localVideoRef.current.play().catch(err => {
+                  if (err.name !== 'NotAllowedError') {
+                    console.error('Error playing local video from TrackPublished:', err)
+                  }
+                })
+              }
             } else if (publication.kind === 'audio') {
               console.log('✅ Setting local audio track from TrackPublished event')
               setLocalAudioTrack(publication.track.mediaStreamTrack)
