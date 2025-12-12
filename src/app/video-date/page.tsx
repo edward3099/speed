@@ -5009,36 +5009,6 @@ function VideoDateContent() {
                         </div>
                       </motion.button>
                     )}
-                    
-                    <motion.button
-                      onClick={toggleMute}
-                      className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg touch-manipulation ${
-                        isMuted
-                          ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20 active:scale-95"
-                          : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15 active:scale-95"
-                      }`}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      title={isMuted ? "Unmute" : "Mute"}
-                      style={{ minWidth: '32px', minHeight: '32px' }}
-                    >
-                      {isMuted ? <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" /> : <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />}
-                    </motion.button>
-
-                    <motion.button
-                      onClick={toggleVideo}
-                      className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl backdrop-blur-md border-2 transition-all duration-300 shadow-lg touch-manipulation ${
-                        isVideoOff
-                          ? "bg-red-500/20 border-red-500/50 text-red-300 shadow-red-500/20 active:scale-95"
-                          : "bg-white/10 border-white/20 hover:border-teal-300/50 text-white hover:bg-white/15 active:scale-95"
-                      }`}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      title={isVideoOff ? "Turn on video" : "Turn off video"}
-                      style={{ minWidth: '32px', minHeight: '32px' }}
-                    >
-                      {isVideoOff ? <VideoOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" /> : <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />}
-                    </motion.button>
 
                   <motion.div
                       whileHover={{ scale: 1.05 }}
