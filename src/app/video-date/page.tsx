@@ -1205,44 +1205,10 @@ function VideoDateContent() {
               // Ensure video is not marked as off
               setIsVideoOff(false)
               
-              // Immediately attach to video element if available
-              if (localVideoRef.current && videoTrack) {
-                console.log('📹 Immediately attaching video track to local video element from TrackPublished')
-                try {
-                  // Stop any existing tracks in the stream
-                  if (localVideoRef.current.srcObject) {
-                    const existingStream = localVideoRef.current.srcObject as MediaStream
-                    existingStream.getTracks().forEach(t => t.stop())
-                  }
-                  
-                  // Create new stream with the track
-                  const stream = new MediaStream([videoTrack])
-                  localVideoRef.current.srcObject = stream
-                  
-                  // Ensure video is visible
-                  localVideoRef.current.style.opacity = '1'
-                  
-                  // Try to play immediately
-                  const playPromise = localVideoRef.current.play()
-                  if (playPromise !== undefined) {
-                    playPromise
-                      .then(() => {
-                        console.log('✅ Local video playing from TrackPublished event')
-                      })
-                      .catch(err => {
-                        if (err.name !== 'NotAllowedError') {
-                          console.error('Error playing local video from TrackPublished:', err)
-                        } else {
-                          console.log('⚠️ Local video play blocked (needs user interaction)')
-                        }
-                      })
-                  }
-                } catch (err) {
-                  console.error('Error attaching video track from TrackPublished:', err)
-                }
-              } else {
-                console.warn('⚠️ localVideoRef.current is null in TrackPublished, cannot attach track')
-              }
+              // Note: Don't attach here - let the main useEffect handle attachment
+              // This ensures consistent attachment logic and avoids race conditions
+              // The main useEffect will pick up the track via localVideoTrack state
+              console.log('📹 TrackPublished: Video track set in state, main useEffect will attach')
             } else if (publication.kind === 'audio') {
               console.log('✅ Setting local audio track from TrackPublished event')
               setLocalAudioTrack(publication.track.mediaStreamTrack)
@@ -4210,7 +4176,8 @@ function VideoDateContent() {
                         muted
                         className="w-full h-full object-cover"
                         style={{ 
-                          opacity: (countdownVideoOff || !localVideoTrack) ? 0 : 1,
+                          // Video should be visible when track exists (auto-enabled since toggle buttons removed)
+                          opacity: localVideoTrack ? 1 : 0,
                           display: 'block'
                         }}
                         onError={(e) => {
