@@ -770,7 +770,7 @@ function VideoDateContent() {
                 // CRITICAL: Ensure video element exists and is in DOM
                 // If not ready, update state and retry attachment
                 if (!remoteVideoRef.current) {
-                  console.warn('⚠️ remoteVideoRef.current is null! Video element not ready. Will retry.')
+                  // Video element not ready - retry logic handles this automatically
                   setRemoteVideoTrack(track.mediaStreamTrack)
                   // Retry attachment after a delay
                   setTimeout(() => {
@@ -867,7 +867,7 @@ function VideoDateContent() {
                     }, 200)
                     return // Successfully attached
                   } catch (err) {
-                    console.warn('⚠️ track.attach() failed, falling back to MediaStream:', err)
+                    // track.attach() failed - fallback to MediaStream handles this
                   }
                 }
                 
