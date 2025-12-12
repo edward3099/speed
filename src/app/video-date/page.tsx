@@ -1202,9 +1202,8 @@ function VideoDateContent() {
               setLocalVideoTrack(videoTrack)
               setCameraMicEnabled(true) // Mark as enabled when we get a track
               
-              // Ensure video is not marked as off (both states)
+              // Ensure video is not marked as off
               setIsVideoOff(false)
-              setCountdownVideoOff(false) // Also set countdown video to on
               
               // Immediately attach to video element if available
               if (localVideoRef.current && videoTrack) {
@@ -3810,8 +3809,9 @@ function VideoDateContent() {
           setLocalVideoTrack(track)
           tracksFound = true
           
-          // Ensure video is not marked as off
+          // Ensure video is not marked as off (both states)
           setIsVideoOff(false)
+          setCountdownVideoOff(false) // Also set countdown video to on
           
           // Immediately attach to video element if available
           if (localVideoRef.current) {
