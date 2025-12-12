@@ -2111,6 +2111,14 @@ function VideoDateContent() {
     // Set room to null to prevent any further operations
     setRoom(null)
   }
+  
+  // Cleanup when post modal is shown (date ended)
+  useEffect(() => {
+    if (showPostModal) {
+      // Ensure all tracks are stopped when post modal appears
+      cleanupAllTracksAndDisconnect().catch(() => {})
+    }
+  }, [showPostModal])
 
   // Handle early exit
   const handleEarlyExit = async () => {
