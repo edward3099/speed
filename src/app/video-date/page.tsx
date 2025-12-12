@@ -1505,20 +1505,8 @@ function VideoDateContent() {
 
     // Cleanup on unmount
     return () => {
-      if (room) {
-        // Clean up tracks before disconnecting to prevent "skipping incoming track" errors
-        setLocalVideoTrack(null)
-        setLocalAudioTrack(null)
-        setRemoteVideoTrack(null)
-        setRemoteAudioTrack(null)
-        
-        // Disconnect gracefully - check if already disconnected
-        if (room.state !== 'disconnected') {
-          room.disconnect().catch(() => {
-            // Silently handle - room may already be disconnected
-          })
-        }
-      }
+      // Clean up all tracks and disconnect when component unmounts
+      cleanupAllTracksAndDisconnect().catch(() => {})
     }
   }, [matchId, router, supabase])
 
@@ -2431,6 +2419,8 @@ function VideoDateContent() {
               .eq('id', videoDateId)
               .eq('status', 'active')
           }
+          // Clean up all tracks and disconnect when timer already completed
+          cleanupAllTracksAndDisconnect().catch(() => {})
           setShowPostModal(true)
           return
         }
