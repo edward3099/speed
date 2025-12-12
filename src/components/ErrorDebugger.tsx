@@ -63,6 +63,19 @@ function ErrorDebugger() {
         errorString.includes('closed peer connection') ||
         errorString.includes('signal disconnected') ||
         errorString.includes('websocket closed') ||
+        errorString.includes('could not fetch region settings') || // LiveKit region settings are optional
+        errorString.includes('region settings') ||
+        errorString.includes('Real-time subscription error') || // These are handled with reconnection
+        errorString.includes('CHANNEL_ERROR') ||
+        errorString.includes('Real-time subscription timed out') ||
+        errorString.includes('TIMED_OUT') ||
+        errorString.includes('Video element not in DOM yet') || // These are handled with retries
+        errorString.includes('Video element has zero dimensions') || // These are handled
+        errorString.includes('remoteVideoRef.current is null') || // These are handled with retries
+        errorString.includes('Track is already ended') || // These are expected
+        errorString.includes('track.attach() failed') || // Fallback is implemented
+        errorString.includes('Error playing after attach') || // These are handled
+        errorString.includes('Error subscribing to') || // Retry logic handles this
         hasLiveKitErrorObject ||
         (typeof firstArg === 'object' && firstArg !== null && 'room' in firstArg && (
           ('error' in firstArg && Object.keys(firstArg.error || {}).length === 0) ||

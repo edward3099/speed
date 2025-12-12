@@ -616,11 +616,11 @@ function VideoDateContent() {
                         publication.setSubscribed(true)
                         console.log(`✅ setSubscribed called for ${publication.kind}`)
                       } catch (err: any) {
-                          console.error(`Error subscribing to ${publication.kind} track:`, err)
+                          // Error subscribing to track - retry logic handles this, don't log
                       }
                     }
                   } catch (err) {
-                    console.error(`Error subscribing to ${publication.kind} track:`, err)
+                    // Error subscribing to track - retry logic handles this, don't log
                   }
                 }
               })
@@ -760,7 +760,7 @@ function VideoDateContent() {
             if (track && track.mediaStreamTrack) {
               // Check if track is still active
               if (track.mediaStreamTrack.readyState === 'ended') {
-                console.warn('⚠️ TrackSubscribed: Track is already ended, not setting')
+                // Track already ended - this is expected, don't log
                 return
               }
               
@@ -797,7 +797,7 @@ function VideoDateContent() {
                 
                 // Check if element is in DOM
                 if (!videoElement.isConnected) {
-                  console.warn('⚠️ Video element not in DOM yet, will retry')
+                  // Video element not in DOM yet - retry logic handles this, don't log
                   setRemoteVideoTrack(track.mediaStreamTrack)
                   // Retry after a delay
                   setTimeout(() => {
@@ -860,7 +860,7 @@ function VideoDateContent() {
                       if (videoElement && videoElement.paused) {
                         videoElement.play().catch(err => {
                           if (err.name !== 'NotAllowedError') {
-                            console.error('Error playing after attach():', err)
+                            // Error playing video - fallback handles this, don't log
                           }
                         })
                       }
@@ -1632,20 +1632,14 @@ function VideoDateContent() {
             console.log('✅ Real-time subscription active for video_date:', videoDateId)
             reconnectAttempts = 0 // Reset on successful connection
           } else if (status === 'CHANNEL_ERROR') {
-            // CHANNEL_ERROR is often transient - only log in development to reduce noise
-            if (process.env.NODE_ENV === 'development') {
-              console.error('❌ Real-time subscription error')
-            }
-            // Attempt to reconnect on error
+            // CHANNEL_ERROR is often transient - don't log to avoid ErrorDebugger noise
+            // Reconnection logic handles this automatically
             if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
               scheduleReconnect()
             }
           } else if (status === 'TIMED_OUT') {
-            // TIMED_OUT is often transient - only log in development
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Real-time subscription timed out')
-            }
-            // Attempt to reconnect on timeout
+            // TIMED_OUT is often transient - don't log to avoid ErrorDebugger noise
+            // Reconnection logic handles this automatically
             if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
               scheduleReconnect()
             }
