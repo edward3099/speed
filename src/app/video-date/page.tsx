@@ -2051,15 +2051,18 @@ function VideoDateContent() {
     if (room && room.state !== 'disconnected') {
       try {
         // Stop and unpublish all local participant tracks
-        const tracksToUnpublish: Track[] = []
+        const tracksToUnpublish: any[] = []
         room.localParticipant.trackPublications.forEach((publication) => {
           if (publication.track) {
             publication.track.stop()
-            tracksToUnpublish.push(publication.track)
+            // Get the underlying MediaStreamTrack for unpublishTracks
+            if (publication.track.mediaStreamTrack) {
+              tracksToUnpublish.push(publication.track.mediaStreamTrack)
+            }
           }
         })
         
-        // Unpublish all tracks
+        // Unpublish all tracks using MediaStreamTracks
         if (tracksToUnpublish.length > 0) {
           await room.localParticipant.unpublishTracks(tracksToUnpublish)
         }
