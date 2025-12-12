@@ -1192,19 +1192,56 @@ function VideoDateContent() {
             if (publication.kind === 'video') {
               console.log('✅ Setting local video track from TrackPublished event')
               const videoTrack = publication.track.mediaStreamTrack
+              
+              // Ensure track is enabled
+              if (!videoTrack.enabled) {
+                console.log('⚠️ Video track is disabled in TrackPublished, enabling it')
+                videoTrack.enabled = true
+              }
+              
               setLocalVideoTrack(videoTrack)
               setCameraMicEnabled(true) // Mark as enabled when we get a track
+              
+              // Ensure video is not marked as off
+              setIsVideoOff(false)
               
               // Immediately attach to video element if available
               if (localVideoRef.current && videoTrack) {
                 console.log('📹 Immediately attaching video track to local video element from TrackPublished')
-                const stream = new MediaStream([videoTrack])
-                localVideoRef.current.srcObject = stream
-                localVideoRef.current.play().catch(err => {
-                  if (err.name !== 'NotAllowedError') {
-                    console.error('Error playing local video from TrackPublished:', err)
+                try {
+                  // Stop any existing tracks in the stream
+                  if (localVideoRef.current.srcObject) {
+                    const existingStream = localVideoRef.current.srcObject as MediaStream
+                    existingStream.getTracks().forEach(t => t.stop())
                   }
-                })
+                  
+                  // Create new stream with the track
+                  const stream = new MediaStream([videoTrack])
+                  localVideoRef.current.srcObject = stream
+                  
+                  // Ensure video is visible
+                  localVideoRef.current.style.opacity = '1'
+                  
+                  // Try to play immediately
+                  const playPromise = localVideoRef.current.play()
+                  if (playPromise !== undefined) {
+                    playPromise
+                      .then(() => {
+                        console.log('✅ Local video playing from TrackPublished event')
+                      })
+                      .catch(err => {
+                        if (err.name !== 'NotAllowedError') {
+                          console.error('Error playing local video from TrackPublished:', err)
+                        } else {
+                          console.log('⚠️ Local video play blocked (needs user interaction)')
+                        }
+                      })
+                  }
+                } catch (err) {
+                  console.error('Error attaching video track from TrackPublished:', err)
+                }
+              } else {
+                console.warn('⚠️ localVideoRef.current is null in TrackPublished, cannot attach track')
               }
             } else if (publication.kind === 'audio') {
               console.log('✅ Setting local audio track from TrackPublished event')
@@ -3746,24 +3783,59 @@ function VideoDateContent() {
         const videoPub = videoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
         if (videoPub?.track?.mediaStreamTrack) {
           const trackId = videoPub.track.mediaStreamTrack.id
-          console.log('✅ Video track found:', trackId, 'enabled:', videoPub.track.mediaStreamTrack.enabled)
+          const track = videoPub.track.mediaStreamTrack
+          console.log('✅ Video track found:', trackId, 'enabled:', track.enabled, 'readyState:', track.readyState)
+          
           // Ensure track is enabled
-          if (!videoPub.track.mediaStreamTrack.enabled) {
-            videoPub.track.mediaStreamTrack.enabled = true
+          if (!track.enabled) {
+            console.log('⚠️ Video track is disabled, enabling it')
+            track.enabled = true
           }
-          setLocalVideoTrack(videoPub.track.mediaStreamTrack)
+          
+          // Set the track in state
+          setLocalVideoTrack(track)
           tracksFound = true
+          
+          // Ensure video is not marked as off
+          setIsVideoOff(false)
           
           // Immediately attach to video element if available
           if (localVideoRef.current) {
             console.log('📹 Immediately attaching video track to local video element')
-            const stream = new MediaStream([videoPub.track.mediaStreamTrack])
-            localVideoRef.current.srcObject = stream
-            localVideoRef.current.play().catch(err => {
-              if (err.name !== 'NotAllowedError') {
-                console.error('Error playing local video immediately:', err)
+            try {
+              // Stop any existing tracks in the stream
+              if (localVideoRef.current.srcObject) {
+                const existingStream = localVideoRef.current.srcObject as MediaStream
+                existingStream.getTracks().forEach(t => t.stop())
               }
-            })
+              
+              // Create new stream with the track
+              const stream = new MediaStream([track])
+              localVideoRef.current.srcObject = stream
+              
+              // Ensure video is visible
+              localVideoRef.current.style.opacity = '1'
+              
+              // Try to play immediately
+              const playPromise = localVideoRef.current.play()
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    console.log('✅ Local video playing immediately after enable')
+                  })
+                  .catch(err => {
+                    if (err.name !== 'NotAllowedError') {
+                      console.error('Error playing local video immediately:', err)
+                    } else {
+                      console.log('⚠️ Local video play blocked (needs user interaction)')
+                    }
+                  })
+              }
+            } catch (err) {
+              console.error('Error attaching video track to element:', err)
+            }
+          } else {
+            console.warn('⚠️ localVideoRef.current is null, cannot attach track immediately')
           }
         } else {
           console.log('⚠️ No video track found yet (checked', videoPubs.length, 'publications)')
