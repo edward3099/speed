@@ -14,8 +14,9 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const apiKey = process.env.LIVEKIT_API_KEY
-    const apiSecret = process.env.LIVEKIT_API_SECRET
+    // Trim whitespace/newlines from API key/secret (common issue when setting env vars)
+    const apiKey = process.env.LIVEKIT_API_KEY?.trim()
+    const apiSecret = process.env.LIVEKIT_API_SECRET?.trim()
 
     if (!apiKey || !apiSecret) {
       if (process.env.NODE_ENV === 'development') {

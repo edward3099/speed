@@ -1599,19 +1599,28 @@ function VideoDateContent() {
             }
           }
         )
-        .subscribe((status) => {
-          console.log('📡 Real-time subscription status:', status)
+        .subscribe        ((status) => {
+          // Only log status changes in development to reduce console noise
+          if (process.env.NODE_ENV === 'development') {
+            console.log('📡 Real-time subscription status:', status)
+          }
           if (status === 'SUBSCRIBED') {
             console.log('✅ Real-time subscription active for video_date:', videoDateId)
             reconnectAttempts = 0 // Reset on successful connection
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Real-time subscription error')
+            // CHANNEL_ERROR is often transient - only log in development to reduce noise
+            if (process.env.NODE_ENV === 'development') {
+              console.error('❌ Real-time subscription error')
+            }
             // Attempt to reconnect on error
             if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
               scheduleReconnect()
             }
           } else if (status === 'TIMED_OUT') {
-            console.warn('⚠️ Real-time subscription timed out')
+            // TIMED_OUT is often transient - only log in development
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ Real-time subscription timed out')
+            }
             // Attempt to reconnect on timeout
             if (isMounted && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
               scheduleReconnect()
