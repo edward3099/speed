@@ -1875,6 +1875,41 @@ function VideoDateContent() {
       }
   }, [localVideoTrack, hasUserInteracted, countdownComplete])
   
+  // Automatically enable video when track exists (since toggle buttons are removed)
+  useEffect(() => {
+    if (localVideoTrack) {
+      // When a video track exists, automatically set video to "on"
+      // This replaces the toggle button functionality
+      setIsVideoOff(false)
+      setCountdownVideoOff(false)
+      console.log('✅ Auto-enabling video because track exists (toggle buttons removed)')
+    }
+  }, [localVideoTrack])
+  
+  // Dedicated effect to ensure video visibility when track exists
+  useEffect(() => {
+    if (!localVideoRef.current || !localVideoTrack) return
+    
+    const videoElement = localVideoRef.current
+    
+    // Force video to be visible when track exists
+    requestAnimationFrame(() => {
+      if (videoElement && localVideoTrack) {
+        // Force visibility with inline styles (higher priority than style prop)
+        videoElement.style.setProperty('opacity', '1', 'important')
+        videoElement.style.setProperty('display', 'block', 'important')
+        videoElement.style.setProperty('visibility', 'visible', 'important')
+        
+        console.log('✅ Forced local video visibility:', {
+          hasTrack: !!localVideoTrack,
+          isVideoOff,
+          countdownVideoOff,
+          computedOpacity: window.getComputedStyle(videoElement).opacity
+        })
+      }
+    })
+  }, [localVideoTrack, isVideoOff, countdownVideoOff])
+  
   // Special handling for countdown video - ensure it plays immediately
   useEffect(() => {
     if (countdownComplete || !localVideoTrack) return
