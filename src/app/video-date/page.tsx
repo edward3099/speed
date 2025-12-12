@@ -2092,6 +2092,7 @@ function VideoDateContent() {
         remoteAudioRef.current.srcObject = null
       }
       remoteAudioRef.current.pause()
+      remoteAudioRef.current.currentTime = 0
     }
     
     // Clear stream refs
@@ -2106,6 +2107,9 @@ function VideoDateContent() {
         // Room may already be disconnected - this is fine
       }
     }
+    
+    // Set room to null to prevent any further operations
+    setRoom(null)
   }
 
   // Handle early exit
