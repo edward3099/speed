@@ -1,0 +1,212 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/3-users-city-age-filtering.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  write to custom object with { processEnv: myObject }
+(node:44372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating 3 test users...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set. Verification: [
+  {
+    userId: [32m'e7afed78'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m, [32m'Midlands'[39m, [32m'North England'[39m ],
+    cityCount: [33m4[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'99e93751'[39m,
+    city: [ [32m'London'[39m ],
+    cityCount: [33m1[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'71869f26'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m ],
+    cityCount: [33m2[39m,
+    ageRange: [32m'30-40'[39m
+  }
+]
+🌐 Opening browser contexts and signing in users...
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+×[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+(node:44853) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating 3 test users...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set. Verification: [
+  {
+    userId: [32m'f9d05efd'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m, [32m'Midlands'[39m, [32m'North England'[39m ],
+    cityCount: [33m4[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'4fc1efad'[39m,
+    city: [ [32m'London'[39m ],
+    cityCount: [33m1[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'ff8934cf'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m ],
+    cityCount: [33m2[39m,
+    ageRange: [32m'30-40'[39m
+  }
+]
+🌐 Opening browser contexts and signing in users...
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+×[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+(node:45412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating 3 test users...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set. Verification: [
+  {
+    userId: [32m'9065c29f'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m, [32m'Midlands'[39m, [32m'North England'[39m ],
+    cityCount: [33m4[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'9b36e043'[39m,
+    city: [ [32m'London'[39m ],
+    cityCount: [33m1[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'718d66f7'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m ],
+    cityCount: [33m2[39m,
+    ageRange: [32m'30-40'[39m
+  }
+]
+🌐 Opening browser contexts and signing in users...
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+F
+
+  1) [chromium] › tests/3-users-city-age-filtering.spec.ts:19:7 › 3 Users City and Age Filtering Test › should match male (young, all cities) with female (young, London only), but not with female (old, 2 cities) 
+
+    TimeoutError: page.fill: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[type="email"]')[22m
+
+
+      151 |           
+      152 |           // Sign in
+    > 153 |           await page.fill('input[type="email"]', user.email)
+          |                      ^
+      154 |           await page.fill('input[type="password"]', user.password)
+      155 |           await page.click('button:has-text("Sign In")')
+      156 |           await page.waitForURL('**/spin**', { timeout: 30000 })
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:153:22
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:146:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TimeoutError: page.fill: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[type="email"]')[22m
+
+
+      151 |           
+      152 |           // Sign in
+    > 153 |           await page.fill('input[type="email"]', user.email)
+          |                      ^
+      154 |           await page.fill('input[type="password"]', user.password)
+      155 |           await page.click('button:has-text("Sign In")')
+      156 |           await page.waitForURL('**/spin**', { timeout: 30000 })
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:153:22
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:146:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TimeoutError: page.fill: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[type="email"]')[22m
+
+
+      151 |           
+      152 |           // Sign in
+    > 153 |           await page.fill('input[type="email"]', user.email)
+          |                      ^
+      154 |           await page.fill('input[type="password"]', user.password)
+      155 |           await page.click('button:has-text("Sign In")')
+      156 |           await page.waitForURL('**/spin**', { timeout: 30000 })
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:153:22
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:146:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry2/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry2/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry2/error-context.md
+
+  1 failed
+    [chromium] › tests/3-users-city-age-filtering.spec.ts:19:7 › 3 Users City and Age Filtering Test › should match male (young, all cities) with female (young, London only), but not with female (old, 2 cities) 

@@ -1,0 +1,56 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/city-age-filtering.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+(node:96446) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-a5tevkyz0-eds-projects-934496ce.vercel.app
+👤 Creating test users with different city preferences and ages...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male London signed in
+  ✅ Test Female London signed in
+  ✅ Test Female North signed in
+  ✅ Test Female Old signed in
+  ✅ Test Female No City signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+  ✅ Test Female No City clicked Start Spin
+  ✅ Test Female Old clicked Start Spin
+  ✅ Test Female London clicked Start Spin
+  ✅ Test Male London clicked Start Spin
+  ✅ Test Female North clicked Start Spin
+
+📊 Checking match results...
+  Test Male London: https://speed-a5tevkyz0-eds-projects-934496ce.vercel.app/voting-window?matchId=57282f62-c5ed-4309-a638-9c662d862eac
+  Test Female London: https://speed-a5tevkyz0-eds-projects-934496ce.vercel.app/voting-window?matchId=57282f62-c5ed-4309-a638-9c662d862eac
+  Test Female North: https://speed-a5tevkyz0-eds-projects-934496ce.vercel.app/spinning
+  Test Female Old: https://speed-a5tevkyz0-eds-projects-934496ce.vercel.app/spinning
+  Test Female No City: https://speed-a5tevkyz0-eds-projects-934496ce.vercel.app/spin
+
+📈 MATCH ANALYSIS:
+  ✅ Match 57282f62...:
+     - Test Male London (male)
+     - Test Female London (female)
+     ✅ Valid match: Test Female London has overlapping cities or no city preference
+
+📊 TEST RESULTS:
+Expected matches for User 1:
+  ✅ User 2 (London overlap, age compatible)
+  ✅ User 5 (no city preference, age compatible)
+  ❌ User 3 (no city overlap)
+  ❌ User 4 (age out of range)
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+·
+  1 passed (1.4m)

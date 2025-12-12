@@ -1,0 +1,141 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/city-age-filtering.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+(node:33804) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating test users with different city preferences and ages...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male London signed in
+  ✅ Test Female London signed in
+  ✅ Test Female North signed in
+  ✅ Test Female Old signed in
+  ✅ Test Female No City signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+  ✅ Test Female London clicked Start Spin
+  ✅ Test Female Old clicked Start Spin
+  ✅ Test Female No City clicked Start Spin
+  ✅ Test Male London clicked Start Spin
+  ✅ Test Female North clicked Start Spin
+
+📊 Checking match results...
+  Test Male London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=67cb079c-13a8-43c4-a63b-a196988d3c04
+  Test Female London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female North: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female Old: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=67cb079c-13a8-43c4-a63b-a196988d3c04
+  Test Female No City: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+
+📈 MATCH ANALYSIS:
+  ✅ Match 67cb079c...:
+     - Test Male London (male)
+     - Test Female Old (female)
+❌ Test failed: Error: ❌ ISSUE: User 1 matched with Test Female Old but age is out of range!
+    at [90m/Users/bb/Desktop/speed/[39mtests/city-age-filtering.spec.ts:314:23
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+×[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+(node:34614) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating test users with different city preferences and ages...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male London signed in
+  ✅ Test Female London signed in
+  ✅ Test Female North signed in
+  ✅ Test Female Old signed in
+  ✅ Test Female No City signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+  ✅ Test Female Old clicked Start Spin
+  ✅ Test Female No City clicked Start Spin
+  ✅ Test Female London clicked Start Spin
+  ✅ Test Male London clicked Start Spin
+  ✅ Test Female North clicked Start Spin
+
+📊 Checking match results...
+  Test Male London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=1bc70f32-fc09-4328-8a0c-68c54bb3cf83
+  Test Female London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=1bc70f32-fc09-4328-8a0c-68c54bb3cf83
+  Test Female North: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female Old: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female No City: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spin
+
+📈 MATCH ANALYSIS:
+  ✅ Match 1bc70f32...:
+     - Test Male London (male)
+     - Test Female London (female)
+     ✅ Valid match: Test Female London has overlapping cities or no city preference
+
+📊 TEST RESULTS:
+Expected matches for User 1:
+  ✅ User 2 (London overlap, age compatible)
+  ✅ User 5 (no city preference, age compatible)
+  ❌ User 3 (no city overlap)
+  ❌ User 4 (age out of range)
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+±
+
+  1) [chromium] › tests/city-age-filtering.spec.ts:19:7 › City and Age Filtering Tests › should only match users with overlapping cities and compatible age ranges 
+
+    Error: ❌ ISSUE: User 1 matched with Test Female Old but age is out of range!
+
+      312 |               }
+      313 |               if (partner.email.includes('old')) {
+    > 314 |                 throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but age is out of range!`)
+          |                       ^
+      315 |               }
+      316 |               if (partner.email.includes('london') || partner.email.includes('no-city')) {
+      317 |                 console.log(`     ✅ Valid match: ${partner.name} has overlapping cities or no city preference`)
+        at /Users/bb/Desktop/speed/tests/city-age-filtering.spec.ts:314:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-4.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-5.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/error-context.md
+
+  1 flaky
+    [chromium] › tests/city-age-filtering.spec.ts:19:7 › City and Age Filtering Tests › should only match users with overlapping cities and compatible age ranges 

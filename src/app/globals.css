@@ -1,0 +1,687 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* UNIVERSAL RESET: Remove ALL borders, outlines, and focus styles from animated elements */
+* {
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* CRITICAL: Remove ALL visual artifacts from motion.div elements */
+motion.div,
+[data-framer-name],
+div[data-framer-name],
+div[class*="motion"],
+span[class*="motion"],
+div:has(> motion.div),
+div:has(> motion.span),
+div:has(> [class*="motion"]) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  /* Remove any potential visible artifacts */
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+  /* Remove any potential visible borders from box model */
+  margin: 0 !important;
+  padding: 0 !important;
+  /* Ensure no visible square from dimensions */
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+/* Remove ALL possible borders/outlines from motion and animated elements */
+[class*="motion"],
+[class*="animate"],
+motion.div,
+motion.span,
+motion.button,
+motion.svg,
+svg[class*="motion"],
+div[class*="motion"],
+span[class*="motion"],
+div:has([class*="motion"]),
+div:has([class*="animate"]),
+div:has(svg[class*="motion"]),
+div:has(motion.div),
+div:has(motion.span) {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-focus-ring-color: transparent !important;
+  focus-ring-color: transparent !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Remove focus states from ALL animated elements */
+[class*="motion"]:focus,
+[class*="motion"]:focus-visible,
+[class*="motion"]:active,
+[class*="motion"]:hover,
+[class*="animate"]:focus,
+[class*="animate"]:focus-visible,
+[class*="animate"]:active,
+[class*="animate"]:hover {
+  outline: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remove borders from SVG and their containers */
+svg,
+svg:focus,
+svg:focus-visible,
+svg:active,
+svg:hover,
+div:has(> svg),
+div:has(svg) {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Prevent all scrolling globally - Mobile app style lock */
+html {
+  overflow: hidden !important;
+  max-width: 100vw !important;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  /* Disable all touch gestures - mobile app style */
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+  -webkit-overflow-scrolling: none;
+}
+
+body {
+  overflow: hidden !important;
+  max-width: 100vw !important;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  /* Disable all touch gestures - mobile app style */
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+  -webkit-overflow-scrolling: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure all containers respect max-width and no scrolling */
+body > *,
+#__next,
+#__next > * {
+  max-width: 100vw !important;
+  overflow: hidden !important;
+  width: 100%;
+  /* Disable all touch gestures */
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/* Prevent any element from causing scroll */
+div, section, main, article, aside, header, footer, nav {
+  max-width: 100%;
+  overflow: hidden;
+  /* Disable all touch gestures */
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/* Allow range inputs to be slidable on mobile */
+input[type="range"] {
+  touch-action: pan-x !important;
+}
+
+/* Prevent fixed/absolute elements from causing overflow */
+[class*="fixed"],
+[class*="absolute"] {
+  max-width: 100vw;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/* Prevent images and media from causing overflow */
+img, video, iframe, embed, object {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent any transform or animation from causing overflow */
+[style*="transform"],
+[class*="animate"] {
+  max-width: 100vw;
+}
+
+/* Remove borders and backgrounds from ALL animated elements - AGGRESSIVE */
+[class*="motion"],
+[data-framer-component],
+motion.div,
+motion.span,
+motion.button,
+div[class*="motion"],
+span[class*="motion"],
+*[class*="motion"],
+*[class*="animate"] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-focus-ring-color: transparent !important;
+  focus-ring-color: transparent !important;
+}
+
+/* Remove ALL focus outlines from motion elements */
+[class*="motion"]:focus,
+[class*="motion"]:focus-visible,
+[class*="motion"]:active,
+motion.div:focus,
+motion.span:focus,
+motion.button:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure sparkles and animated elements have no visible containers */
+.pointer-events-none[class*="absolute"],
+.pointer-events-none.absolute,
+div[class*="pointer-events-none"],
+div[class*="absolute"][class*="pointer-events-none"] {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any visible containers from SVG elements */
+svg,
+svg:focus,
+svg:focus-visible,
+svg:active {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  display: block;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-focus-ring-color: transparent !important;
+  focus-ring-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Remove borders from all absolute positioned elements used for animations */
+[class*="absolute"][class*="pointer-events-none"],
+div[class*="absolute"] {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove borders from text-center and all motion wrapper divs */
+.text-center,
+div[class*="text-center"] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Remove ALL borders from divs that contain motion elements */
+div:has([class*="motion"]),
+div:has(motion.div),
+div:has(motion.span),
+div:has(svg),
+div:has([class*="animate"]) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Remove borders from motion element containers specifically */
+div[class*="motion"],
+div:has(> [class*="motion"]),
+div:has(> motion.div),
+div:has(> motion.span),
+div:has(> svg[class*="motion"]),
+div:has(svg),
+div:has([class*="animate"]) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* UNIVERSAL: Remove borders from ALL elements by default */
+*:not([class*="border-"]):not(button):not(input):not(textarea):not(select):not([class*="rounded"]):not([class*="bg-"]) {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Exception: Only allow borders on elements with explicit border classes */
+[class*="border-"]:not([class*="motion"]):not([class*="animate"]) {
+  /* Keep borders for explicitly styled elements - these will override the universal rule */
+}
+
+/* Ensure flex containers don't overflow */
+.flex, [class*="flex"] {
+  min-width: 0;
+}
+
+/* Prevent text from causing overflow */
+p, span, h1, h2, h3, h4, h5, h6, a, button, input, textarea, label {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+/* Mobile app style scroll lock - prevent all scrolling completely */
+@layer utilities {
+  /* Lock all scrolling - mobile app style */
+  .lock-scroll {
+    overflow: hidden !important;
+    touch-action: none !important;
+    overscroll-behavior: none !important;
+    max-width: 100vw !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Allow scroll only for specific elements (like modals) */
+  .allow-scroll {
+    overflow: auto !important;
+    touch-action: auto !important;
+    overscroll-behavior: auto !important;
+  }
+
+  /* Prevent any element from being wider than viewport */
+  .contain-viewport {
+    max-width: 100vw;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Ensure all scrollable containers are locked */
+[class*="overflow"],
+[class*="scroll"] {
+  touch-action: none;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+/* Prevent iOS bounce effect on all axes */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: none;
+  }
+}
+
+@keyframes softPulse {
+  0% { opacity: 0.25 }
+  50% { opacity: 0.4 }
+  100% { opacity: 0.25 }
+}
+
+.soft-pulse {
+  animation: softPulse 7s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(8px) }
+  100% { opacity: 1; transform: translateY(0) }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+@keyframes bounceLight {
+  0% { transform: translateY(0) }
+  50% { transform: translateY(-4px) }
+  100% { transform: translateY(0) }
+}
+
+.button-bounce:hover {
+  animation: bounceLight 0.6s ease-in-out;
+}
+
+.hero-card {
+  width: 100%;
+  padding: 24px;
+  background-color: rgba(255,255,255,0.06);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.hero-card:hover {
+  background-color: rgba(255,255,255,0.1);
+  transform: scale(1.02);
+}
+
+.shuffle-frame {
+  width: 280px;
+  height: 140px;
+  overflow: hidden;
+  border-radius: 20px;
+  background-color: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.shuffle-track {
+  display: flex;
+  gap: 12px;
+  animation: shuffleMove 5s ease-out forwards;
+}
+
+.shuffle-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 20px;
+  object-fit: cover;
+  opacity: 0.9;
+}
+
+@keyframes shuffleMove {
+  0% { transform: translateX(0) }
+  80% { transform: translateX(-360px) }
+  100% { transform: translateX(-380px); opacity: 0 }
+}
+
+.profile-card {
+  width: 100%;
+  padding: 24px;
+  background-color: rgba(255,255,255,0.06);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.spin-btn {
+  flex: 1;
+  padding: 16px;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.spin-btn:active {
+  transform: scale(0.95);
+}
+
+.pass-btn {
+  background-color: rgba(255,255,255,0.1);
+}
+
+.yes-btn {
+  background-color: #5eead4;
+  color: black;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: rgba(255,255,255,0.1);
+  outline: none;
+  border: none;
+  color: white;
+}
+
+.video-box {
+  width: 100%;
+  max-width: 320px;
+  height: 220px;
+  border-radius: 20px;
+  overflow: hidden;
+  background-color: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 18px;
+}
+
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%) rotate(0deg);
+  }
+  100% {
+    transform: translateX(200%) rotate(360deg);
+  }
+}
+
+.animate-shimmer-slide {
+  animation: shimmer-slide var(--speed, 3s) linear infinite;
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.8s ease-out forwards;
+}
+
+@keyframes floatSlow {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-floatSlow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.shadow-teal-soft {
+  box-shadow: 0 0 20px rgba(94, 234, 212, 0.3);
+}
+
+/* Soft layered gradient orbs */
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: gradientDrift 20s ease-in-out infinite;
+}
+
+.gradient-orb-1 {
+  width: 600px;
+  height: 600px;
+  top: -10%;
+  left: -10%;
+  background: radial-gradient(circle, rgba(94, 234, 212, 0.3) 0%, rgba(94, 234, 212, 0) 70%);
+  animation-duration: 25s;
+  animation-delay: 0s;
+}
+
+.gradient-orb-2 {
+  width: 700px;
+  height: 700px;
+  bottom: -15%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0) 70%);
+  animation-duration: 30s;
+  animation-delay: 5s;
+}
+
+.gradient-orb-3 {
+  width: 500px;
+  height: 500px;
+  top: 50%;
+  right: 20%;
+  background: radial-gradient(circle, rgba(94, 234, 212, 0.2) 0%, rgba(94, 234, 212, 0) 70%);
+  animation-duration: 22s;
+  animation-delay: 10s;
+}
+
+@keyframes gradientDrift {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+  33% {
+    transform: translate(30px, -40px) scale(1.05);
+    opacity: 0.45;
+  }
+  66% {
+    transform: translate(-20px, 30px) scale(0.95);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+}
+
+@media (min-width: 768px) {
+  .gradient-orb-1 {
+    width: 800px;
+    height: 800px;
+  }
+  
+  .gradient-orb-2 {
+    width: 900px;
+    height: 900px;
+  }
+  
+  .gradient-orb-3 {
+    width: 700px;
+    height: 700px;
+  }
+}
+
+/* Range input thumb styling - larger on mobile for better touch targets */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(94, 234, 212, 0.3);
+  cursor: pointer;
+  border: 2px solid rgba(94, 234, 212, 0.8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  background: rgba(94, 234, 212, 0.6);
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(94, 234, 212, 0.3);
+  cursor: pointer;
+  border: 2px solid rgba(94, 234, 212, 0.8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  background: rgba(94, 234, 212, 0.6);
+  transform: scale(1.2);
+}
+
+/* Desktop: smaller thumb, mobile: larger */
+@media (min-width: 640px) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Mobile Safe Area Support - S.P.A.R.K. Framework */
+@layer utilities {
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .top-safe {
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  }
+  
+  .bottom-safe {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+  
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+  
+  .pt-safe {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  }
+  
+  /* Touch-friendly interactions */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Mobile-first typography scaling */
+@media (max-width: 640px) {
+  html {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,277 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/3-users-city-age-filtering.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+(node:48088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating 3 test users...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set. Verification: [
+  {
+    userId: [32m'8e61815f'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m, [32m'Midlands'[39m, [32m'North England'[39m ],
+    cityCount: [33m4[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'e85ea501'[39m,
+    city: [ [32m'London'[39m ],
+    cityCount: [33m1[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'dfff2f84'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m ],
+    cityCount: [33m2[39m,
+    ageRange: [32m'30-40'[39m
+  }
+]
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male All Cities signed in
+  ✅ Test Female London Only signed in
+  ✅ Test Female Old 2 Cities signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+×[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+(node:48755) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating 3 test users...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set. Verification: [
+  {
+    userId: [32m'137282cc'[39m,
+    city: [ [32m'London'[39m ],
+    cityCount: [33m1[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'555a22ea'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m, [32m'Midlands'[39m, [32m'North England'[39m ],
+    cityCount: [33m4[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'c99b2269'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m ],
+    cityCount: [33m2[39m,
+    ageRange: [32m'30-40'[39m
+  }
+]
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male All Cities signed in
+  ✅ Test Female London Only signed in
+  ✅ Test Female Old 2 Cities signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+×[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+(node:49456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating 3 test users...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set. Verification: [
+  {
+    userId: [32m'1506bfe3'[39m,
+    city: [ [32m'London'[39m ],
+    cityCount: [33m1[39m,
+    ageRange: [32m'20-30'[39m
+  },
+  {
+    userId: [32m'2ff67846'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m ],
+    cityCount: [33m2[39m,
+    ageRange: [32m'30-40'[39m
+  },
+  {
+    userId: [32m'6828b1e9'[39m,
+    city: [ [32m'London'[39m, [32m'South England'[39m, [32m'Midlands'[39m, [32m'North England'[39m ],
+    cityCount: [33m4[39m,
+    ageRange: [32m'20-30'[39m
+  }
+]
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male All Cities signed in
+  ✅ Test Female London Only signed in
+  ✅ Test Female Old 2 Cities signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+F
+
+  1) [chromium] › tests/3-users-city-age-filtering.spec.ts:19:7 › 3 Users City and Age Filtering Test › should match male (young, all cities) with female (young, London only), but not with female (old, 2 cities) 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Start Spin"), button:has-text("Spin")').first()[22m
+    [2m    - locator resolved to <button class="group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-white/10 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 px-12 py-5 text-xl rounded-2xl font-semibold bg-teal-300 text-black hover:bg-teal-300 hover:text-black">…</button>[22m
+    [2m  - attempting click action[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not stable[22m
+    [2m    - retrying click action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not stable[22m
+    [2m    - retrying click action[22m
+    [2m      - waiting 100ms[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+    [2m    - element is not stable[22m
+    [2m  - retrying click action[22m
+    [2m    - waiting 500ms[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+    [2m    - element is visible, enabled and stable[22m
+    [2m    - scrolling into view if needed[22m
+    [2m    - done scrolling[22m
+    [2m    - <div class="flex flex-col gap-3 sm:gap-5 md:gap-6">…</div> from <div class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none overflow-hidden p-4 sm:p-0">…</div> subtree intercepts pointer events[22m
+    [2m  16 × retrying click action[22m
+    [2m       - waiting 500ms[22m
+    [2m       - waiting for element to be visible, enabled and stable[22m
+    [2m       - element is not stable[22m
+    [2m  - retrying click action[22m
+    [2m    - waiting 500ms[22m
+
+
+      206 |           const startSpinButton = page.locator('button:has-text("Start Spin"), button:has-text("Spin")').first()
+      207 |           await startSpinButton.waitFor({ state: 'visible', timeout: 10000 })
+    > 208 |           await startSpinButton.click()
+          |                                 ^
+      209 |           console.log(`  ✅ ${user.name} clicked Start Spin`)
+      210 |         })
+      211 |       )
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:208:33
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:204:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Start Spin"), button:has-text("Spin")').first()[22m
+    [2m    - locator resolved to <button class="group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-white/10 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 px-12 py-5 text-xl rounded-2xl font-semibold bg-teal-300 text-black hover:bg-teal-300 hover:text-black">…</button>[22m
+    [2m  - attempting click action[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not stable[22m
+    [2m    - retrying click action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not stable[22m
+    [2m    - retrying click action[22m
+    [2m      - waiting 100ms[22m
+    [2m    13 × waiting for element to be visible, enabled and stable[22m
+    [2m       - element is not stable[22m
+    [2m     - retrying click action[22m
+    [2m       - waiting 500ms[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      206 |           const startSpinButton = page.locator('button:has-text("Start Spin"), button:has-text("Spin")').first()
+      207 |           await startSpinButton.waitFor({ state: 'visible', timeout: 10000 })
+    > 208 |           await startSpinButton.click()
+          |                                 ^
+      209 |           console.log(`  ✅ ${user.name} clicked Start Spin`)
+      210 |         })
+      211 |       )
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:208:33
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:204:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Start Spin"), button:has-text("Spin")').first()[22m
+    [2m    - locator resolved to <button class="group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-white/10 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 px-12 py-5 text-xl rounded-2xl font-semibold bg-teal-300 text-black hover:bg-teal-300 hover:text-black">…</button>[22m
+    [2m  - attempting click action[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not stable[22m
+    [2m    - retrying click action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not stable[22m
+    [2m    - retrying click action[22m
+    [2m      - waiting 100ms[22m
+    [2m    17 × waiting for element to be visible, enabled and stable[22m
+    [2m       - element is not stable[22m
+    [2m     - retrying click action[22m
+    [2m       - waiting 500ms[22m
+
+
+      206 |           const startSpinButton = page.locator('button:has-text("Start Spin"), button:has-text("Spin")').first()
+      207 |           await startSpinButton.waitFor({ state: 'visible', timeout: 10000 })
+    > 208 |           await startSpinButton.click()
+          |                                 ^
+      209 |           console.log(`  ✅ ${user.name} clicked Start Spin`)
+      210 |         })
+      211 |       )
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:208:33
+        at /Users/bb/Desktop/speed/tests/3-users-city-age-filtering.spec.ts:204:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry2/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/3-users-city-age-filtering-bd936-t-with-female-old-2-cities--chromium-retry2/error-context.md
+
+  1 failed
+    [chromium] › tests/3-users-city-age-filtering.spec.ts:19:7 › 3 Users City and Age Filtering Test › should match male (young, all cities) with female (young, London only), but not with female (old, 2 cities) 

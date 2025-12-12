@@ -1,0 +1,77 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/load-test-50males-20females.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+(node:87757) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against: https://speed-silk.vercel.app
+👤 Creating 1 male users via backend...
+✅ All 1 male users created
+👤 Creating 1 female users via backend...
+✅ All 1 female users created
+🌐 Opening browser contexts for all users...
+✅ Created 2 browser contexts
+🔐 Signing in all users (batched to avoid server overload)...
+  Signing in batch 1/1 (2 users)...
+  ✅ Batch 1 complete: 2/2 users signed in
+✅ Sign-in complete: 2/2 users successfully signed in
+🎰 2 users clicking Start Spin (in batches)...
+  Batch 1/1: 2 users clicking Start Spin...
+  ✅ Batch 1 complete
+✅ 2 users clicked Start Spin
+⏳ Waiting for matches to occur (45 seconds)...
+📊 Checking match status for all signed-in users...
+
+🗳️ Testing voting flow: Both users will vote "yes"...
+  Found match fa58a041-10f3-4198-8227-2c40ab097888 with 2 users - testing voting...
+  ⏳ Waiting for both users to reach voting-window...
+  👆 Both users clicking "Yes"...
+  🔘 male user: Clicking Yes button...
+  🔘 female user: Clicking Yes button...
+  ❌ Failed to click Yes for male user: locator.textContent: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('button').filter({ hasText: /yes/i }).first()[22m
+
+  ❌ Failed to click Yes for female user: locator.textContent: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('button').filter({ hasText: /yes/i }).first()[22m
+
+  Debug: Page has "yes" button: false
+  Debug: Page has "yes" button: false
+  📋 Browser console messages: [0] 🔘 Yes button clicked {matchId: fa58a041-10f3-4198-8227-2c40ab097888, userVote: null} | [0] 📤 Sending vote: {matchId: fa58a041-10f3-4198-8227-2c40ab097888, voteType: yes} | [1] 🔘 Yes button clicked {matchId: fa58a041-10f3-4198-8227-2c40ab097888, userVote: null} | [1] 📤 Sending vote: {matchId: fa58a041-10f3-4198-8227-2c40ab097888, voteType: yes} | [0] 📥 Vote response: {status: 200, ok: true, statusText: } | [0] 📥 Vote response data: {message: Waiting for partner to vote, outcome: null, completed: false, debug_info: Object} | [0] ⏳ Waiting for partner to vote {message: Waiting for partner to vote, matchId: fa58a041-10f3-4198-8227-2c40ab097888} | [0] 🔍 Checking match outcome immediately after vote... {matchId: fa58a041-10f3-4198-8227-2c40ab097888} | [1] 📥 Vote response: {status: 200, ok: true, statusText: } | [1] 📥 Vote response data: {outcome: both_yes, completed: true} | [1] ✅ Both users voted yes, redirecting to video-date immediately {outcome: both_yes, matchId: fa58a041-10f3-4198-8227-2c40ab097888} | [0] ✅ FOUND: Partner voted - outcome is both_yes, redirecting to video-date {matchId: fa58a041-10f3-4198-8227-2c40ab097888} | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] could not fetch region settings {room: , roomID: undefined, participant: , pID: , error: ConnectionError: Could not fetch region settings: 
+    at sA.<anonymous> (https://speed-silk.vercel…} | [0] could not fetch region settings {room: , roomID: undefined, participant: , pID: , error: ConnectionError: Could not fetch region settings: 
+    at sA.<anonymous> (https://speed-silk.vercel…} | [0] ❌ Failed to connect to LiveKit room: {message: could not establish signal connection: invalid API key, name: ConnectionError, error: ConnectionError: could not establish signal connection: invalid API key
+    at oS.<anonymous> (http…} | [1] ❌ Failed to connect to LiveKit room: {message: could not establish signal connection: invalid API key, name: ConnectionError, error: ConnectionError: could not establish signal connection: invalid API key
+    at oS.<anonymous> (http…} | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [0] ❌ Real-time subscription error | [1] ❌ Real-time subscription error | [1] ❌ Real-time subscription error
+  ⏳ Waiting for both users to be redirected to /video-date (30 seconds)...
+  ✅ Both users redirected to /video-date! (after 1000ms)
+
+📈 MATCH ANALYSIS:
+Total users created: 2
+Successfully signed in: 2
+Matched users: 2
+Unmatched users: 0
+Total matches created: 1
+Signed-in females: 1/1
+Signed-in males: 1/1
+Expected matches: 1 (one per signed-in female, limited by males)
+
+🔍 ISSUES FOUND:
+✅ No issues found - all expected matches occurred correctly!
+
+📋 DETAILED BREAKDOWN:
+Matched females: 1/1 (0 failed to sign in)
+Matched males: 1/1 (0 failed to sign in)
+Unmatched females: 0
+Unmatched males: 0
+
+🧹 Cleaning up all users...
+
+🎉 TEST PASSED - All expected matches occurred correctly!
+🧹 Cleaning up test users...
+·
+  1 passed (1.7m)

@@ -1,0 +1,74 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/load-test-50males-20females.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+(node:79591) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against: https://speed-silk.vercel.app
+👤 Creating 1 male users via backend...
+✅ All 1 male users created
+👤 Creating 1 female users via backend...
+✅ All 1 female users created
+🌐 Opening browser contexts for all users...
+✅ Created 2 browser contexts
+🔐 Signing in all users (batched to avoid server overload)...
+  Signing in batch 1/1 (2 users)...
+  ✅ Batch 1 complete: 2/2 users signed in
+✅ Sign-in complete: 2/2 users successfully signed in
+🎰 2 users clicking Start Spin (in batches)...
+  Batch 1/1: 2 users clicking Start Spin...
+  ✅ Batch 1 complete
+✅ 2 users clicked Start Spin
+⏳ Waiting for matches to occur (45 seconds)...
+📊 Checking match status for all signed-in users...
+
+🗳️ Testing voting flow: Both users will vote "yes"...
+  Found match ce58b033-2328-4957-abdb-3c86700bae49 with 2 users - testing voting...
+  ⏳ Waiting for both users to reach voting-window...
+  👆 Both users clicking "Yes"...
+  🔘 male user: Clicking Yes button...
+  🔘 female user: Clicking Yes button...
+  ✅ male user clicked "Yes" (button text: "Yes", disabled: false)
+  📋 male user console messages: [0] 🔘 Yes button clicked {matchId: ce58b033-2328-4957-abdb-3c86700bae49, userVote: null}; [0] 📤 Sending vote: {matchId: ce58b033-2328-4957-abdb-3c86700bae49, voteType: yes}; [0] 📥 Vote response: {status: 200, ok: true, statusText: }; [0] 📥 Vote response data: {error: Vote window expired}; [0] ❌ Vote API returned error: Vote window expired undefined
+  ✅ female user clicked "Yes" (button text: "Yes", disabled: false)
+  📋 female user console messages: [1] 🔘 Yes button clicked {matchId: ce58b033-2328-4957-abdb-3c86700bae49, userVote: null}; [1] 📤 Sending vote: {matchId: ce58b033-2328-4957-abdb-3c86700bae49, voteType: yes}; [1] 📥 Vote response: {status: 200, ok: true, statusText: }; [1] 📥 Vote response data: {error: Vote window expired}; [1] ❌ Vote API returned error: Vote window expired undefined
+  📋 Browser console messages: [0] 🔘 Yes button clicked {matchId: ce58b033-2328-4957-abdb-3c86700bae49, userVote: null} | [0] 📤 Sending vote: {matchId: ce58b033-2328-4957-abdb-3c86700bae49, voteType: yes} | [1] 🔘 Yes button clicked {matchId: ce58b033-2328-4957-abdb-3c86700bae49, userVote: null} | [1] 📤 Sending vote: {matchId: ce58b033-2328-4957-abdb-3c86700bae49, voteType: yes} | [1] 📥 Vote response: {status: 200, ok: true, statusText: } | [1] 📥 Vote response data: {error: Vote window expired} | [1] ❌ Vote API returned error: Vote window expired undefined | [0] 📥 Vote response: {status: 200, ok: true, statusText: } | [0] 📥 Vote response data: {error: Vote window expired} | [0] ❌ Vote API returned error: Vote window expired undefined
+  ⏳ Waiting for both users to be redirected to /video-date (30 seconds)...
+  ⏳ Still waiting... (5000/30000ms) - URLs: https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49, https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49
+  ⏳ Still waiting... (10000/30000ms) - URLs: https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49, https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49
+  ⏳ Still waiting... (15000/30000ms) - URLs: https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49, https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49
+  ⏳ Still waiting... (20000/30000ms) - URLs: https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49, https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49
+  ⏳ Still waiting... (25000/30000ms) - URLs: https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49, https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49
+  ⏳ Still waiting... (30000/30000ms) - URLs: https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49, https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49
+  ⚠️ Not all users on /video-date after 30000ms
+     URLs: https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49, https://speed-silk.vercel.app/voting-window?matchId=ce58b033-2328-4957-abdb-3c86700bae49
+
+📈 MATCH ANALYSIS:
+Total users created: 2
+Successfully signed in: 2
+Matched users: 2
+Unmatched users: 0
+Total matches created: 1
+Signed-in females: 1/1
+Signed-in males: 1/1
+Expected matches: 1 (one per signed-in female, limited by males)
+
+🔍 ISSUES FOUND:
+1. ISSUE: Only 0/2 users reached /video-date after both voting yes (expected both to redirect)
+
+📋 DETAILED BREAKDOWN:
+Matched females: 1/1 (0 failed to sign in)
+Matched males: 1/1 (0 failed to sign in)
+Unmatched females: 0
+Unmatched males: 0
+
+🧹 Cleaning up all users...
+
+❌ TEST COMPLETED WITH 1 ISSUE(S) - See above for details
+🧹 Cleaning up test users...
+·
+  1 passed (1.8m)

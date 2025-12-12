@@ -1,0 +1,74 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/load-test-50males-20females.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+(node:30345) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-silk.vercel.app
+👤 Creating 1 male users via backend...
+✅ All 1 male users created
+👤 Creating 1 female users via backend...
+✅ All 1 female users created
+🌐 Opening browser contexts for all users...
+✅ Created 2 browser contexts
+🔐 Signing in all users (batched to avoid server overload)...
+  Signing in batch 1/1 (2 users)...
+  ✅ Batch 1 complete: 2/2 users signed in
+✅ Sign-in complete: 2/2 users successfully signed in
+🎰 2 users clicking Start Spin (in batches)...
+  Batch 1/1: 2 users clicking Start Spin...
+  ✅ Batch 1 complete
+✅ 2 users clicked Start Spin
+⏳ Waiting for matches to occur (45 seconds)...
+📊 Checking match status for all signed-in users...
+
+🗳️ Testing voting flow: One user votes "yes", other doesn't vote (vote window expires)...
+  Found match 7d1486ba-13f8-4091-a971-1bbb493a4547 with 2 users - testing yes_idle scenario (vote window expires)...
+  ⏳ Waiting for both users to reach voting-window...
+  👆 male user clicking "Yes", female user NOT voting (will wait for countdown to expire)...
+  🔘 male user: Clicking Yes button...
+  ✅ male user clicked "Yes" (button text: "✓ Yes", disabled: true)
+  ⏳ Waiting for vote window to expire (60 seconds)... User2 (female) will NOT vote.
+  ⏳ Waiting 65 seconds for vote window expiration...
+  📋 Browser console messages: [0] 🔘 Yes button clicked {matchId: 7d1486ba-13f8-4091-a971-1bbb493a4547, userVote: null} | [0] 📤 Sending vote: {matchId: 7d1486ba-13f8-4091-a971-1bbb493a4547, voteType: yes} | [0] 📥 Vote response: {status: 200, ok: true, statusText: } | [0] 📥 Vote response data: {message: Waiting for partner to vote, outcome: null, completed: false, debug_info: Object} | [0] ⏳ Waiting for partner to vote {message: Waiting for partner to vote, matchId: 7d1486ba-13f8-4091-a971-1bbb493a4547} | [0] 🔍 Checking match outcome immediately after vote... {matchId: 7d1486ba-13f8-4091-a971-1bbb493a4547} | [0] 🔍 Checking match outcome immediately after vote... {matchId: 7d1486ba-13f8-4091-a971-1bbb493a4547} | [0] 🔍 Checking match outcome immediately after vote... {matchId: 7d1486ba-13f8-4091-a971-1bbb493a4547} | [0] ⏰ Countdown reached 0 - vote window expired, checking match status... | [1] ⏰ Countdown reached 0 - vote window expired, checking match status... | [0] ⏰ Countdown expiration - Vote check: {userVoted: yes, currentUserId: 72b3c12a-dc43-48be-babb-c77b8af27778, match_user1_id: 72b3c12a-dc43-48be-babb-c77b8af27778, match_user2_id: d7d3f6ee-22e1-41d8-871a-6a7738f62857, match_user1_vote: yes} | [0] ⏰ Countdown expiration - User voted, redirecting to /spinning | [1] ⏰ Countdown expiration - Vote check: {userVoted: null, currentUserId: d7d3f6ee-22e1-41d8-871a-6a7738f62857, match_user1_id: 72b3c12a-dc43-48be-babb-c77b8af27778, match_user2_id: d7d3f6ee-22e1-41d8-871a-6a7738f62857, match_user1_vote: yes} | [1] ⏰ Countdown expiration - User did not vote, redirecting to /spin | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778 | [0] ⚠️ Real-time subscription error: user-state-72b3c12a-dc43-48be-babb-c77b8af27778
+  ⏳ Checking final user states after vote window expiration...
+  📍 Final URLs: User1 (male, voted yes): https://speed-silk.vercel.app/voting-window?matchId=7d1486ba-13f8-4091-a971-1bbb493a4547, User2 (female, didn't vote): https://speed-silk.vercel.app/spin
+  ⚠️ Unexpected redirects:
+     - male user (voted yes): Expected /spinning, got https://speed-silk.vercel.app/voting-window?matchId=7d1486ba-13f8-4091-a971-1bbb493a4547
+     - female user (didn't vote): Expected /spin or /spinning, got https://speed-silk.vercel.app/spin
+
+📈 MATCH ANALYSIS:
+Total users created: 2
+Successfully signed in: 2
+Matched users: 2
+Unmatched users: 0
+Total matches created: 1
+Signed-in females: 1/1
+Signed-in males: 1/1
+Expected matches: 1 (one per signed-in female, limited by males)
+
+🔍 ISSUES FOUND:
+1. ISSUE: After yes_pass outcome (one pass, one yes), not all users were auto-spun to /spinning. URLs: https://speed-silk.vercel.app/voting-window?matchId=7d1486ba-13f8-4091-a971-1bbb493a4547, https://speed-silk.vercel.app/spin
+2. ISSUE: Only 0/1 signed-in females matched (1 females and 1 males signed in)
+3. ISSUE: 1 females stuck waiting (still on /spin or /spinning) - they should have matched
+4. ISSUE: Only 0/2 users reached /video-date after both voting yes (expected both to redirect)
+
+📋 DETAILED BREAKDOWN:
+Matched females: 0/1 (0 failed to sign in)
+Matched males: 1/1 (0 failed to sign in)
+Unmatched females: 1
+Unmatched males: 0
+
+👥 UNMATCHED SIGNED-IN USERS:
+  - female Test Female 1 - Current URL: https://speed-silk.vercel.app/spin
+
+🧹 Cleaning up all users...
+
+❌ TEST COMPLETED WITH 4 ISSUE(S) - See above for details
+🧹 Cleaning up test users...
+·
+  1 passed (2.3m)

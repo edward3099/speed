@@ -1,0 +1,269 @@
+
+> speed-date@0.1.0 test
+> playwright test tests/city-age-filtering.spec.ts
+
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+
+Running 1 test using 1 worker
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+(node:36822) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating test users with different city preferences and ages...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male London signed in
+  ✅ Test Female London signed in
+  ✅ Test Female North signed in
+  ✅ Test Female Old signed in
+  ✅ Test Female No City signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+  ✅ Test Female Old clicked Start Spin
+  ✅ Test Female No City clicked Start Spin
+  ✅ Test Male London clicked Start Spin
+  ✅ Test Female London clicked Start Spin
+  ✅ Test Female North clicked Start Spin
+
+📊 Checking match results...
+  Test Male London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=372f45b1-7eed-4bdb-93bc-1bc558b42ed4
+  Test Female London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female North: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=372f45b1-7eed-4bdb-93bc-1bc558b42ed4
+  Test Female Old: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female No City: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spin
+
+📈 MATCH ANALYSIS:
+  ✅ Match 372f45b1...:
+     - Test Male London (male)
+     - Test Female North (female)
+❌ Test failed: Error: ❌ ISSUE: User 1 matched with Test Female North but they have no city overlap!
+    at [90m/Users/bb/Desktop/speed/[39mtests/city-age-filtering.spec.ts:311:23
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+×[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+(node:37521) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating test users with different city preferences and ages...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male London signed in
+  ✅ Test Female London signed in
+  ✅ Test Female North signed in
+  ✅ Test Female Old signed in
+  ✅ Test Female No City signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+  ✅ Test Male London clicked Start Spin
+  ✅ Test Female No City clicked Start Spin
+  ✅ Test Female North clicked Start Spin
+  ✅ Test Female Old clicked Start Spin
+  ✅ Test Female London clicked Start Spin
+
+📊 Checking match results...
+  Test Male London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=71e5f2c1-dc26-400a-8bc1-7ab3b3e4ea36
+  Test Female London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female North: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=71e5f2c1-dc26-400a-8bc1-7ab3b3e4ea36
+  Test Female Old: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female No City: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spin
+
+📈 MATCH ANALYSIS:
+  ✅ Match 71e5f2c1...:
+     - Test Male London (male)
+     - Test Female North (female)
+❌ Test failed: Error: ❌ ISSUE: User 1 matched with Test Female North but they have no city overlap!
+    at [90m/Users/bb/Desktop/speed/[39mtests/city-age-filtering.spec.ts:311:23
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+×[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+(node:38358) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app
+👤 Creating test users with different city preferences and ages...
+✅ All test users created
+⚙️ Updating user profiles with ages...
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set
+🌐 Opening browser contexts and signing in users...
+  ✅ Test Male London signed in
+  ✅ Test Female London signed in
+  ✅ Test Female North signed in
+  ✅ Test Female Old signed in
+  ✅ Test Female No City signed in
+⚙️ Setting preferences via UI...
+🎰 All users clicking Start Spin simultaneously...
+  ✅ Test Female North clicked Start Spin
+  ✅ Test Male London clicked Start Spin
+  ✅ Test Female London clicked Start Spin
+  ✅ Test Female Old clicked Start Spin
+  ✅ Test Female No City clicked Start Spin
+
+📊 Checking match results...
+  Test Male London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=76816b0a-e946-4aaf-a3d4-cd962a223004
+  Test Female London: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female North: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/voting-window?matchId=76816b0a-e946-4aaf-a3d4-cd962a223004
+  Test Female Old: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+  Test Female No City: https://speed-1m1nczlh6-eds-projects-934496ce.vercel.app/spinning
+
+📈 MATCH ANALYSIS:
+  ✅ Match 76816b0a...:
+     - Test Male London (male)
+     - Test Female North (female)
+❌ Test failed: Error: ❌ ISSUE: User 1 matched with Test Female North but they have no city overlap!
+    at [90m/Users/bb/Desktop/speed/[39mtests/city-age-filtering.spec.ts:311:23
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m
+
+🧹 Cleaning up test users...
+✅ Cleanup complete
+F
+
+  1) [chromium] › tests/city-age-filtering.spec.ts:19:7 › City and Age Filtering Tests › should only match users with overlapping cities and compatible age ranges 
+
+    Error: ❌ ISSUE: User 1 matched with Test Female North but they have no city overlap!
+
+      309 |               
+      310 |               if (partner.email.includes('north')) {
+    > 311 |                 throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but they have no city overlap!`)
+          |                       ^
+      312 |               }
+      313 |               if (partner.email.includes('old')) {
+      314 |                 throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but age is out of range!`)
+        at /Users/bb/Desktop/speed/tests/city-age-filtering.spec.ts:311:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-4.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/test-failed-5.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: ❌ ISSUE: User 1 matched with Test Female North but they have no city overlap!
+
+      309 |               
+      310 |               if (partner.email.includes('north')) {
+    > 311 |                 throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but they have no city overlap!`)
+          |                       ^
+      312 |               }
+      313 |               if (partner.email.includes('old')) {
+      314 |                 throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but age is out of range!`)
+        at /Users/bb/Desktop/speed/tests/city-age-filtering.spec.ts:311:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/test-failed-5.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/test-failed-4.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/error-context.md
+
+    attachment #7: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: ❌ ISSUE: User 1 matched with Test Female North but they have no city overlap!
+
+      309 |               
+      310 |               if (partner.email.includes('north')) {
+    > 311 |                 throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but they have no city overlap!`)
+          |                       ^
+      312 |               }
+      313 |               if (partner.email.includes('old')) {
+      314 |                 throw new Error(`❌ ISSUE: User 1 matched with ${partner.name} but age is out of range!`)
+        at /Users/bb/Desktop/speed/tests/city-age-filtering.spec.ts:311:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry2/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry2/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry2/test-failed-4.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry2/test-failed-5.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/city-age-filtering-City-an-ad29a-s-and-compatible-age-ranges-chromium-retry2/error-context.md
+
+  1 failed
+    [chromium] › tests/city-age-filtering.spec.ts:19:7 › City and Age Filtering Tests › should only match users with overlapping cities and compatible age ranges 

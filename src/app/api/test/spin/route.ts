@@ -1,0 +1,377 @@
+/**
+ * TEST ENDPOINT: /api/test/spin
+ * 
+ * Bypasses authentication for k6 load testing
+ * ONLY USE IN DEVELOPMENT/TESTING
+ * 
+ * This endpoint allows k6 to test spin logic without authentication overhead
+ * 
+ * Optimizations:
+ * - Rate limiting to prevent overload
+ * - Retry logic for transient errors
+ * - Connection pooling
+ * - Error handling improvements
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { getPooledServiceClient } from '@/lib/supabase/pooled-client'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
+import { retry } from '@/lib/retry'
+import { getRequestQueue } from '@/lib/request-queue'
+import { getCache } from '@/lib/cache'
+import { requireTestApiKey } from '@/lib/middleware/test-endpoint-auth'
+import { getConnectionThrottle } from '@/lib/connection-throttle'
+
+// Only allow in development OR with API key in production
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production'
+
+// Increase route handler timeout for auth operations which can be slow
+export const maxDuration = 30 // 30 seconds (Next.js default is 10s for Hobby, 60s for Pro)
+
+// Rate limiting: 500 requests per 10 seconds per IP (increased for 500+ users)
+// Higher limit to reduce false rate limit hits during load testing
+const RATE_LIMIT_OPTIONS = {
+  windowMs: 10 * 1000, // 10 seconds
+  maxRequests: 500,
+}
+
+export async function POST(request: NextRequest) {
+  // Check API key authentication (required in production)
+  const authResult = requireTestApiKey(request)
+  if (authResult) {
+    return authResult
+  }
+
+  // Rate limiting
+  const rateLimitResult = rateLimitMiddleware(request, RATE_LIMIT_OPTIONS)
+  if (!rateLimitResult?.allowed) {
+    return NextResponse.json(
+      {
+        error: 'Rate limit exceeded',
+        retryAfter: rateLimitResult?.retryAfter,
+        resetTime: rateLimitResult?.resetTime,
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimitResult?.retryAfter || 10),
+          'X-RateLimit-Limit': String(RATE_LIMIT_OPTIONS.maxRequests),
+          'X-RateLimit-Remaining': String(rateLimitResult?.remaining || 0),
+          'X-RateLimit-Reset': String(rateLimitResult?.resetTime || Date.now()),
+        },
+      }
+    )
+  }
+
+  // Connection throttling - prevent too many concurrent connections
+  const connectionThrottle = getConnectionThrottle()
+  if (!connectionThrottle.tryAcquire()) {
+    const throttleStatus = connectionThrottle.getStatus()
+    return NextResponse.json(
+      {
+        error: 'Service temporarily unavailable',
+        message: 'Too many concurrent connections. Please try again later.',
+        activeConnections: throttleStatus.activeConnections,
+        maxConcurrent: throttleStatus.maxConcurrent,
+      },
+      {
+        status: 503,
+        headers: {
+          'Retry-After': '2',
+          'X-Active-Connections': String(throttleStatus.activeConnections),
+          'X-Max-Concurrent': String(throttleStatus.maxConcurrent),
+        },
+      }
+    )
+  }
+
+  // Request queuing with backpressure
+  const requestQueue = getRequestQueue()
+  const queueStatus = requestQueue.getStatus()
+  
+  if (queueStatus.isFull) {
+    connectionThrottle.release() // Release throttle token
+    return NextResponse.json(
+      {
+        error: 'Service temporarily unavailable',
+        message: 'Request queue is full. Please try again later.',
+        queueSize: queueStatus.queueSize,
+        processing: queueStatus.processing,
+      },
+      {
+        status: 503,
+        headers: {
+          'Retry-After': '5',
+          'X-Queue-Size': String(queueStatus.queueSize),
+          'X-Queue-Processing': String(queueStatus.processing),
+        },
+      }
+    )
+  }
+
+  try {
+    // Parse request body first (before queuing)
+    const body = await request.json()
+    const { user_id, gender } = body
+
+    if (!user_id) {
+      return NextResponse.json(
+        { error: 'user_id is required' },
+        { status: 400 }
+      )
+    }
+
+    // Process request through queue
+    try {
+      const result = await requestQueue.add(async () => {
+
+    // Use pooled service client for better performance, fallback to creating new client
+    let supabase
+    try {
+      supabase = getPooledServiceClient()
+    } catch (e) {
+      // Fallback to creating new client if pooled client not available
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+      if (!supabaseServiceKey) {
+        // Fallback to anon key if service key not available
+        supabase = createClient(
+          supabaseUrl,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+      } else {
+        // Use service role for testing (bypasses RLS)
+        supabase = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        })
+      }
+    }
+
+    // OPTIMIZED: Check cache first, then database
+    // For load testing, users should be pre-created via /api/test/batch-setup
+    const cache = getCache()
+    const userCacheKey = `user_exists:${user_id}`
+    let existingProfile = cache.get<{ id: string }>(userCacheKey)
+    
+    if (!existingProfile) {
+      // Not in cache, check database
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user_id)
+        .single()
+      
+      if (profileData) {
+        existingProfile = profileData
+        // Cache for 60 seconds (users don't change often)
+        cache.set(userCacheKey, profileData, 60000)
+      }
+    }
+
+    if (!existingProfile) {
+      // Only create if it's a small number of users (fallback for small tests)
+      // For large load tests, users should be pre-created
+      let authUser = null
+      try {
+        const { data } = await supabase.auth.admin.getUserById(user_id)
+        authUser = data?.user
+      } catch (e) {
+        // User doesn't exist, will create
+      }
+      
+      if (!authUser) {
+        // Create auth user (only for small tests)
+        // Use retry logic with exponential backoff to handle rate limiting
+        const createUserResult = await retry(
+          async () => {
+            const result = await supabase.auth.admin.createUser({
+              id: user_id,
+              email: `k6-test-${user_id}@test.com`,
+              password: 'test-password-123',
+              email_confirm: true,
+            })
+            
+            if (result.error) {
+              // Check for rate limiting (429) or other retryable errors
+              const errorMessage = result.error.message?.toLowerCase() || ''
+              const isRateLimit = result.error.status === 429 || errorMessage.includes('rate limit')
+              const isRetryable = isRateLimit || 
+                                 errorMessage.includes('timeout') ||
+                                 errorMessage.includes('connection') ||
+                                 errorMessage.includes('network')
+              
+              if (isRetryable) {
+                throw new Error(`Retryable error: ${result.error.message}`)
+              }
+              
+              // Non-retryable errors (e.g., user already exists)
+              return result
+            }
+            
+            return result
+          },
+          {
+            maxAttempts: 5,
+            initialDelayMs: 200,
+            maxDelayMs: 2000,
+            backoffMultiplier: 2,
+            retryableErrors: ['Retryable error', 'rate limit', 'timeout', 'connection', 'network'],
+          }
+        ).catch((error) => ({ error: { message: error.message, status: 500 } }))
+
+        if (createUserResult.error) {
+          // Check if user already exists (non-fatal)
+          const errorMessage = createUserResult.error.message?.toLowerCase() || ''
+          if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
+            // User might have been created by another concurrent request - continue
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Auth user ${user_id} already exists, continuing...`)
+            }
+          } else {
+            // If creation fails after retries, return error
+            return NextResponse.json(
+              { 
+                error: 'Failed to create auth user', 
+                details: createUserResult.error.message,
+                status: createUserResult.error.status || 500
+              },
+              { status: createUserResult.error.status || 500 }
+            )
+          }
+        }
+
+        // Trust that createUser succeeded - no need to verify or wait
+      }
+
+      // Create test profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user_id,
+          name: `Test User ${user_id.substring(0, 8)}`,
+          age: 25 + Math.floor(Math.random() * 15),
+          bio: 'k6 test user',
+          photo: '',
+          gender: gender || (Math.random() < 0.714 ? 'male' : 'female'),
+          onboarding_completed: true,
+        })
+
+      if (profileError) {
+        throw new Error(`Failed to create profile: ${profileError.message}`)
+      }
+
+      // Trust that insert succeeded - cache immediately without verification
+      cache.set(userCacheKey, { id: user_id }, 60000)
+    }
+
+    // Profile exists (from cache or creation) - no need to verify again
+    // Call join_queue function with retry logic and timeout handling
+    const result = await Promise.race([
+      retry(
+        async () => {
+          const result = await supabase.rpc('join_queue', {
+            p_user_id: user_id
+          })
+          if (result.error) {
+            throw result.error
+          }
+          return result
+        },
+        {
+          maxAttempts: 3,
+          initialDelayMs: 100,
+          retryableErrors: ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'ECONNREFUSED', 'AbortError'],
+        }
+      ),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout after 7 seconds')), 7000)
+      )
+    ]).catch((error) => ({ error })) as { data: any; error: any }
+
+    const { error: joinError } = result
+
+    if (joinError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error joining queue:', joinError)
+      }
+      throw new Error(`Failed to join queue: ${joinError.message}`)
+    }
+
+    // Trust that join_queue succeeded - query state only for response data
+    // join_queue RPC is synchronous, so state is immediately available
+    const { data: userState } = await supabase
+      .from('users_state')
+      .select('state, waiting_since')
+      .eq('user_id', user_id)
+      .single()
+
+    // Invalidate cache (user status changed)
+    cache.delete(`match_status:${user_id}`)
+
+    // Return response with state information
+    return {
+      success: true,
+      message: 'Joined queue successfully',
+      user_id: user_id,
+      state: userState?.state || 'waiting',
+      in_queue: true,
+      waiting_since: userState?.waiting_since
+    }
+      })
+
+      return NextResponse.json(result, {
+        headers: {
+          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+          'X-RateLimit-Reset': String(rateLimitResult.resetTime),
+          'X-Queue-Size': String(requestQueue.getStatus().queueSize),
+        },
+      })
+    } catch (queueError: any) {
+      // Handle queue errors (full queue, timeout, etc.)
+      if (queueError.message?.includes('queue is full')) {
+        return NextResponse.json(
+          {
+            error: 'Service temporarily unavailable',
+            message: 'Request queue is full. Please try again later.',
+            queueSize: requestQueue.getStatus().queueSize,
+          },
+          {
+            status: 503,
+            headers: {
+              'Retry-After': '5',
+            },
+          }
+        )
+      }
+      // Re-throw other errors to be caught by outer catch
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error in requestQueue.add:', queueError)
+      }
+      throw queueError
+    }
+  } catch (error: any) {
+    // Ensure connection throttle is released on any error
+    const connectionThrottle = getConnectionThrottle()
+    connectionThrottle.release()
+    
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error in /api/test/spin:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
+    return NextResponse.json(
+      { error: 'Internal server error', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
+      { status: 500 }
+    )
+  }
+}
+
