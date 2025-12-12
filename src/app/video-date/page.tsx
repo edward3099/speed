@@ -556,6 +556,37 @@ function VideoDateContent() {
 
         // Set up event listeners
         livekitRoom.on(RoomEvent.Connected, async () => {
+          // CRITICAL: When room connects, check for any existing local video tracks
+          // This handles cases where tracks were published before connection or TrackPublished event was missed
+          setTimeout(() => {
+            if (livekitRoom && livekitRoom.state === 'connected') {
+              const localParticipant = livekitRoom.localParticipant
+              const videoPubs = Array.from(localParticipant.videoTrackPublications.values())
+              const videoPub = videoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+              
+              if (videoPub?.track?.mediaStreamTrack && !localVideoTrack) {
+                const track = videoPub.track.mediaStreamTrack
+                console.log('✅ Found existing local video track on room connect, setting in state:', track.id)
+                setLocalVideoTrack(track)
+                setIsVideoOff(false)
+                setCountdownVideoOff(false)
+                
+                // Attach to video element if available
+                if (localVideoRef.current) {
+                  try {
+                    const stream = new MediaStream([track])
+                    localVideoRef.current.srcObject = stream
+                    localVideoRef.current.style.opacity = '1'
+                    localVideoRef.current.style.display = 'block'
+                    localVideoRef.current.style.visibility = 'visible'
+                    localVideoRef.current.play().catch(() => {})
+                  } catch (err) {
+                    console.error('Error attaching video on room connect:', err)
+                  }
+                }
+              }
+            }
+          }, 500) // Small delay to ensure everything is initialized
           setIsConnected(true)
           console.log('✅ Connected to LiveKit room')
           console.log('📊 Room state:', {
@@ -1202,13 +1233,21 @@ function VideoDateContent() {
               setLocalVideoTrack(videoTrack)
               setCameraMicEnabled(true) // Mark as enabled when we get a track
               
-              // Ensure video is not marked as off
+              // CRITICAL: Ensure video is not marked as off and countdown video is on
               setIsVideoOff(false)
+              setCountdownVideoOff(false)
               
-              // Note: Don't attach here - let the main useEffect handle attachment
-              // This ensures consistent attachment logic and avoids race conditions
-              // The main useEffect will pick up the track via localVideoTrack state
-              console.log('📹 TrackPublished: Video track set in state, main useEffect will attach')
+              // CRITICAL: Use direct ref attachment (bypasses React state delay)
+              console.log('📹 TrackPublished: Attaching video track directly to element')
+              const attached = attachTrackToVideoElement(videoTrack)
+              if (attached) {
+                console.log('✅ TrackPublished: Video track attached directly, user should see video immediately')
+              } else {
+                console.warn('⚠️ TrackPublished: Failed to attach video track directly')
+              }
+              
+              // Note: The main useEffect will also handle attachment as a fallback
+              console.log('📹 TrackPublished: Video track set in state and attached to element')
             } else if (publication.kind === 'audio') {
               console.log('✅ Setting local audio track from TrackPublished event')
               setLocalAudioTrack(publication.track.mediaStreamTrack)
@@ -1780,9 +1819,92 @@ function VideoDateContent() {
     return () => clearInterval(interval)
   }, [videoDateId, showPartnerEndedDateModal, supabase])
 
+  // CRITICAL: Periodic check to find published tracks that aren't in state
+  // This handles cases where TrackPublished event doesn't fire or is missed
+  // Also handles cases where getUserMedia fails but LiveKit has tracks
+  useEffect(() => {
+    if (!room || room.state === 'disconnected') return
+    
+    const checkForPublishedTracks = () => {
+      // Check if we have a track in publications but not in state
+      const videoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
+      const videoPub = videoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+      
+      // If we found a track in publications but not in state, set it
+      if (videoPub?.track?.mediaStreamTrack) {
+        const track = videoPub.track.mediaStreamTrack
+        const currentTrackId = localVideoTrack?.id
+        
+        // Only update if it's a different track or we don't have one
+        if (!currentTrackId || currentTrackId !== track.id) {
+          console.log('🔍 Found published video track that wasn\'t in state, setting it now:', track.id)
+          
+          // Set track in state
+          setLocalVideoTrack(track)
+          setIsVideoOff(false)
+          setCountdownVideoOff(false)
+          
+          // Immediately attach to video element if available
+          if (localVideoRef.current) {
+            try {
+              // Check if track is already attached
+              const currentStream = localVideoRef.current.srcObject as MediaStream | null
+              const currentTrackId = currentStream?.getVideoTracks()[0]?.id
+              
+              if (!currentStream || currentTrackId !== track.id) {
+                const stream = new MediaStream([track])
+                localVideoRef.current.srcObject = stream
+                localVideoRef.current.style.opacity = '1'
+                localVideoRef.current.style.display = 'block'
+                localVideoRef.current.style.visibility = 'visible'
+                localVideoRef.current.play().catch(err => {
+                  if (err.name !== 'NotAllowedError') {
+                    console.error('Error playing video in periodic check:', err)
+                  }
+                })
+              }
+            } catch (err) {
+              console.error('Error attaching video in periodic check:', err)
+            }
+          }
+        }
+      }
+    }
+    
+    // Check immediately
+    checkForPublishedTracks()
+    
+    // Then check every 500ms for the first 10 seconds (longer for slow connections)
+    const interval = setInterval(checkForPublishedTracks, 500)
+    const timeout = setTimeout(() => clearInterval(interval), 10000)
+    
+    return () => {
+      clearInterval(interval)
+      clearTimeout(timeout)
+    }
+  }, [room, localVideoTrack])
+  
   // Main effect to attach local video track to video element
   // This is the SINGLE SOURCE OF TRUTH for local video attachment
   useEffect(() => {
+    // CRITICAL: If we have a video ref but no track, try to find it from room publications
+    if (localVideoRef.current && !localVideoTrack && room && room.state !== 'disconnected') {
+      console.log('⚠️ No localVideoTrack in state, checking room publications...')
+      const videoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
+      const videoPub = videoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+      if (videoPub?.track?.mediaStreamTrack) {
+        const track = videoPub.track.mediaStreamTrack
+        console.log('✅ Found video track in publications, setting in state:', track.id)
+        setLocalVideoTrack(track)
+        setIsVideoOff(false)
+        setCountdownVideoOff(false)
+        // Don't return - continue to attach the track
+      } else {
+        console.log('⚠️ No video track found in publications either')
+        return
+      }
+    }
+    
     if (!localVideoRef.current || !localVideoTrack) {
       console.log('⚠️ Local video attachment skipped:', {
         hasRef: !!localVideoRef.current,
@@ -1845,7 +1967,8 @@ function VideoDateContent() {
       
       // Attempt to play - require user interaction for autoplay policies (especially on mobile)
       // During countdown, try to play if user has interacted
-      const shouldPlay = hasUserInteracted && videoElement.paused
+      // CRITICAL: If track exists and is attached, always try to play (user has interacted by enabling camera)
+      const shouldPlay = (hasUserInteracted || localVideoTrack) && videoElement.paused
       
       if (shouldPlay) {
         const playPromise = videoElement.play()
@@ -1861,7 +1984,8 @@ function VideoDateContent() {
                 message: err.message,
                 hasUserInteracted,
                 countdownComplete,
-                paused: videoElement.paused
+                paused: videoElement.paused,
+                trackExists: !!localVideoTrack
               })
             })
         }
@@ -1869,7 +1993,8 @@ function VideoDateContent() {
         console.log('⚠️ Local video play skipped:', {
           hasUserInteracted,
           paused: videoElement.paused,
-          countdownComplete
+          countdownComplete,
+          trackExists: !!localVideoTrack
         })
       }
     } catch (error) {
@@ -3646,6 +3771,132 @@ function VideoDateContent() {
   }
 
   // Helper function to publish track with retry logic for engine connection errors
+  /**
+   * Promise-based function to wait for a local video track to appear in LiveKit publications.
+   * Uses exponential backoff polling with multiple check intervals.
+   * This eliminates React state synchronization delays by directly checking LiveKit publications.
+   * 
+   * @param timeoutMs Maximum time to wait (default: 2000ms)
+   * @returns Promise that resolves with the MediaStreamTrack or null if not found
+   */
+  const waitForLocalVideoTrack = async (timeoutMs: number = 2000): Promise<MediaStreamTrack | null> => {
+    if (!room || !isRoomConnected()) {
+      console.warn('⚠️ waitForLocalVideoTrack: Room not connected')
+      return null
+    }
+
+    const startTime = Date.now()
+    const checkIntervals = [0, 50, 100, 200, 400, 800] // Exponential backoff intervals
+    
+    return new Promise((resolve) => {
+      let checkIndex = 0
+      
+      const checkForTrack = () => {
+        // Check timeout
+        if (Date.now() - startTime > timeoutMs) {
+          console.warn(`⚠️ waitForLocalVideoTrack: Timeout after ${timeoutMs}ms`)
+          resolve(null)
+          return
+        }
+
+        // Check if room is still connected
+        if (!room || !isRoomConnected()) {
+          console.warn('⚠️ waitForLocalVideoTrack: Room disconnected during check')
+          resolve(null)
+          return
+        }
+
+        // Check for video track in publications
+        const videoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
+        const videoPub = videoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+        
+        if (videoPub?.track?.mediaStreamTrack) {
+          const track = videoPub.track.mediaStreamTrack
+          console.log(`✅ waitForLocalVideoTrack: Found track after ${Date.now() - startTime}ms:`, track.id)
+          resolve(track)
+          return
+        }
+
+        // Schedule next check if we haven't exhausted intervals
+        if (checkIndex < checkIntervals.length - 1) {
+          const nextInterval = checkIntervals[checkIndex + 1] - checkIntervals[checkIndex]
+          checkIndex++
+          setTimeout(checkForTrack, nextInterval)
+        } else {
+          // After all intervals, do final check
+          setTimeout(() => {
+            const finalVideoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
+            const finalVideoPub = finalVideoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+            if (finalVideoPub?.track?.mediaStreamTrack) {
+              resolve(finalVideoPub.track.mediaStreamTrack)
+            } else {
+              console.warn(`⚠️ waitForLocalVideoTrack: Track not found after ${Date.now() - startTime}ms`)
+              resolve(null)
+            }
+          }, timeoutMs - (Date.now() - startTime))
+        }
+      }
+
+      // Start checking immediately
+      checkForTrack()
+    })
+  }
+
+  /**
+   * Directly attach a MediaStreamTrack to the video element using refs.
+   * This bypasses React state delays for immediate visual feedback.
+   */
+  const attachTrackToVideoElement = (track: MediaStreamTrack) => {
+    if (!localVideoRef.current) {
+      console.warn('⚠️ attachTrackToVideoElement: localVideoRef.current is null')
+      return false
+    }
+
+    try {
+      const videoElement = localVideoRef.current
+      const currentStream = videoElement.srcObject as MediaStream | null
+      const currentTrackId = currentStream?.getVideoTracks()[0]?.id
+      
+      // Only reattach if track changed
+      if (currentTrackId === track.id && videoElement.srcObject) {
+        console.log('✅ attachTrackToVideoElement: Track already attached')
+        return true
+      }
+
+      // Clean up old stream
+      if (videoElement.srcObject) {
+        const oldStream = videoElement.srcObject as MediaStream
+        oldStream.getTracks().forEach(t => {
+          // Don't stop the track - it's managed by LiveKit
+        })
+        videoElement.srcObject = null
+      }
+
+      // Create new stream and attach
+      const stream = new MediaStream([track])
+      videoElement.srcObject = stream
+      
+      // Force visibility with inline styles (higher priority than CSS)
+      videoElement.style.setProperty('opacity', '1', 'important')
+      videoElement.style.setProperty('display', 'block', 'important')
+      videoElement.style.setProperty('visibility', 'visible', 'important')
+      
+      console.log('✅ attachTrackToVideoElement: Track attached directly to video element:', track.id)
+      
+      // Attempt to play
+      videoElement.play().catch(err => {
+        if (err.name !== 'NotAllowedError') {
+          console.error('Error playing video in attachTrackToVideoElement:', err)
+        }
+      })
+      
+      return true
+    } catch (err) {
+      console.error('Error in attachTrackToVideoElement:', err)
+      return false
+    }
+  }
+
   const publishTrackWithRetry = async (
     track: MediaStreamTrack,
     options: { source: Track.Source },
@@ -3696,6 +3947,10 @@ function VideoDateContent() {
 
   const enableCameraAndMic = async () => {
     console.log('🎥 enableCameraAndMic called')
+    
+    // CRITICAL: Set hasUserInteracted immediately when user clicks button
+    // This is required for video.play() to work on mobile (autoplay policy)
+    setHasUserInteracted(true)
     
     if (!isRoomConnected()) {
       console.error('❌ Room not available or disconnected')
@@ -3778,6 +4033,37 @@ function VideoDateContent() {
           
       await room.localParticipant.enableCameraAndMicrophone()
           console.log('✅ LiveKit enableCameraAndMicrophone called successfully')
+          
+          // CRITICAL: Use Promise-based waitForTrack for deterministic behavior
+          // This eliminates race conditions and React state synchronization delays
+          const detectedTrack = await waitForLocalVideoTrack(2000) // 2 second timeout
+          
+          if (detectedTrack) {
+            console.log('✅ Video track detected via waitForLocalVideoTrack:', detectedTrack.id)
+            
+            // Set track in React state for UI rendering
+            setLocalVideoTrack(detectedTrack)
+            setIsVideoOff(false)
+            setCountdownVideoOff(false)
+            
+            // CRITICAL: Attach directly to video element using refs (bypasses React state delay)
+            const attached = attachTrackToVideoElement(detectedTrack)
+            if (attached) {
+              console.log('✅ Video track attached directly to element, user should see video immediately')
+            }
+            
+            // Also handle audio track if available
+            if (room && isRoomConnected()) {
+              const audioPubs = Array.from(room.localParticipant.audioTrackPublications.values())
+              const audioPub = audioPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+              if (audioPub?.track?.mediaStreamTrack && !localAudioTrack) {
+                setLocalAudioTrack(audioPub.track.mediaStreamTrack)
+              }
+            }
+          } else {
+            console.warn('⚠️ waitForLocalVideoTrack: Track not found within timeout, TrackPublished event will handle it')
+            // TrackPublished event handler will catch it as fallback
+          }
         } catch (enableError: any) {
           const errorMsg = enableError?.message || String(enableError)
           const errorName = enableError?.name || ''
@@ -3806,12 +4092,34 @@ function VideoDateContent() {
             }
           }
           
+          // Handle NotSupportedError gracefully - this happens in test environments
+          if (errorName === 'NotSupportedError' || errorMsg.includes('Not supported')) {
+            console.warn('⚠️ enableCameraAndMicrophone not supported - checking for existing tracks...')
+            // Don't throw - continue to check for existing tracks
+            return
+          }
+          
           // Re-throw other errors
           throw enableError
         }
       }
       
-      await enableWithRetry(1)
+      // Try to enable - if it fails with NotSupportedError, we'll still check for tracks
+      try {
+        await enableWithRetry(1)
+      } catch (enableErr: any) {
+        // If enableCameraAndMicrophone fails, still check for existing tracks
+        const enableErrMsg = enableErr?.message || String(enableErr)
+        const enableErrName = enableErr?.name || ''
+        
+        if (enableErrName === 'NotSupportedError' || enableErrMsg.includes('Not supported')) {
+          console.warn('⚠️ enableCameraAndMicrophone failed with NotSupportedError - will check for existing tracks')
+          // Continue to track checking logic below - don't throw
+        } else {
+          // For other errors, re-throw to be caught by outer catch
+          throw enableErr
+        }
+      }
       
       // Wait for tracks to be published - longer wait for iPhone
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -3854,43 +4162,13 @@ function VideoDateContent() {
           setIsVideoOff(false)
           setCountdownVideoOff(false) // Also set countdown video to on
           
-          // Immediately attach to video element if available
-          if (localVideoRef.current) {
-            console.log('📹 Immediately attaching video track to local video element')
-            try {
-              // Stop any existing tracks in the stream
-              if (localVideoRef.current.srcObject) {
-                const existingStream = localVideoRef.current.srcObject as MediaStream
-                existingStream.getTracks().forEach(t => t.stop())
-              }
-              
-              // Create new stream with the track
-              const stream = new MediaStream([track])
-              localVideoRef.current.srcObject = stream
-              
-              // Ensure video is visible
-              localVideoRef.current.style.opacity = '1'
-              
-              // Try to play immediately
-              const playPromise = localVideoRef.current.play()
-              if (playPromise !== undefined) {
-                playPromise
-                  .then(() => {
-                    console.log('✅ Local video playing immediately after enable')
-                  })
-                  .catch(err => {
-                    if (err.name !== 'NotAllowedError') {
-                      console.error('Error playing local video immediately:', err)
-                    } else {
-                      console.log('⚠️ Local video play blocked (needs user interaction)')
-                    }
-                  })
-              }
-            } catch (err) {
-              console.error('Error attaching video track to element:', err)
-            }
+          // CRITICAL: Use direct ref attachment (bypasses React state delay)
+          console.log('📹 Immediately attaching video track to local video element using direct ref')
+          const attached = attachTrackToVideoElement(track)
+          if (attached) {
+            console.log('✅ Video track attached directly, user should see video immediately')
           } else {
-            console.warn('⚠️ localVideoRef.current is null, cannot attach track immediately')
+            console.warn('⚠️ Failed to attach video track directly')
           }
         } else {
           console.log('⚠️ No video track found yet (checked', videoPubs.length, 'publications)')
@@ -3921,6 +4199,11 @@ function VideoDateContent() {
         }
       }
 
+      // CRITICAL: Set isVideoOff to false immediately when enabling (optimistic update)
+      // This prevents the "video off" placeholder from showing while tracks are being published
+      setIsVideoOff(false)
+      setCountdownVideoOff(false)
+      
       // Try multiple times with longer delays for iPhone
       updateLocalTracks(1)
       setTimeout(() => updateLocalTracks(2), 500)
@@ -3929,9 +4212,56 @@ function VideoDateContent() {
       setTimeout(() => updateLocalTracks(5), 3000)
       setTimeout(() => {
         if (!tracksFound) {
-          console.warn('⚠️ Tracks not found after 4 seconds, but marking as enabled anyway')
-          setCameraMicEnabled(true)
-          setHasUserInteracted(true)
+          console.warn('⚠️ Tracks not found after 4 seconds, checking one more time...')
+          
+          // Final attempt: Check if tracks are now available
+          if (room && isRoomConnected()) {
+            const finalVideoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
+            const finalVideoPub = finalVideoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+            const finalAudioPubs = Array.from(room.localParticipant.audioTrackPublications.values())
+            const finalAudioPub = finalAudioPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+            
+            if (finalVideoPub?.track?.mediaStreamTrack || finalAudioPub?.track?.mediaStreamTrack) {
+              console.log('✅ Found tracks on final attempt')
+              
+              if (finalVideoPub?.track?.mediaStreamTrack) {
+                const track = finalVideoPub.track.mediaStreamTrack
+                setLocalVideoTrack(track)
+                setIsVideoOff(false)
+                setCountdownVideoOff(false)
+                
+                // Attach to video element
+                if (localVideoRef.current) {
+                  try {
+                    const stream = new MediaStream([track])
+                    localVideoRef.current.srcObject = stream
+                    localVideoRef.current.style.opacity = '1'
+                    localVideoRef.current.style.display = 'block'
+                    localVideoRef.current.style.visibility = 'visible'
+                    localVideoRef.current.play().catch(() => {})
+                  } catch (err) {
+                    console.error('Error attaching track on final attempt:', err)
+                  }
+                }
+              }
+              
+              if (finalAudioPub?.track?.mediaStreamTrack) {
+                setLocalAudioTrack(finalAudioPub.track.mediaStreamTrack)
+              }
+              
+              setCameraMicEnabled(true)
+              setHasUserInteracted(true)
+              tracksFound = true
+            } else {
+              // No tracks found - mark as enabled anyway (user might have camera issues)
+              console.warn('⚠️ No tracks found after all attempts, but marking as enabled')
+              setCameraMicEnabled(true)
+              setHasUserInteracted(true)
+            }
+          } else {
+            setCameraMicEnabled(true)
+            setHasUserInteracted(true)
+          }
         }
       }, 4000)
 
@@ -3944,16 +4274,69 @@ function VideoDateContent() {
         stack: error?.stack,
       })
       
-      // Suppress "createOffer with closed peer connection" errors - they're harmless
       const errorMsg = error?.message || String(error)
+      const errorName = error?.name || ''
+      
+      // Suppress "createOffer with closed peer connection" errors - they're harmless
       if (errorMsg.includes('createOffer') && errorMsg.includes('closed')) {
         console.log('⚠️ WebRTC connection closed, but continuing...')
         setCameraMicEnabled(true)
         setHasUserInteracted(true)
         return
       }
+      
+      // Handle NotSupportedError - check for existing tracks before showing error
+      if (errorName === 'NotSupportedError' || errorMsg.includes('Not supported')) {
+        console.warn('⚠️ getUserMedia/enableCameraAndMicrophone not supported - checking for existing tracks...')
+        
+        // CRITICAL: Even if getUserMedia fails, check if LiveKit already has tracks
+        if (room && isRoomConnected()) {
+          const videoPubs = Array.from(room.localParticipant.videoTrackPublications.values())
+          const videoPub = videoPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+          const audioPubs = Array.from(room.localParticipant.audioTrackPublications.values())
+          const audioPub = audioPubs.find(pub => pub.track && pub.track.mediaStreamTrack)
+          
+          if (videoPub?.track?.mediaStreamTrack || audioPub?.track?.mediaStreamTrack) {
+            console.log('✅ Found existing tracks despite NotSupportedError - using them')
+            
+            if (videoPub?.track?.mediaStreamTrack) {
+              const track = videoPub.track.mediaStreamTrack
+              setLocalVideoTrack(track)
+              setIsVideoOff(false)
+              setCountdownVideoOff(false)
+              
+              // Attach to video element
+              if (localVideoRef.current) {
+                try {
+                  const stream = new MediaStream([track])
+                  localVideoRef.current.srcObject = stream
+                  localVideoRef.current.style.opacity = '1'
+                  localVideoRef.current.style.display = 'block'
+                  localVideoRef.current.style.visibility = 'visible'
+                  localVideoRef.current.play().catch(() => {})
+                } catch (err) {
+                  console.error('Error attaching existing video track:', err)
+                }
+              }
+            }
+            
+            if (audioPub?.track?.mediaStreamTrack) {
+              setLocalAudioTrack(audioPub.track.mediaStreamTrack)
+            }
+            
+            setCameraMicEnabled(true)
+            setHasUserInteracted(true)
+            // Don't show error if we found tracks
+            return
+          }
+        }
+        
+        // Only show error if no tracks were found
+        showError(new Error('Camera/microphone not supported in this environment. Please use a supported browser with camera access.'))
+        return
+      }
 
-      // Show user-friendly error message using toast
+      // Show user-friendly error message using toast for other errors
       showError(error)
     }
   }
@@ -4057,6 +4440,9 @@ function VideoDateContent() {
       isVideoOff: newVideoOffState
     })
     
+    // Mark user as interacted when toggling video
+    setHasUserInteracted(true)
+    
     try {
       // First, try to toggle existing tracks directly (works on mobile without getUserMedia)
       const videoPubs = Array.from(localParticipant.videoTrackPublications.values())
@@ -4064,13 +4450,38 @@ function VideoDateContent() {
       
       if (videoPub?.track?.mediaStreamTrack) {
         // Track exists - toggle it directly without calling getUserMedia
-        videoPub.track.mediaStreamTrack.enabled = !newVideoOffState
+        const track = videoPub.track.mediaStreamTrack
+        track.enabled = !newVideoOffState
         setIsVideoOff(newVideoOffState)
         
-        // Update local video track state
+        // Update local video track state - CRITICAL: Always set track when enabling
         if (!newVideoOffState) {
-          setLocalVideoTrack(videoPub.track.mediaStreamTrack)
+          // Video is being enabled - ensure track is in state and enabled
+          setLocalVideoTrack(track)
+          setIsVideoOff(false) // Ensure video is marked as on
+          setCountdownVideoOff(false) // Also ensure countdown video is on
+          
+          // Immediately attach to video element if available
+          if (localVideoRef.current) {
+            try {
+              const stream = new MediaStream([track])
+              localVideoRef.current.srcObject = stream
+              localVideoRef.current.style.opacity = '1'
+              localVideoRef.current.style.display = 'block'
+              localVideoRef.current.style.visibility = 'visible'
+              
+              // Try to play immediately
+              localVideoRef.current.play().catch(err => {
+                if (err.name !== 'NotAllowedError') {
+                  console.error('Error playing local video in toggleVideo:', err)
+                }
+              })
+            } catch (err) {
+              console.error('Error attaching video track in toggleVideo:', err)
+            }
+          }
         } else {
+          // Video is being disabled
           setLocalVideoTrack(null)
         }
         setCameraMicEnabled(true)
@@ -4100,10 +4511,32 @@ function VideoDateContent() {
             source: Track.Source.Camera,
           })
           
-          // Set track immediately
+          // Set track immediately - CRITICAL: Ensure state is correct for video display
           setLocalVideoTrack(videoTrack)
-          setIsVideoOff(newVideoOffState)
+          setIsVideoOff(false) // Video is being enabled, so set to false
+          setCountdownVideoOff(false) // Also ensure countdown video is on
           setCameraMicEnabled(true)
+          
+          // Immediately attach to video element if available
+          if (localVideoRef.current) {
+            try {
+              const stream = new MediaStream([videoTrack])
+              localVideoRef.current.srcObject = stream
+              localVideoRef.current.style.opacity = '1'
+              localVideoRef.current.style.display = 'block'
+              localVideoRef.current.style.visibility = 'visible'
+              
+              // Try to play immediately
+              localVideoRef.current.play().catch(err => {
+                if (err.name !== 'NotAllowedError') {
+                  console.error('Error playing local video after publish:', err)
+                }
+              })
+            } catch (err) {
+              console.error('Error attaching video track after publish:', err)
+            }
+          }
+          
           console.log('✅ Camera enabled and published')
         } catch (err: any) {
           console.error('❌ Error enabling camera:', err)
@@ -5081,8 +5514,10 @@ function VideoDateContent() {
                       muted
                       className="w-full h-full object-cover"
                       style={{ 
-                        opacity: (isVideoOff || !localVideoTrack) ? 0 : 1,
-                        display: 'block'
+                        // Show video if track exists, even if isVideoOff is temporarily true
+                        opacity: !localVideoTrack ? 0 : 1,
+                        display: 'block',
+                        visibility: !localVideoTrack ? 'hidden' : 'visible'
                       }}
                       onError={(e) => {
                         console.error('Local video element error:', e)
@@ -5108,8 +5543,8 @@ function VideoDateContent() {
                         console.log('▶️ Local video started playing')
                       }}
                     />
-                    {/* Show placeholder when video is off */}
-                    {isVideoOff && (
+                    {/* Show placeholder when video is off - but only if no track exists */}
+                    {isVideoOff && !localVideoTrack && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="text-center">
                           <VideoOff className="w-20 h-20 text-white/30 mx-auto mb-2" />

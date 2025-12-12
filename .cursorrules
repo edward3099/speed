@@ -87,3 +87,25 @@
 - **Generics**: Use generics for reusable, type-safe functions.
 - **Utility Types**: Leverage built-in utility types (Partial, Pick, Omit, etc.).
 - **Strict Mode**: Keep strict mode enabled. Fix type errors properly.
+
+## Thinking Patterns Analysis
+
+- **When user requests thinking patterns analysis**: ALWAYS use ALL 15 thinking pattern tools systematically, not just a subset.
+- **The 15 tools are**:
+  1. sequential_thinking
+  2. mental_model
+  3. debugging_approach
+  4. stochastic_algorithm
+  5. collaborative_reasoning
+  6. decision_framework
+  7. metacognitive_monitoring
+  8. scientific_method
+  9. structured_argumentation
+  10. visual_reasoning
+  11. domain_modeling
+  12. problem_decomposition
+  13. critical_thinking
+  14. recursive_thinking
+  15. temporal_thinking
+- **Approach**: Use all tools systematically to provide comprehensive multi-perspective analysis. Each tool provides unique insights that converge on optimal solutions.
+- **Note**: visual_reasoning may have occasional transient parsing errors but works with proper formatting.
