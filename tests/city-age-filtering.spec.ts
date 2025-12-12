@@ -92,80 +92,102 @@ test.describe('City and Age Filtering Tests', () => {
       await supabase.from('profiles').update({ age: 35 }).eq('id', user4.userId)
       await supabase.from('profiles').update({ age: 24 }).eq('id', user5.userId)
       
-      // Set up preferences for each user via direct SQL execution (Supabase JS client has issues with arrays)
-      console.log('⚙️ Setting up user preferences via SQL...')
+      // Set up preferences for each user via Supabase REST API (to ensure arrays are saved correctly)
+      console.log('⚙️ Setting up user preferences via Supabase...')
+      
+      const preferencesUrl = `${supabaseUrl}/rest/v1/user_preferences`
+      const headers = {
+        'apikey': supabaseServiceKey,
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      }
       
       // User 1: London + South England, age 20-30
-      await mcp_supabase_execute_sql({
-        query: `
-          INSERT INTO user_preferences (user_id, min_age, max_age, city, gender_preference, updated_at)
-          VALUES ($1, $2, $3, $4, $5, NOW())
-          ON CONFLICT (user_id) DO UPDATE SET
-            min_age = EXCLUDED.min_age,
-            max_age = EXCLUDED.max_age,
-            city = EXCLUDED.city,
-            gender_preference = EXCLUDED.gender_preference,
-            updated_at = NOW()
-        `.replace('$1', `'${user1.userId}'`).replace('$2', '20').replace('$3', '30').replace('$4', `ARRAY['London', 'South England']::TEXT[]`).replace('$5', `'female'`)
+      await fetch(preferencesUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          user_id: user1.userId,
+          min_age: 20,
+          max_age: 30,
+          city: ['London', 'South England'],
+          gender_preference: 'female',
+          updated_at: new Date().toISOString()
+        })
       }).catch(() => {})
       
       // User 2: London + Midlands, age 20-30
-      await mcp_supabase_execute_sql({
-        query: `
-          INSERT INTO user_preferences (user_id, min_age, max_age, city, gender_preference, updated_at)
-          VALUES ('${user2.userId}', 20, 30, ARRAY['London', 'Midlands']::TEXT[], 'male', NOW())
-          ON CONFLICT (user_id) DO UPDATE SET
-            min_age = EXCLUDED.min_age,
-            max_age = EXCLUDED.max_age,
-            city = EXCLUDED.city,
-            gender_preference = EXCLUDED.gender_preference,
-            updated_at = NOW()
-        `
+      await fetch(preferencesUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          user_id: user2.userId,
+          min_age: 20,
+          max_age: 30,
+          city: ['London', 'Midlands'],
+          gender_preference: 'male',
+          updated_at: new Date().toISOString()
+        })
       }).catch(() => {})
       
       // User 3: North England only, age 25-35
-      await mcp_supabase_execute_sql({
-        query: `
-          INSERT INTO user_preferences (user_id, min_age, max_age, city, gender_preference, updated_at)
-          VALUES ('${user3.userId}', 25, 35, ARRAY['North England']::TEXT[], 'male', NOW())
-          ON CONFLICT (user_id) DO UPDATE SET
-            min_age = EXCLUDED.min_age,
-            max_age = EXCLUDED.max_age,
-            city = EXCLUDED.city,
-            gender_preference = EXCLUDED.gender_preference,
-            updated_at = NOW()
-        `
+      await fetch(preferencesUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          user_id: user3.userId,
+          min_age: 25,
+          max_age: 35,
+          city: ['North England'],
+          gender_preference: 'male',
+          updated_at: new Date().toISOString()
+        })
       }).catch(() => {})
       
       // User 4: London, age 30-40
-      await mcp_supabase_execute_sql({
-        query: `
-          INSERT INTO user_preferences (user_id, min_age, max_age, city, gender_preference, updated_at)
-          VALUES ('${user4.userId}', 30, 40, ARRAY['London']::TEXT[], 'male', NOW())
-          ON CONFLICT (user_id) DO UPDATE SET
-            min_age = EXCLUDED.min_age,
-            max_age = EXCLUDED.max_age,
-            city = EXCLUDED.city,
-            gender_preference = EXCLUDED.gender_preference,
-            updated_at = NOW()
-        `
+      await fetch(preferencesUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          user_id: user4.userId,
+          min_age: 30,
+          max_age: 40,
+          city: ['London'],
+          gender_preference: 'male',
+          updated_at: new Date().toISOString()
+        })
       }).catch(() => {})
       
       // User 5: No city preference, age 20-30
-      await mcp_supabase_execute_sql({
-        query: `
-          INSERT INTO user_preferences (user_id, min_age, max_age, city, gender_preference, updated_at)
-          VALUES ('${user5.userId}', 20, 30, NULL, 'male', NOW())
-          ON CONFLICT (user_id) DO UPDATE SET
-            min_age = EXCLUDED.min_age,
-            max_age = EXCLUDED.max_age,
-            city = EXCLUDED.city,
-            gender_preference = EXCLUDED.gender_preference,
-            updated_at = NOW()
-        `
+      await fetch(preferencesUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          user_id: user5.userId,
+          min_age: 20,
+          max_age: 30,
+          city: null,
+          gender_preference: 'male',
+          updated_at: new Date().toISOString()
+        })
       }).catch(() => {})
       
-      console.log('✅ Preferences set via SQL')
+      // Verify preferences were saved correctly
+      const { data: verifyData } = await supabase
+        .from('user_preferences')
+        .select('user_id, city, min_age, max_age')
+        .in('user_id', [user1.userId, user2.userId, user3.userId, user4.userId, user5.userId])
+      
+      if (verifyData) {
+        console.log('✅ Preferences set. Verification:', verifyData.map(v => ({
+          userId: v.user_id.substring(0, 8),
+          city: v.city,
+          cityType: Array.isArray(v.city) ? 'array' : (v.city === null ? 'null' : typeof v.city),
+          cityLength: Array.isArray(v.city) ? v.city.length : 0,
+          ageRange: `${v.min_age}-${v.max_age}`
+        })))
+      }
       
       // Create browser contexts and sign in users
       console.log('🌐 Opening browser contexts and signing in users...')
