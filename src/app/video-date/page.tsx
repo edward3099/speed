@@ -466,6 +466,15 @@ function VideoDateContent() {
           return
         }
         
+        // Validate URL matches LiveKit Cloud format
+        if (!wsUrl.includes('livekit.cloud') && !wsUrl.includes('livekit.io')) {
+          console.warn('⚠️ LiveKit URL does not match expected format (should contain livekit.cloud or livekit.io):', wsUrl)
+          await logVideoError('configuration_error', 'LiveKit URL format warning', {
+            wsUrl,
+            note: 'URL should match your LiveKit Cloud project URL'
+          })
+        }
+        
         console.log('🔗 LiveKit connection details:', {
           wsUrl: wsUrl.replace(/\/\/.*@/, '//***@'), // Hide credentials in URL if any
           roomName,
@@ -1315,22 +1324,28 @@ function VideoDateContent() {
             try {
               const diagnosticsResponse = await fetch('/api/livekit-token/diagnostics')
               const diagnostics = await diagnosticsResponse.json()
-              let userMessage = 'LiveKit connection failed: Invalid API key. '
-              if (diagnostics.errors && diagnostics.errors.length > 0) {
-                userMessage += diagnostics.errors.join(', ') + '. '
+              
+              // Check if URL matches expected format
+              const wsUrlCheck = wsUrl || ''
+              const urlMatches = wsUrlCheck.includes('livekit.cloud') || wsUrlCheck.includes('livekit.io')
+              
+              let userMessage = 'LiveKit connection failed: API key/secret mismatch. '
+              userMessage += 'The API key and secret in Vercel must match your LiveKit Cloud project exactly. '
+              
+              if (!urlMatches) {
+                userMessage += 'Also verify NEXT_PUBLIC_LIVEKIT_URL matches your LiveKit project URL. '
               }
-              if (diagnostics.recommendations && diagnostics.recommendations.length > 0) {
-                userMessage += diagnostics.recommendations.join(' ')
-              } else {
-                userMessage += 'Please check that LIVEKIT_API_KEY and LIVEKIT_API_SECRET are set in Vercel environment variables.'
-              }
+              
+              userMessage += 'Update environment variables in Vercel and redeploy.'
               
               await logVideoError('livekit_auth_error', 'LiveKit authentication failed', {
                 error: errorMessage,
                 errorName,
                 errorCode,
                 errorStatus,
-                diagnostics
+                diagnostics,
+                wsUrl: wsUrlCheck,
+                urlMatches
               })
               showError(new Error(userMessage))
             } catch (diagError) {
@@ -1340,7 +1355,7 @@ function VideoDateContent() {
                 errorCode,
                 errorStatus
               })
-              showError(new Error('LiveKit connection failed: Invalid API key. Please check environment variables in Vercel.'))
+              showError(new Error('LiveKit connection failed: API key/secret mismatch. Update LIVEKIT_API_KEY and LIVEKIT_API_SECRET in Vercel to match your LiveKit Cloud project, then redeploy.'))
             }
             router.push('/spin')
             return

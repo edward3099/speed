@@ -54,6 +54,11 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+      // Validate API key format (LiveKit API keys typically start with "API")
+      if (!apiKey.startsWith('API') && apiKey.length < 10) {
+        console.warn('⚠️ API key format seems unusual - verify it matches your LiveKit Cloud project')
+      }
+      
       // Create token following LiveKit's official pattern
       // Reference: https://github.com/livekit/node-sdks/blob/main/packages/livekit-server-sdk/README.md
       const at = new AccessToken(apiKey, apiSecret, {
