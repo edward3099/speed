@@ -573,10 +573,38 @@ function VideoDateContent() {
           // Wait for WebRTC engine to be ready before allowing publishing
           // The room.connect() completes when signaling is ready, but engine needs more time
           console.log('⏳ Waiting for WebRTC engine to be ready...')
-          setTimeout(() => {
-            setEngineReady(true)
-            console.log('✅ WebRTC engine ready - publishing operations can proceed')
-          }, 2000) // Wait 2 seconds for engine to initialize
+          
+          // Check engine readiness more reliably
+          const checkEngineReady = () => {
+            // Check if room is connected and has proper state
+            if (livekitRoom.state === 'connected' && livekitRoom.engine) {
+              setEngineReady(true)
+              console.log('✅ WebRTC engine ready - publishing operations can proceed')
+              return true
+            }
+            return false
+          }
+          
+          // Try immediately
+          if (checkEngineReady()) {
+            return
+          }
+          
+          // If not ready, check periodically
+          let attempts = 0
+          const maxAttempts = 20 // 10 seconds total (20 * 500ms)
+          const checkInterval = setInterval(() => {
+            attempts++
+            if (checkEngineReady() || attempts >= maxAttempts) {
+              clearInterval(checkInterval)
+              if (attempts >= maxAttempts && !engineReady) {
+                // Even if we can't detect it, mark as ready after timeout
+                // The actual publish will handle errors
+                setEngineReady(true)
+                console.log('⚠️ Engine ready check timed out, but marking as ready (publish will handle errors)')
+              }
+            }
+          }, 500) // Check every 500ms
           
           // Function to check and subscribe to remote tracks
           const checkAndSubscribeToRemoteTracks = () => {
@@ -3584,19 +3612,26 @@ function VideoDateContent() {
       return
     }
 
-    // Check if WebRTC engine is ready
+    // Check if WebRTC engine is ready - with better detection
     if (!engineReady) {
       console.warn('⚠️ WebRTC engine not ready yet, waiting...')
       // Wait for engine to be ready (with timeout)
       let attempts = 0
-      while (!engineReady && attempts < 10) {
+      const maxAttempts = 20 // 10 seconds total
+      while (!engineReady && attempts < maxAttempts) {
+        // Check actual room state instead of just waiting
+        if (room && room.state === 'connected' && room.engine) {
+          setEngineReady(true)
+          console.log('✅ Engine detected as ready during wait')
+          break
+        }
         await new Promise(resolve => setTimeout(resolve, 500))
         attempts++
       }
       if (!engineReady) {
-        console.error('❌ WebRTC engine not ready after waiting')
-        showInfo('Please wait a moment and try again. The connection is still initializing.')
-      return
+        // Even if we can't detect it, try anyway - the actual publish will handle errors
+        console.warn('⚠️ Engine ready check timed out, but proceeding anyway (publish will handle errors)')
+        setEngineReady(true) // Mark as ready to allow publish attempt
       }
     }
 
