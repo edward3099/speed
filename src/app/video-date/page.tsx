@@ -1839,16 +1839,29 @@ function VideoDateContent() {
       videoElement.srcObject = stream
       }
       
+      // Ensure video is visible (not hidden by isVideoOff)
+      setIsVideoOff(false)
+      
+      // Force video element to be visible
+      if (videoElement) {
+        videoElement.style.opacity = '1'
+        videoElement.style.display = 'block'
+      }
+      
       // Attempt to play - during countdown, always try to play (user is testing camera)
       // After countdown, require user interaction for autoplay policies
       const shouldPlay = !countdownComplete || hasUserInteracted
       if (shouldPlay && videoElement.paused) {
-        videoElement.play().catch(err => {
-          // Silently ignore NotAllowedError (expected on mobile without user interaction)
-          if (err.name !== 'NotAllowedError') {
-            console.error('Error playing local video:', err)
-          }
-        })
+        videoElement.play()
+          .then(() => {
+            console.log('✅ Local video playing from useEffect')
+          })
+          .catch(err => {
+            // Silently ignore NotAllowedError (expected on mobile without user interaction)
+            if (err.name !== 'NotAllowedError') {
+              console.error('Error playing local video:', err)
+            }
+          })
       }
     } catch (error) {
       console.error('Error attaching local video track:', error)
