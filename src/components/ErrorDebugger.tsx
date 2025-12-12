@@ -83,12 +83,19 @@ function ErrorDebugger() {
           (errorString.includes('DataChannel') && firstArg.event?.isTrusted === true)
         ))
 
+      // Filter RPC errors that have retry logic
+      const isRpcError = 
+        errorString.includes('RPC failed') ||
+        errorString.includes('Error fetching') && errorString.includes('RPC') ||
+        errorString.includes('Countdown RPC failed') ||
+        errorString.includes('time remaining from RPC')
+
       // Filter devtools errors
       const isDevtoolsError = 
         errorString.includes('NODE_OPTIONs are not supported') ||
         errorString.includes('electron/shell/common/node_bindings')
 
-      return isLiveKitError || isDevtoolsError
+      return isLiveKitError || isRpcError || isDevtoolsError
     }
 
     // Function to add error to log

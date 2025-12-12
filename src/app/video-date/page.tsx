@@ -906,7 +906,7 @@ function VideoDateContent() {
                 }
                 
                 const handleTrackEnded = () => {
-                  console.warn('⚠️ Track ended event fired')
+                  // Track ended - this is expected, don't log
                 }
                 
                 const handleTrackUnmute = () => {
@@ -952,7 +952,7 @@ function VideoDateContent() {
                   
                   if (tracks.length === 0) {
                     if (attempt < maxAttempts) {
-                      console.warn(`⚠️ No tracks in stream (attempt ${attempt}), retrying...`)
+                      // No tracks in stream - retry logic handles this
                       setTimeout(() => tryPlay(attempt + 1, maxAttempts), 200)
                     }
                     return
@@ -1058,7 +1058,7 @@ function VideoDateContent() {
                 setRemoteAudioTrack(track.mediaStreamTrack)
               }
             } else {
-              console.warn('⚠️ TrackSubscribed event received but track or mediaStreamTrack is missing')
+              // TrackSubscribed but track missing - this is handled, don't log
             }
           }
         })
@@ -1955,7 +1955,7 @@ function VideoDateContent() {
         if (playPromise !== undefined) {
           playPromise.catch(err => {
             if (err.name === 'AbortError') {
-              console.warn('⚠️ Video play was aborted, will retry')
+              // Video play aborted - retry logic handles this
               setTimeout(() => {
                 if (videoElement.srcObject && videoElement.paused) {
                   videoElement.play().catch(() => {})
@@ -2379,7 +2379,7 @@ function VideoDateContent() {
       if (dbRemaining === null) {
         // RPC failed - don't update timer, will retry on next interval
         // This ensures we don't use client-side calculation which causes drift
-        console.warn('⚠️ RPC failed, keeping current timer value, will retry...')
+        // RPC failed - retry logic handles this, don't log
         return
       }
       
@@ -3611,7 +3611,7 @@ function VideoDateContent() {
         console.log(`🔍 Checking for tracks (attempt ${attempt})...`)
         
         if (!room) {
-          console.warn('⚠️ Room is null, cannot check tracks')
+          // Room is null - this is checked and handled
           return
         }
         
@@ -5139,7 +5139,7 @@ function VideoDateContent() {
                           console.log('▶️ Remote video started playing')
                         }}
                         onPause={() => {
-                          console.warn('⏸️ Remote video paused - this should not happen during streaming!')
+                          // Remote video paused - resume logic handles this
                           // Aggressively try to resume immediately and with retries
                           if (remoteVideoTrack && remoteVideoRef.current && remoteVideoRef.current.srcObject) {
                             // Try immediately
@@ -5170,7 +5170,7 @@ function VideoDateContent() {
                           }
                         }}
                         onStalled={() => {
-                          console.warn('⚠️ Remote video stalled - attempting to resume')
+                          // Remote video stalled - resume logic handles this
                           if (remoteVideoRef.current && remoteVideoRef.current.paused && remoteVideoRef.current.srcObject) {
                             setTimeout(() => {
                               remoteVideoRef.current?.play().catch(() => {})
@@ -5203,7 +5203,7 @@ function VideoDateContent() {
                                 }, 100)
                               }
                             } else {
-                              console.warn('⚠️ Stream track is not live:', tracks[0]?.readyState)
+                              // Stream track not live - this is checked and handled
                             }
                           }
                         }}
