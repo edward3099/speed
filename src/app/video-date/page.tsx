@@ -4724,18 +4724,9 @@ function VideoDateContent() {
                                 setCameraMicEnabled(true)
                                 console.log('✅ Camera enabled and published')
                                 
-                                // Immediately attach to video element if available
-                                if (localVideoRef.current) {
-                                  console.log('📹 Countdown (desktop): Attaching new track to video element')
-                                  const stream = new MediaStream([videoTrack])
-                                  localVideoRef.current.srcObject = stream
-                                  // Try to play immediately
-                                  setTimeout(() => {
-                                    if (localVideoRef.current && localVideoRef.current.paused) {
-                                      localVideoRef.current.play().catch(() => {})
-                                    }
-                                  }, 100)
-                                }
+                                // Note: Don't attach here - let the main useEffect handle attachment
+                                // This ensures consistent attachment logic and avoids race conditions
+                                console.log('📹 Countdown (desktop): Video track set in state, main useEffect will attach')
                               } catch (err: any) {
                                 console.error('❌ Error enabling camera:', err)
           if (err.name === 'NotAllowedError') {
