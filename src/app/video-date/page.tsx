@@ -4980,35 +4980,49 @@ function VideoDateContent() {
                   whileHover={{ scale: 1.01 }}
                 >
                   <div className="relative aspect-video rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-teal-300/50 transition-all duration-300 shadow-2xl">
-                    {isVideoOff ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <VideoOff className="w-20 h-20 text-white/30 mx-auto mb-2" />
-                          <p className="text-sm opacity-60 font-medium">video off</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error('Local video element error:', e)
-                        }}
-                        onLoadedMetadata={() => {
-                          // Only attempt play if user has interacted
-                          if (hasUserInteracted) {
-                            localVideoRef.current?.play().catch(err => {
+                    {/* CRITICAL: Always render video element so ref is available and track can attach */}
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                      style={{ 
+                        opacity: (isVideoOff || !localVideoTrack) ? 0 : 1,
+                        display: 'block'
+                      }}
+                      onError={(e) => {
+                        console.error('Local video element error:', e)
+                      }}
+                      onLoadedMetadata={() => {
+                        console.log('✅ Local video metadata loaded, track:', !!localVideoTrack)
+                        // Always attempt play when metadata loads
+                        if (localVideoRef.current && localVideoTrack) {
+                          console.log('▶️ Attempting to play local video after metadata loaded')
+                          localVideoRef.current.play()
+                            .then(() => {
+                              console.log('✅ Local video playing after metadata loaded')
+                            })
+                            .catch(err => {
                               // Silently ignore NotAllowedError (expected on mobile without user interaction)
                               if (err.name !== 'NotAllowedError') {
                                 console.error('Error playing local video after metadata loaded:', err)
                               }
                             })
-                          }
-                        }}
-                      />
+                        }
+                      }}
+                      onPlay={() => {
+                        console.log('▶️ Local video started playing')
+                      }}
+                    />
+                    {/* Show placeholder when video is off */}
+                    {isVideoOff && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="text-center">
+                          <VideoOff className="w-20 h-20 text-white/30 mx-auto mb-2" />
+                          <p className="text-sm opacity-60 font-medium">video off</p>
+                        </div>
+                      </div>
                     )}
 
                     <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 flex items-center gap-2 sm:gap-3">
