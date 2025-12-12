@@ -1780,65 +1780,105 @@ function VideoDateContent() {
     return () => clearInterval(interval)
   }, [videoDateId, showPartnerEndedDateModal, supabase])
 
-  // Attach video/audio tracks to elements with proper cleanup and error handling
+  // Main effect to attach local video track to video element
+  // This is the SINGLE SOURCE OF TRUTH for local video attachment
   useEffect(() => {
-    if (!localVideoTrack || !localVideoRef.current) return
+    if (!localVideoRef.current || !localVideoTrack) {
+      console.log('⚠️ Local video attachment skipped:', {
+        hasRef: !!localVideoRef.current,
+        hasTrack: !!localVideoTrack
+      })
+      return
+    }
 
-    let stream: MediaStream | null = null
-    let videoElement = localVideoRef.current
+    const videoElement = localVideoRef.current
 
     try {
+      // Ensure track is enabled
+      if (!localVideoTrack.enabled) {
+        console.log('⚠️ Local video track disabled, enabling...')
+        localVideoTrack.enabled = true
+      }
+
       // Check if track is already attached to avoid unnecessary re-attachment
       const currentStream = videoElement.srcObject as MediaStream | null
       const currentTrackId = currentStream?.getVideoTracks()[0]?.id
       const newTrackId = localVideoTrack.id
       
-      // Only reattach if track changed
-      if (currentTrackId !== newTrackId) {
-        // Clean up old stream first (but don't stop tracks - they're managed by LiveKit)
-      if (videoElement.srcObject) {
-        videoElement.srcObject = null
-      }
+      // Only reattach if track changed or srcObject is missing
+      if (!videoElement.srcObject || currentTrackId !== newTrackId) {
+        console.log('📹 Attaching local video track:', {
+          currentTrackId,
+          newTrackId,
+          hasSrcObject: !!videoElement.srcObject
+        })
 
-      // Create new stream and attach
-      stream = new MediaStream([localVideoTrack])
-      videoElement.srcObject = stream
+        // Clean up old stream first (but don't stop tracks - they're managed by LiveKit)
+        if (videoElement.srcObject) {
+          const oldStream = videoElement.srcObject as MediaStream
+          oldStream.getTracks().forEach(t => {
+            // Don't stop the track itself, just remove from stream
+            // The track is managed by LiveKit
+          })
+          videoElement.srcObject = null
+        }
+
+        // Create new stream and attach
+        const stream = new MediaStream([localVideoTrack])
+        videoElement.srcObject = stream
+        
+        console.log('✅ Local video srcObject set:', {
+          trackId: localVideoTrack.id,
+          trackEnabled: localVideoTrack.enabled,
+          streamActive: stream.active
+        })
       }
       
       // Ensure video is visible (not hidden by isVideoOff)
       setIsVideoOff(false)
+      setCountdownVideoOff(false)
       
-      // Force video element to be visible
-      if (videoElement) {
-        videoElement.style.opacity = '1'
-        videoElement.style.display = 'block'
-      }
+      // Force video element to be visible with inline styles
+      videoElement.style.setProperty('opacity', '1', 'important')
+      videoElement.style.setProperty('display', 'block', 'important')
+      videoElement.style.setProperty('visibility', 'visible', 'important')
       
-      // Attempt to play - during countdown, always try to play (user is testing camera)
-      // After countdown, require user interaction for autoplay policies
-      const shouldPlay = !countdownComplete || hasUserInteracted
-      if (shouldPlay && videoElement.paused) {
-        videoElement.play()
-          .then(() => {
-            console.log('✅ Local video playing from useEffect')
-          })
-          .catch(err => {
-            // Silently ignore NotAllowedError (expected on mobile without user interaction)
-            if (err.name !== 'NotAllowedError') {
-              console.error('Error playing local video:', err)
-            }
-          })
+      // Attempt to play - require user interaction for autoplay policies (especially on mobile)
+      // During countdown, try to play if user has interacted
+      const shouldPlay = hasUserInteracted && videoElement.paused
+      
+      if (shouldPlay) {
+        const playPromise = videoElement.play()
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('✅ Local video playing successfully from main useEffect')
+            })
+            .catch(err => {
+              // Log all errors for debugging (don't silently ignore)
+              console.error('❌ Error playing local video:', {
+                name: err.name,
+                message: err.message,
+                hasUserInteracted,
+                countdownComplete,
+                paused: videoElement.paused
+              })
+            })
+        }
+      } else {
+        console.log('⚠️ Local video play skipped:', {
+          hasUserInteracted,
+          paused: videoElement.paused,
+          countdownComplete
+        })
       }
     } catch (error) {
-      console.error('Error attaching local video track:', error)
+      console.error('❌ Error attaching local video track:', error)
     }
 
-    return () => {
-      // Only cleanup on unmount or track removal - don't stop tracks (managed by LiveKit)
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject = null
-      }
-      }
+    // NO CLEANUP FUNCTION - we don't want to clear srcObject when dependencies change
+    // The video should persist once attached. Only clear on component unmount.
+    // If we need cleanup, it should be in a separate useEffect with proper dependencies.
   }, [localVideoTrack, hasUserInteracted, countdownComplete])
   
   // Automatically enable video when track exists (since toggle buttons are removed)
