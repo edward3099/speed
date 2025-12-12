@@ -747,6 +747,14 @@ function VideoDateContent() {
             return // Room is disconnected, ignore track subscriptions
           }
           
+          // Only process remote tracks - local tracks are handled separately
+          // This prevents "could not find local track subscription" warnings
+          if (participant.identity === authUser.id) {
+            // This is a local track - LiveKit handles this internally
+            // Processing it here can cause subscription mismatches
+            return
+          }
+          
           if (participant.identity !== authUser.id) {
             console.log('📹 Remote track subscribed:', track.kind, publication.trackSid, 'from participant:', participant.identity, 'track:', !!track, 'mediaStreamTrack:', !!track?.mediaStreamTrack, 'track readyState:', track?.mediaStreamTrack?.readyState)
             
@@ -1640,7 +1648,11 @@ function VideoDateContent() {
               }
               scheduleReconnect()
             } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-              console.error('❌ Max reconnection attempts reached for real-time subscription')
+              // Max reconnection attempts reached - this is expected if connection is truly lost
+              // Only log in development to avoid noise in production
+              if (process.env.NODE_ENV === 'development') {
+                console.error('❌ Max reconnection attempts reached for real-time subscription')
+              }
             }
             // Don't warn on normal CLOSED events - they're expected during reconnection
           }

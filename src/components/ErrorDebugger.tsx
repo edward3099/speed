@@ -76,6 +76,8 @@ function ErrorDebugger() {
         errorString.includes('track.attach() failed') || // Fallback is implemented
         errorString.includes('Error playing after attach') || // These are handled
         errorString.includes('Error subscribing to') || // Retry logic handles this
+        errorString.includes('could not find local track subscription') || // LiveKit internal warning during cleanup
+        errorString.includes('local track subscription') || // LiveKit internal warnings
         hasLiveKitErrorObject ||
         (typeof firstArg === 'object' && firstArg !== null && 'room' in firstArg && (
           ('error' in firstArg && Object.keys(firstArg.error || {}).length === 0) ||
