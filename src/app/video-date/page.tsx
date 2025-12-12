@@ -2050,15 +2050,19 @@ function VideoDateContent() {
     // Stop all tracks from room if connected
     if (room && room.state !== 'disconnected') {
       try {
-        // Stop all local participant tracks
+        // Stop and unpublish all local participant tracks
+        const tracksToUnpublish: Track[] = []
         room.localParticipant.trackPublications.forEach((publication) => {
           if (publication.track) {
             publication.track.stop()
+            tracksToUnpublish.push(publication.track)
           }
         })
         
         // Unpublish all tracks
-        await room.localParticipant.unpublishAllTracks()
+        if (tracksToUnpublish.length > 0) {
+          await room.localParticipant.unpublishTracks(tracksToUnpublish)
+        }
       } catch (err) {
         // Ignore errors during cleanup
       }
@@ -3421,6 +3425,9 @@ function VideoDateContent() {
         })
     }
 
+    // Clean up all tracks before navigating away
+    await cleanupAllTracksAndDisconnect()
+    
     // Close modal and navigate to spin page
     setShowPostModal(false)
     router.push('/spin')
