@@ -615,7 +615,8 @@ function VotingWindowContent() {
           
           if (partnerVotedPass) {
             console.log('✅ Partner voted pass (respin), immediately redirecting to spinning', { matchId: data.match.match_id })
-            router.push('/spinning')
+            // Use window.location for hard redirect to ensure it works
+            window.location.href = '/spinning'
             return
           }
         }
@@ -823,7 +824,8 @@ function VotingWindowContent() {
       // This ensures both users return to spinning immediately when one votes respin
       if (voteType === 'pass') {
         console.log('✅ User voted pass (respin), immediately redirecting to spinning', { matchId })
-        router.push('/spinning')
+        // Use window.location for hard redirect to ensure it works
+        window.location.href = '/spinning'
         return
       }
       
