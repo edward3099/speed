@@ -615,8 +615,10 @@ function VotingWindowContent() {
           
           if (partnerVotedPass) {
             console.log('✅ Partner voted pass (respin), immediately redirecting to spinning', { matchId: data.match.match_id })
-            // Use window.location for hard redirect to ensure it works
-            window.location.href = '/spinning'
+            // Use window.location.replace for hard redirect (doesn't add to history)
+            setTimeout(() => {
+              window.location.replace('/spinning')
+            }, 0)
             return
           }
         }
@@ -824,8 +826,9 @@ function VotingWindowContent() {
       // This ensures both users return to spinning immediately when one votes respin
       if (voteType === 'pass') {
         console.log('✅ User voted pass (respin), immediately redirecting to spinning', { matchId })
-        // Use window.location for hard redirect to ensure it works
-        window.location.href = '/spinning'
+        // Use window.location.replace for hard redirect (doesn't add to history)
+        // Redirect immediately, don't wait for API response
+        window.location.replace('/spinning')
         return
       }
       
