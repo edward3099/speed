@@ -562,6 +562,33 @@ function VotingWindowContent() {
     }
   }, [matchId, router])
 
+  // Heartbeat system - keep user online while in voting window
+  // Prevents auto_remove_offline_users() from marking user as offline and cancelling match
+  useEffect(() => {
+    if (!matchId || loading) return
+
+    const updateLastActive = async () => {
+      try {
+        // Use heartbeat API endpoint to update last_active
+        await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      } catch (error) {
+        // Silently fail - don't block on this
+      }
+    }
+
+    // Update immediately, then every 7 seconds while in voting window
+    // CRITICAL: 7 seconds ensures last_active is always < 10 seconds old
+    // auto_remove_offline_users() requires last_active > NOW() - INTERVAL '10 seconds'
+    // With 7s interval, even if there's a 2-3s delay, last_active will still be < 10s old
+    updateLastActive()
+    const interval = setInterval(updateLastActive, 7000)
+
+    return () => clearInterval(interval)
+  }, [matchId, loading])
+
   // Handle vote
   const handleVote = async (voteType: 'yes' | 'pass') => {
     if (!matchId || userVote !== null) {
