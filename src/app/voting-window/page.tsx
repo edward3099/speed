@@ -27,25 +27,131 @@ function VotingWindowContent() {
   const [userVote, setUserVote] = useState<'yes' | 'pass' | null>(null)
   const [loading, setLoading] = useState(true)
   const [acknowledged, setAcknowledged] = useState(false)
+  const [retryAttempts, setRetryAttempts] = useState(0)
   const countdownRef = useRef<NodeJS.Timeout | null>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
+  // CRITICAL: Guard to prevent race conditions - multiple redirects firing simultaneously
+  const redirectGuardRef = useRef<boolean>(false)
+  
+  // Helper function to safely redirect - prevents race conditions
+  // Only blocks redirects to /spin when we have matchId (match should exist)
+  const safeRedirect = (path: string, reason?: string) => {
+    // Only guard redirects to /spin when matchId exists (match should exist)
+    if (path === '/spin' && matchId && redirectGuardRef.current) {
+      // Already redirected away from voting-window - don't redirect again
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Redirect to /spin blocked - already redirected', { path, reason, matchId })
+      }
+      return false
+    }
+    
+    // For /spin redirects with matchId, set guard (prevent multiple redirects)
+    if (path === '/spin' && matchId) {
+      redirectGuardRef.current = true
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Redirecting:', { path, reason, matchId, guardSet: path === '/spin' && matchId })
+    }
+    router.push(path)
+    return true
+  }
 
   // Fetch match status and acknowledge
   useEffect(() => {
+    // CRITICAL: Wait for searchParams to be available before checking matchId
+    // searchParams might not be ready immediately on page load
     if (!matchId) {
-      router.push('/spin')
-      return
+      // Give it a moment - searchParams might still be loading
+      const checkMatchId = setTimeout(() => {
+        if (!matchId) {
+          safeRedirect('/spin', 'No matchId in URL after delay')
+        }
+      }, 100)
+      return () => clearTimeout(checkMatchId)
     }
 
     const fetchMatchAndAcknowledge = async () => {
+      // CRITICAL: Prevent race conditions - if redirect already happened, don't proceed
+      if (redirectGuardRef.current) {
+        return
+      }
+      
       try {
-        // Get match status
-        const statusResponse = await fetch('/api/match/status')
-        const statusData = await statusResponse.json()
-
-        if (!statusResponse.ok) {
-          router.push('/spin')
-          return
+        // CRITICAL: If we have matchId, ALWAYS fetch match directly first (bypasses cache)
+        // This is the source of truth - if matchId exists, match MUST exist in database
+        let statusData: any = null
+        let directFetchSucceeded = false
+        
+        if (matchId) {
+          // Fetch match directly by matchId (no cache) - this is the authoritative source
+          try {
+            const matchResponse = await fetch(`/api/match/by-id?matchId=${matchId}`, { 
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' }
+            })
+            
+            if (matchResponse.ok) {
+              const directData = await matchResponse.json()
+              if (directData.match?.match_id === matchId) {
+                // Match exists! Use this data (most reliable)
+                statusData = directData
+                directFetchSucceeded = true
+                // Continue with this data - match exists, state might still be updating
+              } else {
+                // Match not found in direct fetch - might be timing issue, retry
+                if (retryAttempts < 3) {
+                  setRetryAttempts(prev => prev + 1)
+                  setTimeout(() => fetchMatchAndAcknowledge(), 1000)
+                  return
+                }
+                // After retries, match truly not found
+                console.warn('Match not found in direct fetch after retries', { matchId, retryAttempts })
+                safeRedirect('/spin', 'Match not found after direct fetch retries')
+                return
+              }
+            } else if (matchResponse.status === 404) {
+              // Match not found (404) - might be timing, retry
+              if (retryAttempts < 3) {
+                setRetryAttempts(prev => prev + 1)
+                setTimeout(() => fetchMatchAndAcknowledge(), 1000)
+                return
+              }
+              // After retries, match truly not found
+              console.warn('Match not found (404) after retries', { matchId, retryAttempts })
+              safeRedirect('/spin', 'Match not found (404) after retries')
+              return
+            }
+          } catch (error) {
+            console.error('Error in direct match fetch:', error)
+            // Network error - retry
+            if (retryAttempts < 3) {
+              setRetryAttempts(prev => prev + 1)
+              setTimeout(() => fetchMatchAndAcknowledge(), 1000)
+              return
+            }
+            // After retries, give up
+            safeRedirect('/spin', 'Network error after retries')
+            return
+          }
+        }
+        
+        // Fallback to status endpoint ONLY if no matchId or direct fetch didn't work
+        if (!directFetchSucceeded) {
+          const statusResponse = await fetch('/api/match/status', { cache: 'no-store' })
+          if (!statusResponse.ok) {
+            if (matchId) {
+              // We have matchId but both direct fetch and status failed - retry
+              if (retryAttempts < 3) {
+                setRetryAttempts(prev => prev + 1)
+                setTimeout(() => fetchMatchAndAcknowledge(), 1000)
+                return
+              }
+            }
+            safeRedirect('/spin', 'Status endpoint failed after retries')
+            return
+          }
+          statusData = await statusResponse.json()
         }
 
         // CRITICAL: Check if match outcome is 'both_yes' - redirect to video-date
@@ -103,50 +209,104 @@ function VotingWindowContent() {
                 router.push('/spinning')
               } else {
                 // User didn't vote - redirect to /spin
-                router.push('/spin')
+                safeRedirect('/spin', 'Vote window expired, user did not vote')
               }
             }).catch(() => {
               // Fallback: check user state
               if (statusData.state === 'idle') {
-                router.push('/spin')
+                safeRedirect('/spin', 'Vote window expired, fallback to idle state')
               } else {
-                router.push('/spinning')
+                safeRedirect('/spinning', 'Vote window expired, fallback to waiting state')
               }
             })
             return
           }
         }
 
-        // If user is already re-queued (waiting) or idle, redirect to spinning
-        if (statusData.state === 'waiting' || statusData.state === 'idle') {
-          router.push('/spinning')
-          return
-        }
-
-        // If no match and not in waiting/idle, redirect to spin
-        if (!statusData.match) {
-          router.push('/spin')
-          return
+        // CRITICAL FIX: If we have matchId, match MUST exist (we just fetched it directly)
+        // Don't redirect based on state - state might not be updated yet, but match exists
+        if (matchId) {
+          // We have matchId - verify match exists (either from direct fetch or status)
+          const matchExists = statusData.match?.match_id === matchId
+          
+          if (!matchExists) {
+            // Match not found - try direct fetch one more time (might be timing issue)
+            if (retryAttempts < 3) {
+              setRetryAttempts(prev => prev + 1)
+              // Wait 1 second and retry (gives time for state to propagate)
+              setTimeout(() => {
+                fetchMatchAndAcknowledge()
+              }, 1000)
+              return
+            }
+            // After 3 retries (3 seconds), if match still not found, might be legitimate
+            console.warn('Match not found after retries, redirecting to /spin', { matchId, retryAttempts })
+            safeRedirect('/spin', 'Match not found after retries in initial load')
+            return
+          }
+          
+          // Match exists! Continue with normal flow regardless of state
+          // State might be 'waiting' or 'idle' temporarily, but match exists
+          // Don't redirect - let the voting window display
+          
+        } else {
+          // No matchId in URL - use original logic (user navigated here without matchId)
+          if (!statusData.match) {
+            safeRedirect('/spin', 'No matchId and no match in status')
+            return
+          }
+          
+          if (statusData.state === 'waiting' || statusData.state === 'idle') {
+            router.push('/spinning')
+            return
+          }
         }
 
         // Set partner info
         if (statusData.match.partner) {
           setPartner(statusData.match.partner)
         } else if (statusData.match && !statusData.match.partner) {
-          // Match exists but partner data is missing - log for debugging
-          console.warn('⚠️ Match exists but partner data is missing', {
+          // Match exists but partner data is missing - might be timing issue
+          // If we have matchId, try fetching directly to get partner data
+          if (matchId) {
+            if (retryAttempts < 3) {
+              // Retry - partner data might not be loaded yet
+              setRetryAttempts(prev => prev + 1)
+              setTimeout(() => fetchMatchAndAcknowledge(), 1000)
+              return
+            }
+            // After retries, try direct fetch one more time
+            try {
+              const directResponse = await fetch(`/api/match/by-id?matchId=${matchId}`, { cache: 'no-store' })
+              if (directResponse.ok) {
+                const directData = await directResponse.json()
+                if (directData.match?.partner) {
+                  // Partner data found! Use it
+                  setPartner(directData.match.partner)
+                  // Continue - don't redirect
+                  return
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching partner data directly:', error)
+            }
+          }
+          
+          // Partner data truly missing - log for debugging
+          console.warn('⚠️ Match exists but partner data is missing after retries', {
             match_id: statusData.match.match_id,
             status: statusData.match.status,
             user1_id: statusData.match.user1_id,
             user2_id: statusData.match.user2_id,
             current_user_id: statusData.user_id,
-            match_keys: Object.keys(statusData.match)
+            match_keys: Object.keys(statusData.match),
+            retryAttempts
           })
           
           // This is a critical issue - without partner data, we can't show the voting UI
-          // Redirect to spin page as fallback
+          // But only redirect if we've exhausted all retries
           console.error('❌ Cannot display voting window without partner data - redirecting to /spin')
-          router.push('/spin')
+          safeRedirect('/spin', 'Partner data missing after retries')
           return
         }
 
@@ -202,7 +362,7 @@ function VotingWindowContent() {
               router.push('/spinning')
             } else {
               // User didn't vote - redirect to /spin (idle state)
-              router.push('/spin')
+              safeRedirect('/spin', 'Vote window expired in polling, user did not vote')
             }
             return
           }
@@ -255,14 +415,14 @@ function VotingWindowContent() {
               state: statusData.state
             })
           }
-          router.push('/spin')
+          safeRedirect('/spin', 'No match found in polling after direct fetch')
           return
         }
 
         setLoading(false)
       } catch (error) {
         console.error('Error fetching match:', error)
-        router.push('/spin')
+        safeRedirect('/spin', 'Error in fetchMatchAndAcknowledge')
       }
     }
 
@@ -331,7 +491,7 @@ function VotingWindowContent() {
             } else {
               // User didn't vote - redirect to /spin
               console.log('⏰ Countdown expiration - User did not vote, redirecting to /spin')
-              router.push('/spin')
+              safeRedirect('/spin', 'Countdown expired, user did not vote')
             }
           } else {
             console.log('⏰ Countdown expiration - No match in response or API error', {
@@ -368,11 +528,32 @@ function VotingWindowContent() {
 
     const pollMatchStatus = async () => {
       try {
-        const response = await fetch('/api/match/status')
-        const data = await response.json()
-
-        if (!response.ok) {
-          return
+        // OPTIMIZATION: If we have matchId, try direct fetch first (bypasses cache)
+        let data: any = null
+        if (matchId) {
+          try {
+            const directResponse = await fetch(`/api/match/by-id?matchId=${matchId}`, { cache: 'no-store' })
+            if (directResponse.ok) {
+              data = await directResponse.json()
+              // If match found directly, use it
+              if (data.match?.match_id === matchId) {
+                // Match exists - continue with this data
+              } else {
+                data = null // Fall through to status endpoint
+              }
+            }
+          } catch (error) {
+            // Fall through to status endpoint
+          }
+        }
+        
+        // Fallback to status endpoint if direct fetch didn't work or no matchId
+        if (!data) {
+          const response = await fetch('/api/match/status', { cache: 'no-store' })
+          if (!response.ok) {
+            return
+          }
+          data = await response.json()
         }
 
         // CRITICAL: Check if vote window expired (before checking outcomes)
@@ -408,7 +589,7 @@ function VotingWindowContent() {
               return
             } else {
               // User didn't vote - redirect to /spin (idle state)
-              router.push('/spin')
+              safeRedirect('/spin', 'Polling: vote window expired, user did not vote')
               return
             }
           }
@@ -421,6 +602,22 @@ function VotingWindowContent() {
           console.log('Both users voted yes, redirecting to video-date', { outcome: data.match.outcome, matchId: data.match.match_id })
           router.push(`/video-date?matchId=${data.match.match_id}`)
           return
+        }
+
+        // CRITICAL FIX: Check if partner has voted "pass" - if so, redirect to spinning immediately
+        // This ensures both users return to spinning when one votes respin
+        if (data.match && data.user_id) {
+          const currentUserId = data.user_id
+          const partnerVotedPass = (
+            (data.match.user1_id === currentUserId && data.match.user2_vote === 'pass') ||
+            (data.match.user2_id === currentUserId && data.match.user1_vote === 'pass')
+          )
+          
+          if (partnerVotedPass) {
+            console.log('✅ Partner voted pass (respin), immediately redirecting to spinning', { matchId: data.match.match_id })
+            router.push('/spinning')
+            return
+          }
         }
 
         // If match is completed but outcome is not both_yes, redirect to spinning
@@ -460,19 +657,21 @@ function VotingWindowContent() {
           }
         }
 
-        // If user is now idle or waiting and match exists in response, check outcome
+        // CRITICAL FIX: If we have matchId, don't redirect based on state alone
+        // State might be temporarily 'idle' or 'waiting' while match exists
+        // Only redirect if match is actually completed with non-both_yes outcome
         if ((data.state === 'idle' || data.state === 'waiting') && data.match) {
-          // Match still in response - check outcome
+          // Match exists in response - check outcome first
           if (data.match.outcome === 'both_yes') {
             console.log('Match outcome is both_yes, redirecting to video-date', { matchId: data.match.match_id })
             router.push(`/video-date?matchId=${data.match.match_id}`)
             return
           } else if (data.match.status === 'completed' && data.match.outcome !== 'both_yes') {
-            // Match completed with other outcome - check user state to determine redirect
+            // Match completed with other outcome - this is legitimate redirect
             if (data.state === 'idle') {
               // User is idle (didn't vote) - redirect to /spin
               console.log('Match completed, user is idle (didn\'t vote), redirecting to /spin', { status: data.match.status, outcome: data.match.outcome, state: data.state })
-              router.push('/spin')
+              safeRedirect('/spin', 'Match completed, user idle (didn\'t vote)')
             } else {
               // User is waiting (voted and auto-spun) - redirect to /spinning
               console.log('Match completed, user is waiting (voted), redirecting to /spinning', { status: data.match.status, outcome: data.match.outcome, state: data.state })
@@ -480,22 +679,65 @@ function VotingWindowContent() {
             }
             return
           }
+          // Match exists but not completed - DON'T redirect based on state
+          // State might be wrong temporarily, but match exists and is active
+          // Continue polling - don't redirect
+        } else if ((data.state === 'idle' || data.state === 'waiting') && !data.match && matchId) {
+          // State is wrong AND no match in response, but we have matchId
+          // Try direct fetch before redirecting
+          try {
+            const directResponse = await fetch(`/api/match/by-id?matchId=${matchId}`, { cache: 'no-store' })
+            if (directResponse.ok) {
+              const directData = await directResponse.json()
+              if (directData.match?.match_id === matchId) {
+                // Match exists! Don't redirect - state is just wrong temporarily
+                return
+              }
+            }
+          } catch (error) {
+            // Error fetching - continue (don't redirect yet)
+          }
+          // Match not found even with direct fetch - might be legitimate
+          // But don't redirect immediately - let it resolve naturally
         }
 
-        // If no match exists and user is waiting/idle (and we don't have a matchId to check)
-        // Only redirect if we don't have a stored matchId to check
-        if (!data.match && !matchId) {
-          // Check user state to determine redirect
-          if (data.state === 'idle') {
-            // User is idle - redirect to /spin
-            console.log('No match found, user in idle state, redirecting to /spin', { state: data.state })
-            router.push('/spin')
-          } else if (data.state === 'waiting') {
-            // User is waiting - redirect to /spinning
-            console.log('No match found, user in waiting state, redirecting to /spinning', { state: data.state })
-            router.push('/spinning')
+        // OPTIMIZATION: If we have matchId in URL, be more lenient with redirects
+        // Match might exist but status endpoint has stale cache
+        if (!data.match) {
+          if (matchId) {
+            // We have matchId - try fetching match directly before redirecting
+            // This is critical: matches exist in DB but status endpoint might have stale cache
+            try {
+              const directMatchResponse = await fetch(`/api/match/by-id?matchId=${matchId}`, { cache: 'no-store' })
+              if (directMatchResponse.ok) {
+                const directMatchData = await directMatchResponse.json()
+                if (directMatchData.match?.match_id === matchId) {
+                  // Match exists! Update data and continue (don't redirect)
+                  // This fixes the issue where users are redirected even though match exists
+                  Object.assign(data, directMatchData)
+                  // Continue with normal flow - match exists, just wasn't in status response
+                  return
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching match directly in polling:', error)
+            }
+            // Match not found even with direct fetch - but we have matchId
+            // Don't redirect immediately - match might be in transition
+            // Just return and let next poll check again
+            // Only redirect if this persists for many polls (handled elsewhere)
+            return
+          } else {
+            // No matchId - use original logic (user navigated here without matchId)
+            if (data.state === 'idle') {
+              console.log('No match found, user in idle state, redirecting to /spin', { state: data.state })
+              safeRedirect('/spin', 'Polling: no match, user idle')
+            } else if (data.state === 'waiting') {
+              console.log('No match found, user in waiting state, redirecting to /spinning', { state: data.state })
+              router.push('/spinning')
+            }
+            return
           }
-          return
         }
       } catch (error) {
         console.error('Error polling match status:', error)
@@ -574,6 +816,14 @@ function VotingWindowContent() {
       if (data.error) {
         console.error('❌ Vote API returned error:', data.error, data.details)
         setUserVote(null)
+        return
+      }
+      
+      // CRITICAL FIX: When user votes "pass" (respin), immediately redirect to spinning
+      // This ensures both users return to spinning immediately when one votes respin
+      if (voteType === 'pass') {
+        console.log('✅ User voted pass (respin), immediately redirecting to spinning', { matchId })
+        router.push('/spinning')
         return
       }
       
@@ -723,7 +973,7 @@ function VotingWindowContent() {
             </h2>
             {partner.location && (
               <p className="mt-1 text-sm sm:text-base text-teal-200/80">
-                {partner.location}
+                {partner.location.split(',')[0].trim()}
               </p>
             )}
             {partner.bio && (
