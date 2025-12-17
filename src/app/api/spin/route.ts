@@ -70,6 +70,29 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // CRITICAL FIX: Check if user is already matched BEFORE calling join_queue
+    // This prevents race conditions when both users spin simultaneously
+    // If user is already matched, return the match immediately
+    const { data: existingMatchStatus } = await supabase.rpc('get_user_match_status', {
+      p_user_id: user.id
+    })
+    
+    if (existingMatchStatus?.match?.match_id) {
+      // User is already matched - return match immediately
+      // Don't call join_queue or try_match_user (would clear/destroy the match)
+      connectionThrottle.release()
+      
+      // Invalidate cache to ensure fresh data
+      cache.delete(CacheKeys.userMatchStatus(user.id))
+      
+      return NextResponse.json({
+        success: true,
+        matched: true,
+        match_id: existingMatchStatus.match.match_id,
+        message: 'Already matched'
+      })
+    }
+    
     // Call join_queue function (event-driven: immediately try to match)
     const { error: joinError } = await supabase.rpc('join_queue', {
       p_user_id: user.id
