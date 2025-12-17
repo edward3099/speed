@@ -123,6 +123,21 @@ export async function POST(request: NextRequest) {
       console.warn('Matching attempt failed (may be normal):', matchError.message)
     }
     
+    // CRITICAL FIX: If try_match_user returned NULL, check again if user is now matched
+    // This handles race conditions where partner matched this user while we were trying to match
+    let finalMatchId = matchId
+    if (!matchId) {
+      const { data: recheckStatus } = await supabase.rpc('get_user_match_status', {
+        p_user_id: user.id
+      })
+      if (recheckStatus?.match?.match_id) {
+        finalMatchId = recheckStatus.match.match_id
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ User was matched by partner while we were trying to match them')
+        }
+      }
+    }
+    
     // CRITICAL: Invalidate cache for this user (match status changed)
     // This ensures the spinning page gets fresh data and redirects correctly
     // ALWAYS invalidate, even if no match (user joined queue, status changed)
