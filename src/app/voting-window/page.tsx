@@ -117,16 +117,45 @@ function VotingWindowContent() {
           }
         }
 
-        // If user is already re-queued (waiting) or idle, redirect to spinning
-        if (statusData.state === 'waiting' || statusData.state === 'idle') {
-          router.push('/spinning')
-          return
+        // CRITICAL: Check if match exists before redirecting based on state
+        // If we have a match, users should stay in voting-window regardless of state
+        // State might be temporarily 'idle' or 'waiting' while match exists
+        if (statusData.match && statusData.match.match_id) {
+          // Match exists - continue with voting window (don't redirect)
+          // State might be wrong temporarily, but match exists
+        } else if (!statusData.match && matchId) {
+          // We have matchId but statusData doesn't show match - verify match exists before redirecting
+          // This prevents redirecting when status endpoint has stale cache
+          try {
+            const directMatchResponse = await fetch(`/api/match/by-id?matchId=${matchId}`, { cache: 'no-store' })
+            if (directMatchResponse.ok) {
+              const directMatchData = await directMatchResponse.json()
+              if (directMatchData.match?.match_id === matchId) {
+                // Match exists! Use this data and continue (don't redirect)
+                // Update statusData with match info
+                statusData.match = directMatchData.match
+                // Continue with normal flow - match exists, just wasn't in status response
+              } else {
+                // Match not found - proceed with redirect logic below
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching match directly in initial load:', error)
+            // On error, proceed with redirect logic below
+          }
         }
-
-        // If no match and not in waiting/idle, redirect to spin
+        
+        // Only redirect if we've confirmed there's no match
         if (!statusData.match) {
-          router.push('/spin')
-          return
+          if (statusData.state === 'waiting' || statusData.state === 'idle') {
+            // No match and user is waiting/idle - redirect to spinning
+            router.push('/spinning')
+            return
+          } else {
+            // No match and not in waiting/idle - redirect to spin
+            router.push('/spin')
+            return
+          }
         }
 
         // Set partner info
@@ -480,6 +509,26 @@ function VotingWindowContent() {
             }
             return
           }
+        }
+
+        // CRITICAL: If we have matchId in URL but no match in response, verify match exists before redirecting
+        // This prevents redirecting users away from voting-window when match exists but status endpoint has stale cache
+        if (!data.match && matchId) {
+          // We have matchId - try fetching match directly to verify it exists
+          try {
+            const directMatchResponse = await fetch(`/api/match/by-id?matchId=${matchId}`, { cache: 'no-store' })
+            if (directMatchResponse.ok) {
+              const directMatchData = await directMatchResponse.json()
+              if (directMatchData.match?.match_id === matchId) {
+                // Match exists! Don't redirect - status endpoint just has stale cache
+                return
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching match directly in polling:', error)
+          }
+          // Match not found even with direct fetch - might be legitimate, but be cautious
+          // Only redirect if state indicates user is truly not in a match
         }
 
         // If no match exists and user is waiting/idle (and we don't have a matchId to check)
