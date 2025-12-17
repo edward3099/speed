@@ -772,9 +772,6 @@ function VotingWindowContent() {
         console.log('✅ User voted pass (respin), immediately redirecting to spinning', { matchId })
         // Set userVote to prevent double-clicks
         setUserVote(voteType)
-        // Redirect immediately - don't wait for API call
-        // Use window.location.replace for hard redirect (doesn't add to history)
-        window.location.replace('/spinning')
         // Still send the vote in the background (fire and forget)
         fetch('/api/vote', {
           method: 'POST',
@@ -784,6 +781,11 @@ function VotingWindowContent() {
             vote: voteType
           })
         }).catch(err => console.error('Background vote send error:', err))
+        // Redirect immediately using window.location.href for hard navigation
+        // Use setTimeout to ensure state update completes first
+        setTimeout(() => {
+          window.location.href = '/spinning'
+        }, 0)
         return
       }
       
