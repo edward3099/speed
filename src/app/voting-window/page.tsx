@@ -616,9 +616,7 @@ function VotingWindowContent() {
           if (partnerVotedPass) {
             console.log('✅ Partner voted pass (respin), immediately redirecting to spinning', { matchId: data.match.match_id })
             // Use window.location.replace for hard redirect (doesn't add to history)
-            setTimeout(() => {
-              window.location.replace('/spinning')
-            }, 0)
+            window.location.replace('/spinning')
             return
           }
         }
@@ -768,6 +766,27 @@ function VotingWindowContent() {
     try {
       console.log('📤 Sending vote:', { matchId, voteType })
       
+      // CRITICAL FIX: When user votes "pass" (respin), redirect IMMEDIATELY before API call
+      // This ensures both users return to spinning immediately when one votes respin
+      if (voteType === 'pass') {
+        console.log('✅ User voted pass (respin), immediately redirecting to spinning', { matchId })
+        // Set userVote to prevent double-clicks
+        setUserVote(voteType)
+        // Redirect immediately - don't wait for API call
+        // Use window.location.replace for hard redirect (doesn't add to history)
+        window.location.replace('/spinning')
+        // Still send the vote in the background (fire and forget)
+        fetch('/api/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            match_id: matchId,
+            vote: voteType
+          })
+        }).catch(err => console.error('Background vote send error:', err))
+        return
+      }
+      
       // Set userVote AFTER starting the fetch to prevent double-clicks, but don't block
       setUserVote(voteType)
 
@@ -819,16 +838,6 @@ function VotingWindowContent() {
       if (data.error) {
         console.error('❌ Vote API returned error:', data.error, data.details)
         setUserVote(null)
-        return
-      }
-      
-      // CRITICAL FIX: When user votes "pass" (respin), immediately redirect to spinning
-      // This ensures both users return to spinning immediately when one votes respin
-      if (voteType === 'pass') {
-        console.log('✅ User voted pass (respin), immediately redirecting to spinning', { matchId })
-        // Use window.location.replace for hard redirect (doesn't add to history)
-        // Redirect immediately, don't wait for API response
-        window.location.replace('/spinning')
         return
       }
       
