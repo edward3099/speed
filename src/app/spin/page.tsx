@@ -110,6 +110,9 @@ export default function spin() {
       const sineValue = (Math.sin(segmentIndex * 0.05) + 1) / 2 // 0 to 1
       let count = 200 + Math.floor(sineValue * 600) // 200-800 range
       
+      // Ensure count is never below 250 to leave room for variations
+      count = Math.max(250, count)
+      
       // Add smaller variations based on segment index (reduced to prevent going below 200)
       const segmentSeed = segmentIndex * 137
       const segmentVariation = Math.floor(seededRandom(segmentSeed) * 30) - 15 // -15 to +15
