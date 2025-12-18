@@ -106,17 +106,18 @@ export default function spin() {
       
       // Base count varies between 200-800 using sine wave
       // Use a slower sine wave pattern for gradual variation across wider range
-      const baseVariation = Math.sin(segmentIndex * 0.05) * 300 // -300 to +300 variation
-      let count = 500 + Math.floor(baseVariation) // This gives us 200-800 range
+      // Normalize sine to 0-1 range, then scale to 200-800
+      const sineValue = (Math.sin(segmentIndex * 0.05) + 1) / 2 // 0 to 1
+      let count = 200 + Math.floor(sineValue * 600) // 200-800 range
       
-      // Add smaller variations based on segment index
+      // Add smaller variations based on segment index (reduced to prevent going below 200)
       const segmentSeed = segmentIndex * 137
-      const segmentVariation = Math.floor(seededRandom(segmentSeed) * 40) - 20 // -20 to +20
+      const segmentVariation = Math.floor(seededRandom(segmentSeed) * 30) - 15 // -15 to +15
       count += segmentVariation
       
-      // Add time-of-day variation (makes it more realistic, very slow)
+      // Add time-of-day variation (makes it more realistic, very slow, reduced amplitude)
       const hoursSinceBase = elapsedSeconds / 3600
-      const dailyVariation = Math.sin((hoursSinceBase / 24) * Math.PI * 2) * 100 // Daily cycle
+      const dailyVariation = Math.sin((hoursSinceBase / 24) * Math.PI * 2) * 50 // Daily cycle, smaller amplitude
       count += Math.floor(dailyVariation)
       
       // Keep within bounds (200-800 range)
