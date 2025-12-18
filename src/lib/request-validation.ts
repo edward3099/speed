@@ -102,3 +102,26 @@ export function validateUUID(value: any, fieldName: string = 'id'): ValidationRe
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

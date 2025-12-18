@@ -12,12 +12,12 @@ export default function HeaderWrapper() {
   
   // Customize title based on route
   const getTitle = () => {
-    if (pathname === "/") return "speed date"
+    if (pathname === "/") return "meetchristians.live"
     if (pathname === "/dashboard") return "dashboard"
     if (pathname === "/spin") return "spin"
     if (pathname === "/video-date") return "video date"
     if (pathname === "/onboarding") return "onboarding"
-    return "speed date"
+    return "meetchristians.live"
   }
 
   // Fetch user's profile image

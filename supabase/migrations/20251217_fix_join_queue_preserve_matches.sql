@@ -82,3 +82,6 @@ END;
 $$;
 
 COMMENT ON FUNCTION join_queue IS 'Add user to queue (idle → waiting). CRITICAL: Preserves matches - does NOT clear match_id if user is already matched. Only allows joining from idle or waiting states.';
+
+
+

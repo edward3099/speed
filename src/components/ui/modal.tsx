@@ -11,9 +11,23 @@ interface ModalProps {
   title?: string
   children: ReactNode
   className?: string
+  style?: React.CSSProperties
 }
 
-function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+function Modal({ isOpen, onClose, title, children, className, style }: ModalProps) {
+  // Check if className contains custom max-width - if so, exclude default max-w classes
+  const classNameStr = className || ''
+  const hasCustomMaxWidth = classNameStr && typeof classNameStr === 'string' && (
+    classNameStr.includes('max-w-[') || 
+    classNameStr.includes('max-w-') ||
+    classNameStr.includes('!max-w-')
+  )
+  
+  // Debug logging (remove in production)
+  if (process.env.NODE_ENV === 'development' && className) {
+    console.log('[Modal] className:', className, 'hasCustomMaxWidth:', hasCustomMaxWidth)
+  }
+  
   return (
     <AnimatePresence>
       {isOpen && (
@@ -36,7 +50,10 @@ function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
                 "relative bg-gradient-to-b from-white/15 via-white/10 to-white/10 backdrop-blur-2xl",
                 "rounded-2xl sm:rounded-2xl md:rounded-3xl",
                 // Mobile: Add horizontal margins for space from edges, Desktop: auto width
-                "w-full max-w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm md:max-w-md",
+                "w-full max-w-[calc(100vw-2rem)] sm:w-auto",
+                // Only apply default max-w if no custom max-w is provided
+                // Explicitly check to avoid adding defaults when custom width is provided
+                ...(hasCustomMaxWidth ? [] : ["sm:max-w-sm", "md:max-w-md"]),
                 "p-2 sm:p-2.5 md:p-3",
                 "border sm:border border-white/20 shadow-2xl",
                 "pointer-events-auto",
@@ -44,9 +61,10 @@ function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
                 "max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)]",
                 "flex flex-col",
                 // Prevent horizontal overflow
-                "min-w-0 max-w-full",
+                "min-w-0",
                 "overflow-hidden",
                 // Mobile: Fade and scale animation (centered)
+                // Custom className comes last - no conflicts if defaults excluded
                 className
               )}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -59,6 +77,7 @@ function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
                 mass: 0.8,
               }}
               onClick={(e) => e.stopPropagation()}
+              style={style}
             >
               {/* Mobile: Drag handle indicator */}
               <div className="sm:hidden flex justify-center mb-2 pt-1">

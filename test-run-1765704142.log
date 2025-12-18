@@ -1,0 +1,92 @@
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+
+Running 1 test using 1 worker
+
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+(node:44932) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-silk.vercel.app
+👤 Creating 100 males and 100 females...
+  Created 10/100 users...
+  Created 20/100 users...
+  Created 30/100 users...
+  Created 40/100 users...
+  Created 50/100 users...
+  Created 60/100 users...
+  Created 70/100 users...
+  Created 80/100 users...
+  Created 90/100 users...
+  Created 100/100 users...
+✅ All 100 users created in 12850ms
+⚙️ Updating user profiles with ages...
+✅ Profiles updated in 1543ms
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set in 340ms
+⏳ Waiting 3 seconds for preferences to be saved...
+✅ All 100 users have preferences verified
+🌐 Opening browser contexts and signing in all users in parallel...
+  Progress: 15/100 signed in (0 failed)
+  Progress: 30/100 signed in (0 failed)
+  Progress: 45/100 signed in (0 failed)
+  Progress: 60/100 signed in (0 failed)
+  Progress: 75/100 signed in (0 failed)
+  Progress: 90/100 signed in (0 failed)
+  Progress: 100/100 signed in (0 failed)
+✅ ALL 100 users signed in successfully in 335829ms (335.8s)
+🎰 All users clicking Start Spin simultaneously...
+  ✅ All buttons clicked in 97672ms
+  📡 API calls detected: 0/415 (0 successful)
+  ⚠️ WARNING: Only 0/415 API calls detected - some clicks may not have triggered
+  ⏳ Waiting 5 seconds for API calls and matching to complete...
+  📊 Users in queue (last 60s): 0/100
+
+📊 SPIN PERFORMANCE:
+  Total time: 105237ms
+  Average API response time: 0ms
+  Matched immediately: 0/415
+  Redirected to spinning: 0
+  Redirected to voting-window: 0
+
+⏳ Waiting for matches to occur (90 seconds)...
+🔍 Re-checking user states after wait...
+
+📊 FINAL STATE ANALYSIS:
+  Spinning: 0 users
+  Voting Window: 0 users
+  Video Date: 0 users
+  Other/Unexpected: 415 users
+
+🔍 QUEUE STATE ANALYSIS:
+  Users in waiting state: 28
+  Users in matched state: 0
+  Users waiting <90s (eligible): 28
+
+📈 MATCH ANALYSIS:
+  Total matches found: 0
+  Users in matches: 0
+  Expected matches: 50 = 50 pairs (100 pairs for 200 users)
+
+⏱️ PERFORMANCE SUMMARY:
+  Total test time: 607140ms (607.1s)
+  User creation: 12850ms
+  Profile updates: 1543ms
+  Preference setup: 340ms
+  Sign-in: 335829ms
+  Spin & match: 105237ms
+  Average API response: 0ms
+
+⚠️ ISSUES IDENTIFIED:
+  - Only 0 matches found, expected 50 - matching may be incomplete
+  - 415 users on unexpected pages - state management issues
+
+✅ STRESS TEST COMPLETE
+
+🧹 Cleaning up test users...
+✅ Cleanup complete in 20366ms
+  ✓  1 [chromium] › tests/100-users-stress.spec.ts:19:7 › 100 Users Stress Test › should handle 50 males and 50 females matching simultaneously and identify performance limits (10.5m)
+
+  Slow test file: [chromium] › tests/100-users-stress.spec.ts (10.5m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (11.1m)

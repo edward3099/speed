@@ -38,7 +38,8 @@ export async function createTestUser(
   email: string,
   password: string,
   name: string,
-  gender: 'male' | 'female'
+  gender: 'male' | 'female',
+  age?: number
 ): Promise<TestUser> {
   // Create auth user
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -58,15 +59,18 @@ export async function createTestUser(
   const userId = authData.user.id
 
   // Create profile
+  // Note: location is for display only - matching uses user_preferences.city
+  // Set a default location so partner info displays correctly
   const { error: profileError } = await supabase
     .from('profiles')
     .insert({
       id: userId,
       name,
       gender,
-      age: 25,
+      age: age ?? 25, // Use provided age or default to 25
       bio: `Test user - ${name}`,
       photo: '',
+      location: 'London, United Kingdom', // Default location for display (matching uses user_preferences.city)
       onboarding_completed: true,
     })
 
@@ -104,7 +108,20 @@ export async function createTestUser(
  */
 export async function deleteTestUser(userId: string): Promise<void> {
   // Delete auth user (cascade should handle profile and state)
-  await supabase.auth.admin.deleteUser(userId).catch(() => {
-    // Ignore errors
-  })
+  // Retry with exponential backoff to handle connection resets
+  let retries = 3
+  while (retries > 0) {
+    try {
+      await supabase.auth.admin.deleteUser(userId)
+      return
+    } catch (error: any) {
+      retries--
+      if (retries === 0 || error?.code !== 'ECONNRESET') {
+        // Ignore errors on final retry or if it's not a connection reset
+        return
+      }
+      // Wait before retry (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)))
+    }
+  }
 }

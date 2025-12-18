@@ -28,6 +28,41 @@ export function SuppressDevtoolsErrors() {
         ? JSON.stringify(firstArg) 
         : String(firstArg || '')
       
+      // Filter AbortError - this is expected when multiple play() calls happen
+      // It's not an error, just normal browser behavior
+      const isAbortError = 
+        errorString.includes('The operation was aborted') || 
+        errorString.includes('AbortError') ||
+        errorString.includes('operation was aborted') ||
+        (errorString.includes('Error playing') && errorString.includes('aborted')) ||
+        (errorString.includes('ref callback') && errorString.includes('aborted')) ||
+        (errorString.includes('enableCameraAndMic') && errorString.includes('aborted')) ||
+        (errorString.includes('updateLocalTracks') && errorString.includes('aborted'))
+      
+      // Check args for AbortError objects
+      let hasAbortError = false
+      if (!isAbortError) {
+        for (const arg of args) {
+          if (typeof arg === 'object' && arg !== null) {
+            // Check if it's an AbortError DOMException
+            if (arg instanceof DOMException && arg.name === 'AbortError') {
+              hasAbortError = true
+              break
+            }
+            // Check if error object has name property indicating AbortError
+            if ('name' in arg && arg.name === 'AbortError') {
+              hasAbortError = true
+              break
+            }
+          }
+          // Check if it's an Error with AbortError name
+          if (arg instanceof Error && arg.name === 'AbortError') {
+            hasAbortError = true
+            break
+          }
+        }
+      }
+      
       const isLiveKitError = 
         errorString.includes('error sending signal message') ||
         errorString.includes('signal message') ||
@@ -71,7 +106,7 @@ export function SuppressDevtoolsErrors() {
         errorString.includes('NODE_OPTIONs are not supported') ||
         errorString.includes('electron/shell/common/node_bindings')
 
-      return isLiveKitError || isDevtoolsError
+      return isAbortError || hasAbortError || isLiveKitError || isDevtoolsError
     }
 
     // Override console.error to filter out LiveKit/WebRTC errors

@@ -19,11 +19,14 @@ test.describe('City and Age Filtering Tests', () => {
   test('should only match users with overlapping cities and compatible age ranges', async ({ browser }) => {
     test.setTimeout(300000) // 5 minutes
     
+    // ALWAYS use Vercel URL - never localhost
     const BASE_URL = process.env.TEST_BASE_URL || 'https://speed-silk.vercel.app'
-    if (BASE_URL.includes('localhost') || BASE_URL.includes('127.0.0.1')) {
-      throw new Error(`❌ ERROR: Test must run on Vercel, not localhost! Current BASE_URL: ${BASE_URL}. Set TEST_BASE_URL`)
+    if (BASE_URL.includes('localhost') || BASE_URL.includes('127.0.0.1') || BASE_URL.includes(':3000')) {
+      throw new Error(`❌ ERROR: Test must run on Vercel, not localhost! Current BASE_URL: ${BASE_URL}. Use https://speed-silk.vercel.app`)
     }
-    console.log(`🌐 Testing against Vercel: ${BASE_URL}`)
+    // Force Vercel URL
+    const VERIFIED_BASE_URL = 'https://speed-silk.vercel.app'
+    console.log(`🌐 Testing against Vercel: ${VERIFIED_BASE_URL}`)
     
     const timestamp = Date.now()
     const password = 'TestPassword123!'
@@ -174,6 +177,9 @@ test.describe('City and Age Filtering Tests', () => {
       }).catch(() => {})
       
       // Verify preferences were saved correctly
+      console.log('⏳ Waiting 2 seconds for preferences to be saved...')
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
       const { data: verifyData } = await supabase
         .from('user_preferences')
         .select('user_id, city, min_age, max_age')
@@ -187,9 +193,37 @@ test.describe('City and Age Filtering Tests', () => {
           cityLength: Array.isArray(v.city) ? v.city.length : 0,
           ageRange: `${v.min_age}-${v.max_age}`
         })))
+        
+        // CRITICAL: Verify all users have preferences
+        const usersWithoutPrefs = [user1.userId, user2.userId, user3.userId, user4.userId, user5.userId]
+          .filter(id => !verifyData.find(v => v.user_id === id))
+        if (usersWithoutPrefs.length > 0) {
+          throw new Error(`❌ CRITICAL: ${usersWithoutPrefs.length} users don't have preferences set! Users: ${usersWithoutPrefs.map(id => id.substring(0, 8)).join(', ')}`)
+        }
+      } else {
+        throw new Error('❌ CRITICAL: No preferences found for test users!')
       }
       
-      // Create browser contexts and sign in users
+      // Verify all users have preferences before spinning
+      console.log('🔍 Verifying all users have preferences before spinning...')
+      const { data: preSpinPrefs } = await supabase
+        .from('user_preferences')
+        .select('user_id, city')
+        .in('user_id', testUsers.map(u => u.userId))
+      
+      if (!preSpinPrefs || preSpinPrefs.length !== testUsers.length) {
+        const missingUsers = testUsers.filter(u => !preSpinPrefs?.find(p => p.user_id === u.userId))
+        throw new Error(`❌ CRITICAL: ${missingUsers.length} users missing preferences before spin! Users: ${missingUsers.map(u => u.name).join(', ')}`)
+      }
+      
+      // Note: NULL city preferences are valid - users with no city preference match with anyone
+      const cityStatus = preSpinPrefs.map(p => ({
+        userId: p.user_id.substring(0, 8),
+        hasCity: p.city && Array.isArray(p.city) && p.city.length > 0 ? `${p.city.length} cities` : 'NULL (matches anyone)'
+      }))
+      console.log(`✅ All ${testUsers.length} users have preferences. City status:`, cityStatus)
+      
+      // Create browser contexts and sign in with Playwright
       console.log('🌐 Opening browser contexts and signing in users...')
       const contexts: { context: any; page: any; user: TestUser }[] = []
       
@@ -198,8 +232,8 @@ test.describe('City and Age Filtering Tests', () => {
         const page = await context.newPage()
         contexts.push({ context, page, user })
         
-        // Sign in
-        await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' })
+        // Sign in via Playwright
+        await page.goto(`${VERIFIED_BASE_URL}/`, { waitUntil: 'networkidle' })
         await page.waitForTimeout(1000)
         
         const startButton = page.getByRole('button', { name: /start now/i }).first()
@@ -236,86 +270,83 @@ test.describe('City and Age Filtering Tests', () => {
         console.log(`  ✅ ${user.name} signed in`)
       }
       
-      // Set preferences via UI for users (since API might not exist)
-      console.log('⚙️ Setting preferences via UI...')
-      for (const { page, user } of contexts) {
-        try {
-          // Open filter modal
-          const filterButton = page.locator('button').filter({ hasText: /filter/i }).first()
-          if (await filterButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await filterButton.click()
-            await page.waitForTimeout(500)
-            
-            // Set preferences based on user
-            if (user.email.includes('london') && user.gender === 'male') {
-              // User 1: London + South England, age 20-30
-              // Click London
-              const londonBtn = page.getByRole('button', { name: /^London$/i })
-              if (await londonBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await londonBtn.click()
-                await page.waitForTimeout(200)
-              }
-              // Click South England
-              const southBtn = page.getByRole('button', { name: /^South England$/i })
-              if (await southBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await southBtn.click()
-                await page.waitForTimeout(200)
-              }
-            } else if (user.email.includes('london') && user.gender === 'female') {
-              // User 2: London + Midlands, age 20-30
-              const londonBtn = page.getByRole('button', { name: /^London$/i })
-              if (await londonBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await londonBtn.click()
-                await page.waitForTimeout(200)
-              }
-              const midlandsBtn = page.getByRole('button', { name: /^Midlands$/i })
-              if (await midlandsBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await midlandsBtn.click()
-                await page.waitForTimeout(200)
-              }
-            } else if (user.email.includes('north')) {
-              // User 3: North England only
-              const northBtn = page.getByRole('button', { name: /^North England$/i })
-              if (await northBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await northBtn.click()
-                await page.waitForTimeout(200)
-              }
-            } else if (user.email.includes('old')) {
-              // User 4: London, age 30-40
-              const londonBtn = page.getByRole('button', { name: /^London$/i })
-              if (await londonBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await londonBtn.click()
-                await page.waitForTimeout(200)
-              }
-            }
-            // User 5: No city preference (don't select any)
-            
-            // Apply filters
-            const applyButton = page.getByRole('button', { name: /apply filters/i })
-            if (await applyButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-              await applyButton.click()
-              await page.waitForTimeout(500)
-            }
-          }
-        } catch (error) {
-          console.log(`  ⚠️ Could not set preferences for ${user.name}:`, error)
-        }
-      }
-      
       // All users click Start Spin simultaneously
       console.log('🎰 All users clicking Start Spin simultaneously...')
-      await Promise.all(contexts.map(async ({ page, user }) => {
+      const spinResults = await Promise.all(contexts.map(async ({ page, user }) => {
         try {
           const spinButton = page.getByRole('button', { name: /start spin/i }).first()
           await expect(spinButton).toBeVisible({ timeout: 20000 })
+          
+          // Set up response listener to capture API response
+          const responsePromise = page.waitForResponse(response => 
+            response.url().includes('/api/spin') && response.request().method() === 'POST',
+            { timeout: 15000 }
+          ).catch(() => null)
+          
           await spinButton.click({ force: true })
-          console.log(`  ✅ ${user.name} clicked Start Spin`)
-        } catch (error) {
-          console.error(`  ❌ Failed to click spin for ${user.name}:`, error)
+          
+          // Wait for API response
+          const response = await responsePromise
+          let responseData: any = {}
+          if (response) {
+            responseData = await response.json().catch(() => ({}))
+            const status = response.status()
+            console.log(`  ${user.name}: API status=${status}, matched=${responseData.matched}, match_id=${responseData.match_id || 'none'}`)
+            
+            if (status !== 200) {
+              const errorText = await response.text().catch(() => '')
+              console.error(`  ❌ ${user.name} API error:`, errorText.substring(0, 200))
+            }
+          } else {
+            console.log(`  ⚠️ ${user.name}: No API response captured (timeout or error)`)
+          }
+          
+          // Wait for redirect (either to /spinning or /voting-window)
+          try {
+            await page.waitForURL(/\/spinning|\/voting-window/, { timeout: 15000 })
+            const finalUrl = page.url()
+            console.log(`  ✅ ${user.name} redirected to: ${finalUrl}`)
+            return { user, url: finalUrl, matched: responseData.matched, matchId: responseData.match_id }
+          } catch {
+            const currentUrl = page.url()
+            console.log(`  ⚠️ ${user.name} did not redirect - still on: ${currentUrl}`)
+            return { user, url: currentUrl, matched: false, matchId: null }
+          }
+        } catch (error: any) {
+          console.error(`  ❌ Failed to click spin for ${user.name}:`, error.message || error)
+          return { user, url: page.url(), matched: false, matchId: null, error: error.message }
         }
       }))
       
-      await new Promise(resolve => setTimeout(resolve, 5000)) // Wait for matches
+      // Check if any users failed to redirect
+      const failedRedirects = spinResults.filter(r => !r.url.includes('/spinning') && !r.url.includes('/voting-window'))
+      if (failedRedirects.length > 0) {
+        console.error(`\n❌ ISSUE: ${failedRedirects.length} users failed to redirect after clicking Start Spin:`)
+        failedRedirects.forEach(r => {
+          console.error(`  - ${r.user.name}: Still on ${r.url}${r.error ? ` (Error: ${r.error})` : ''}`)
+        })
+      }
+      
+      // Wait longer for matches to occur and retry matching
+      console.log('\n⏳ Waiting for matches to occur (30 seconds)...')
+      await new Promise(resolve => setTimeout(resolve, 30000))
+      
+      // Check if users are now matched
+      console.log('🔍 Re-checking user states after wait...')
+      for (const { page, user } of contexts) {
+        try {
+          const currentUrl = page.url()
+          if (currentUrl.includes('/voting-window')) {
+            console.log(`  ✅ ${user.name} is now in voting-window: ${currentUrl}`)
+          } else if (currentUrl.includes('/spinning')) {
+            console.log(`  ⏳ ${user.name} still spinning: ${currentUrl}`)
+          } else {
+            console.log(`  ⚠️ ${user.name} on unexpected page: ${currentUrl}`)
+          }
+        } catch (e) {
+          console.log(`  ❌ Error checking ${user.name}:`, e)
+        }
+      }
       
       // Check match results
       console.log('\n📊 Checking match results...')

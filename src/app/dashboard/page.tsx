@@ -49,7 +49,7 @@ export default function dashboard() {
       <div className="fixed inset-0 bg-[#050810] pointer-events-none" />
       <div className="fixed inset-0 bg-gradient-to-br from-teal-900/10 via-transparent to-blue-900/10 pointer-events-none" />
 
-      <div className="relative z-10 px-4 sm:px-5 md:px-6 lg:px-12 py-safe sm:py-6 md:py-8 max-w-4xl mx-auto">
+      <div className="relative z-10 px-4 sm:px-5 md:px-6 lg:px-12 pt-14 sm:pt-16 pb-safe sm:pb-6 md:pb-8 max-w-4xl mx-auto">
         {/* Header Section */}
         <motion.div
           className="mb-10"

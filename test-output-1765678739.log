@@ -1,0 +1,1884 @@
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+
+Running 1 test using 1 worker
+
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+(node:35286) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🌐 Testing against Vercel: https://speed-silk.vercel.app
+👤 Creating 100 males and 100 females...
+  Created 10/100 users...
+  Created 20/100 users...
+  Created 30/100 users...
+  Created 40/100 users...
+  Created 50/100 users...
+  Created 60/100 users...
+  Created 70/100 users...
+  Created 80/100 users...
+  Created 90/100 users...
+  Created 100/100 users...
+✅ All 100 users created in 13099ms
+⚙️ Updating user profiles with ages...
+✅ Profiles updated in 1798ms
+⚙️ Setting up user preferences via Supabase...
+✅ Preferences set in 377ms
+⏳ Waiting 3 seconds for preferences to be saved...
+✅ All 100 users have preferences verified
+🌐 Opening browser contexts and signing in all users in parallel...
+  Progress: 15/100 signed in (0 failed)
+  Progress: 30/100 signed in (0 failed)
+  Progress: 45/100 signed in (0 failed)
+  Progress: 60/100 signed in (0 failed)
+  Progress: 75/100 signed in (0 failed)
+  Progress: 90/100 signed in (0 failed)
+  Progress: 100/100 signed in (0 failed)
+✅ ALL 100 users signed in successfully in 388196ms (388.2s)
+🎰 All users clicking Start Spin simultaneously...
+  ✅ All buttons clicked in 328521ms
+
+📊 SPIN PERFORMANCE:
+  Total time: 331214ms
+  Average API response time: 0ms
+  Matched immediately: 0/415
+  Redirected to spinning: 270
+  Redirected to voting-window: 0
+
+⏳ Waiting for matches to occur (90 seconds)...
+🔍 Re-checking user states after wait...
+
+📊 FINAL STATE ANALYSIS:
+  Spinning: 270 users
+  Voting Window: 0 users
+  Video Date: 0 users
+  Other/Unexpected: 145 users
+
+📈 MATCH ANALYSIS:
+  Total matches found: 0
+  Users in matches: 0
+  Expected matches: 50 = 50 pairs (100 pairs for 200 users)
+
+⏱️ PERFORMANCE SUMMARY:
+  Total test time: 832995ms (833.0s)
+  User creation: 13099ms
+  Profile updates: 1798ms
+  Preference setup: 377ms
+  Sign-in: 388196ms
+  Spin & match: 331214ms
+  Average API response: 0ms
+
+⚠️ ISSUES IDENTIFIED:
+  - 270 users still spinning after 90s wait - matching may be slow or stuck
+  - Only 0 matches found, expected 50 - matching may be incomplete
+  - 145 users on unexpected pages - state management issues
+
+✅ STRESS TEST COMPLETE
+
+🧹 Cleaning up test users...
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 98)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 99)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 97)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 96)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 95)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 94)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 93)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 92)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 91)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 90)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 89)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 88)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 87)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 86)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 85)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 84)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 83)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 82)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 81)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 80)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 79)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 78)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 77)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 76)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 75)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 74)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 73)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 72)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 71)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 70)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 69)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 68)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 67)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 66)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 65)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 64)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 63)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 62)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 61)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 60)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 59)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 58)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 57)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 56)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 55)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 54)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 53)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 52)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 51)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 50)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 49)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 48)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 47)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 46)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 45)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 44)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 43)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 42)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 41)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 40)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 39)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 38)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 37)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 36)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 35)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 33)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 34)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 32)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 30)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 29)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 28)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 27)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 26)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 25)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+TypeError: fetch failed
+[90m    at node:internal/deps/undici/undici:13502:13[39m
+    at _handleRequest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:184:14[90m)[39m
+    at _request [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/lib/fetch.ts:157:16[90m)[39m
+    at GoTrueAdminApi.deleteUser [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4m@supabase[24m/auth-js/src/GoTrueAdminApi.ts:316:14[90m)[39m
+    at deleteTestUser [90m(/Users/bb/Desktop/speed/[39mtests/helpers/create-users.ts:107:3[90m)[39m
+    at async Promise.all (index 24)
+    at [90m/Users/bb/Desktop/speed/[39mtests/100-users-stress.spec.ts:555:7
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:322:9
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:311:11
+    at TimeoutManager.withRunnable [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/timeoutManager.js:67:14[90m)[39m
+    at TestInfoImpl._runWithTimeout [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/testInfo.js:309:7[90m)[39m
+    at [90m/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:320:7
+    at WorkerMain._runTest [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:295:5[90m)[39m
+    at WorkerMain.runTestGroup [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/worker/workerMain.js:199:11[90m)[39m
+    at process.<anonymous> [90m(/Users/bb/Desktop/speed/[39mnode_modules/[4mplaywright[24m/lib/common/process.js:65:22[90m)[39m {
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m
+  [90m    at TLSWrap.callbackTrampoline (node:internal/async_hooks:130:17)[39m {
+    errno: [33m-54[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}
+✅ Cleanup complete in 53896ms
+  ✓  1 [chromium] › tests/100-users-stress.spec.ts:19:7 › 100 Users Stress Test › should handle 50 males and 50 females matching simultaneously and identify performance limits (14.8m)
+
+  Slow test file: [chromium] › tests/100-users-stress.spec.ts (14.8m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (16.3m)

@@ -1,15 +1,51 @@
 ## Active Context
 
-- **Current focus**: Keep the dev server + Cloudflare Tunnel running for remote review, and validate that all feature routes behave correctly through the tunnel URL.
-- **State**:
-  - Dependencies installed with `npm install`.
-  - Dev server running via `PORT=3000 npm run dev` (Next.js 16, Turbopack) from `/workspace`.
-  - Cloudflare quick tunnel active at `https://circle-choose-decades-joins.trycloudflare.com`, started with `./cloudflared tunnel --no-autoupdate --url http://localhost:3000`.
-- **Next steps**:
-  1. Smoke-test primary routes through the tunnel (`/`, `/dashboard`, `/onboarding`, `/spin`, `/video-date`).
-  2. Share the tunnel URL + instructions with stakeholders.
-  3. Document how to stop/restart the dev server and tunnel when needed.
+- **Current focus**: Production speed dating application with complete matching, voting, and video dating flows
+- **Architecture Status**: 
+  - Zero Issues Architecture implemented (Phase 1-6 complete)
+  - Database simplified to 3-state model (idle, waiting, matched)
+  - Event-driven matching with advisory locks
+  - Voting system with automatic outcome resolution
+  - Disconnect handling implemented
+  - All API endpoints functional
+- **Key Features Working**:
+  - ✅ User authentication and onboarding
+  - ✅ Spin → Queue → Match flow
+  - ✅ Real-time matching with WebSocket notifications
+  - ✅ Voting window with 60-second countdown
+  - ✅ Automatic vote resolution (yes+yes, yes+pass, pass+pass)
+  - ✅ Video dating with LiveKit integration
+  - ✅ Heartbeat system for active user tracking
+  - ✅ Cron jobs for expired votes and disconnects
+  - ✅ Admin dashboard and monitoring
+- **Testing Status**:
+  - Comprehensive Playwright test suite
+  - Load testing (500+ concurrent users)
+  - Scenario testing (7 core scenarios defined)
+  - **Standard Test Format Established**:
+    - Create users via Supabase
+    - Set preferences via Supabase
+    - Sign in with Playwright
+    - Click Start Spin
+    - Check matches
+  - Test files: `city-age-filtering.spec.ts`, `2-users-london-match.spec.ts` (template for 2-user tests)
+- **Next steps** (if needed):
+  - Monitor production performance
+  - Handle edge cases as they arise
+  - Optimize matching algorithms if needed
+  - Add new features based on user feedback
+- **Recent Work**:
+  - Restored original matching function (`try_match_user`) - handles NULL city preferences correctly
+  - Users with NULL city preference match with anyone (age/gender compatible)
+  - Users with city preferences only match if they have at least one city in common
+  - Standardized test format to avoid UI preference setting issues
+  - Created `2-users-london-match.spec.ts` as template for simple 2-user matching tests
+  
 - **Considerations**:
-  - Environment variable `PORT` defaults to 26053; override with `PORT=3000` whenever starting the dev server.
-  - Keep tunnel logs handy in `/home/ubuntu/.cursor/projects/workspace/terminals/20959.txt` for troubleshooting.
-  - Cloudflare quick tunnels are ephemeral; expect URL changes on restart.
+  - Environment variable `PORT` defaults to 26053; always use `PORT=3000 npm run dev`
+  - Supabase migrations must be applied for database to work
+  - LiveKit credentials required for video dating
+  - Telegram bot token needed for admin notifications
+  - **Deployment**: Production Vercel project at `https://speed-silk.vercel.app` (this is the main Vercel project for this codebase)
+  - **Test Configuration**: Use `playwright.vercel.config.ts` for Vercel tests (no local server)
+  - **Test Base URL**: Always use `https://speed-silk.vercel.app` for production tests

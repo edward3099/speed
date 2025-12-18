@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
       return statusData
     })
     
-    // Cache the result (3 second TTL - shorter for real-time vote detection)
-    // Status changes when matched/voted, need faster detection for voting
-    cache.set(cacheKey, result, 3000)
+    // Cache the result (1 second TTL - very short for fast match detection)
+    // Status changes when matched/voted, need very fast detection for matching
+    cache.set(cacheKey, result, 1000)
     
     // Return response with cache headers for browser/CDN caching
     const response = NextResponse.json(result)

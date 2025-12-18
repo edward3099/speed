@@ -83,16 +83,42 @@ export default function SpinningPage() {
             return
           }
 
+          // CRITICAL FIX: If state is 'matched' but match_id is missing, fetch match from database
+          // This handles race conditions where state was updated but match_id wasn't set yet
+          if (data.state === 'matched' && !data.match?.match_id) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('State is matched but no match_id found - fetching match from database')
+            }
+            // Try to get match_id from users_state table directly
+            try {
+              const { data: { user } } = await supabaseRef.current.auth.getUser()
+              if (user) {
+                const { data: userState } = await supabaseRef.current
+                  .from('users_state')
+                  .select('match_id')
+                  .eq('user_id', user.id)
+                  .eq('state', 'matched')
+                  .single()
+                
+                if (userState?.match_id) {
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('Found match_id from users_state, redirecting', { matchId: userState.match_id })
+                  }
+                  setIsSpinning(false)
+                  router.push(`/voting-window?matchId=${userState.match_id}`)
+                  return
+                }
+              }
+            } catch (error) {
+              // Silently fail - will retry on next check
+            }
+          }
+
           // If idle (not in queue), redirect to spin page
           if (data.state === 'idle') {
             setIsSpinning(false)
             router.push('/spin')
             return
-          }
-          
-          // If matched state but match_id missing (shouldn't happen, but handle gracefully)
-          if (data.state === 'matched' && !data.match?.match_id && process.env.NODE_ENV === 'development') {
-            console.warn('State is matched but no match_id found - this may indicate a state inconsistency')
           }
         } catch (error: any) {
           if (error.name !== 'AbortError' && process.env.NODE_ENV === 'development') {
@@ -143,6 +169,71 @@ export default function SpinningPage() {
                 }
                 router.push(`/voting-window?matchId=${data.match.match_id}`)
                 return
+              }
+              
+              // CRITICAL FIX: Also check for matched state without match_id (race condition)
+              if (data.state === 'matched' && !data.match?.match_id) {
+                try {
+                  const { data: { user } } = await supabaseRef.current.auth.getUser()
+                  if (user) {
+                    const { data: userState } = await supabaseRef.current
+                      .from('users_state')
+                      .select('match_id')
+                      .eq('user_id', user.id)
+                      .eq('state', 'matched')
+                      .single()
+                    
+                    if (userState?.match_id) {
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('Match found via polling (from users_state), redirecting', { matchId: userState.match_id })
+                      }
+                      setIsSpinning(false)
+                      if (pollInterval) {
+                        clearInterval(pollInterval)
+                        pollInterval = null
+                      }
+                      router.push(`/voting-window?matchId=${userState.match_id}`)
+                      return
+                    }
+                  }
+                } catch (error) {
+                  // Silently fail - will retry on next poll
+                }
+              }
+              
+              // CRITICAL FIX: If state is 'matched' but no match_id found, check database directly
+              // This handles cases where cache is stale or status endpoint has issues
+              if (data.state === 'matched' && !data.match?.match_id) {
+                try {
+                  const { data: { user } } = await supabaseRef.current.auth.getUser()
+                  if (user) {
+                    // Query users_state table directly as fallback
+                    const { data: userState, error: stateError } = await supabaseRef.current
+                      .from('users_state')
+                      .select('match_id, state')
+                      .eq('user_id', user.id)
+                      .eq('state', 'matched')
+                      .maybeSingle()
+                    
+                    if (!stateError && userState?.match_id) {
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('✅ Match found via direct database query (fallback), redirecting', { matchId: userState.match_id })
+                      }
+                      setIsSpinning(false)
+                      if (pollInterval) {
+                        clearInterval(pollInterval)
+                        pollInterval = null
+                      }
+                      router.push(`/voting-window?matchId=${userState.match_id}`)
+                      return
+                    }
+                  }
+                } catch (error) {
+                  // Silently fail - will retry on next poll
+                  if (process.env.NODE_ENV === 'development') {
+                    console.warn('Error querying users_state directly:', error)
+                  }
+                }
               }
             }
           } catch (error) {
@@ -277,6 +368,87 @@ export default function SpinningPage() {
     const interval = setInterval(updateLastActive, 7000)
 
     return () => clearInterval(interval)
+  }, [isSpinning])
+
+  // OPTIMIZATION: Client-side retry matching for unmatched users
+  // Retries matching every 2-3 seconds to ensure fast matching even when initial attempt fails
+  // This is more aggressive than the server-side cron (5s) and ensures users match quickly
+  useEffect(() => {
+    if (!isSpinning) return
+
+    let retryCount = 0
+    const MAX_RETRIES = 20 // Retry for up to 60 seconds (20 * 3s)
+    let retryInterval: NodeJS.Timeout | null = null
+
+    const retryMatching = async () => {
+      if (retryCount >= MAX_RETRIES) {
+        // Stop retrying after max attempts
+        if (retryInterval) {
+          clearInterval(retryInterval)
+          retryInterval = null
+        }
+        return
+      }
+
+      retryCount++
+
+      try {
+        const { data: { user } } = await supabaseRef.current.auth.getUser()
+        if (!user) return
+
+        // Check current state first - if already matched, stop retrying
+        const statusResponse = await fetch('/api/match/status', {
+          cache: 'no-store',
+        })
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json()
+          if (statusData.match?.match_id) {
+            // Already matched, stop retrying
+            if (retryInterval) {
+              clearInterval(retryInterval)
+              retryInterval = null
+            }
+            return
+          }
+        }
+
+        // Retry matching via API endpoint (more reliable than direct RPC)
+        const retryResponse = await fetch('/api/match/retry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json()
+          if (retryData.matched && retryData.match_id && process.env.NODE_ENV === 'development') {
+            console.log(`✅ Client-side retry matched user after ${retryCount} attempts`)
+          }
+        }
+
+        // If matched, the WebSocket or polling will catch it and redirect
+        // No need to manually redirect here
+      } catch (error) {
+        // Silently fail - retry will continue
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`Retry matching attempt ${retryCount} failed:`, error)
+        }
+      }
+    }
+
+    // Start retrying after 2 seconds (give initial matching attempt time)
+    // Then retry every 3 seconds
+    setTimeout(() => {
+      if (!isSpinning) return
+      retryMatching() // First retry
+      retryInterval = setInterval(retryMatching, 3000) // Then every 3 seconds
+    }, 2000)
+
+    return () => {
+      if (retryInterval) {
+        clearInterval(retryInterval)
+      }
+    }
   }, [isSpinning])
 
   return (

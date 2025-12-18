@@ -38,6 +38,13 @@ function VideoDateContent() {
   const [room, setRoom] = useState<Room | null>(null)
   const [localVideoTrack, setLocalVideoTrack] = useState<MediaStreamTrack | null>(null)
   const [localAudioTrack, setLocalAudioTrack] = useState<MediaStreamTrack | null>(null)
+  // Ref to track current video track value (avoids stale closure issues)
+  const localVideoTrackRef = useRef<MediaStreamTrack | null>(null)
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    localVideoTrackRef.current = localVideoTrack
+  }, [localVideoTrack])
   const [remoteVideoTrack, setRemoteVideoTrack] = useState<MediaStreamTrack | null>(null)
   const [remoteAudioTrack, setRemoteAudioTrack] = useState<MediaStreamTrack | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -50,6 +57,89 @@ function VideoDateContent() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const localAudioRef = useRef<HTMLAudioElement>(null)
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
+  const [localVideoRefReady, setLocalVideoRefReady] = useState(false)
+  
+  // Callback ref to detect when video element is mounted
+  const localVideoRefCallback = (element: HTMLVideoElement | null) => {
+    const previousElement = localVideoRef.current
+    localVideoRef.current = element
+    
+    if (element) {
+      console.log('✅ Local video ref mounted/updated:', {
+        elementId: element.id || 'no-id',
+        hasSrcObject: !!element.srcObject,
+        paused: element.paused,
+        readyState: element.readyState,
+        isNewElement: previousElement !== element
+      })
+      setLocalVideoRefReady(true)
+      
+      // CRITICAL: If this is a NEW element (not just a re-render), and we have a track, attach it immediately
+      // Use ref to avoid stale closure issues
+      const currentTrack = localVideoTrackRef.current
+      if (previousElement !== element && currentTrack) {
+        console.log('🔄 New video element mounted with existing track, attaching immediately:', {
+          trackId: currentTrack.id,
+          trackEnabled: currentTrack.enabled,
+          trackReadyState: currentTrack.readyState
+        })
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          // Double-check ref hasn't changed and track still exists
+          const stillCurrentTrack = localVideoTrackRef.current
+          if (localVideoRef.current === element && stillCurrentTrack && stillCurrentTrack === currentTrack) {
+            // CRITICAL: Check if track is already attached to prevent flickering
+            const currentStream = element.srcObject as MediaStream | null
+            const currentTrackId = currentStream?.getVideoTracks()[0]?.id
+            
+            // Only attach if track is different or not attached
+            if (currentTrackId !== stillCurrentTrack.id || !currentStream) {
+              const stream = new MediaStream([stillCurrentTrack])
+              element.srcObject = stream
+              element.style.setProperty('opacity', '1', 'important')
+              element.style.setProperty('display', 'block', 'important')
+              element.style.setProperty('visibility', 'visible', 'important')
+              
+              // Ensure track is enabled
+              if (!stillCurrentTrack.enabled) {
+                stillCurrentTrack.enabled = true
+              }
+              
+              // Only play if not already playing
+              if (element.paused) {
+                element.play().catch(err => {
+                  // AbortError is expected when a new play() call cancels a previous one - not an error
+                  if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                    console.error('Error playing video in ref callback:', err)
+                  }
+                })
+              }
+              console.log('✅ Track attached to new video element in ref callback:', {
+                videoWidth: element.videoWidth,
+                videoHeight: element.videoHeight,
+                paused: element.paused
+              })
+            } else {
+              console.log('✅ Track already attached to element in ref callback, skipping re-attachment')
+            }
+         }
+        })
+      }
+      
+      // If we have a pending track, try to attach it immediately
+      if (pendingAttachmentRef.current) {
+        console.log('🔄 Ref just mounted, attaching pending track immediately')
+        requestAnimationFrame(() => {
+          if (localVideoRef.current === element && pendingAttachmentRef.current) {
+            attachTrackToVideoElement(pendingAttachmentRef.current)
+          }
+        })
+      }
+    } else {
+      console.log('⚠️ Local video ref unmounted')
+      setLocalVideoRefReady(false)
+    }
+  }
   
   // Store MediaStreams in refs to avoid recreating them
   const remoteVideoStreamRef = useRef<MediaStream | null>(null)
@@ -1239,11 +1329,61 @@ function VideoDateContent() {
               
               // CRITICAL: Use direct ref attachment (bypasses React state delay)
               console.log('📹 TrackPublished: Attaching video track directly to element')
+              
+              // Direct attachment function
+              const attachDirectly = () => {
+                const element = localVideoRef.current
+                if (element && videoTrack) {
+                  try {
+                    console.log('📹 TrackPublished: Directly attaching track to element')
+                    const stream = new MediaStream([videoTrack])
+                    element.srcObject = stream
+                    element.style.setProperty('opacity', '1', 'important')
+                    element.style.setProperty('display', 'block', 'important')
+                    element.style.setProperty('visibility', 'visible', 'important')
+                    
+                    if (!videoTrack.enabled) {
+                      videoTrack.enabled = true
+                    }
+                    
+                    // Only play if not already playing (prevents AbortError)
+                    if (element.paused) {
+                      element.play()
+                        .then(() => {
+                          console.log('✅ TrackPublished: Track attached and playing directly:', {
+                            videoWidth: element.videoWidth,
+                            videoHeight: element.videoHeight
+                          })
+                        })
+                        .catch(err => {
+                          // AbortError is expected when a new play() cancels a previous one - not an error
+                          if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                            console.error('Error playing in TrackPublished:', err)
+                          }
+                        })
+                    } else {
+                      console.log('✅ TrackPublished: Video already playing')
+                    }
+                  } catch (err) {
+                    console.error('Error in TrackPublished direct attachment:', err)
+                  }
+                } else {
+                  console.log('⚠️ TrackPublished: Element or track not ready for direct attachment')
+                }
+              }
+              
+              // Try immediately
+              attachDirectly()
+              
+              // Also use existing function
               const attached = attachTrackToVideoElement(videoTrack)
               if (attached) {
-                console.log('✅ TrackPublished: Video track attached directly, user should see video immediately')
+                console.log('✅ TrackPublished: Video track attached via attachTrackToVideoElement')
               } else {
-                console.warn('⚠️ TrackPublished: Failed to attach video track directly')
+                // Retry direct attachment
+                setTimeout(attachDirectly, 100)
+                setTimeout(attachDirectly, 300)
+                setTimeout(attachDirectly, 500)
               }
               
               // Note: The main useEffect will also handle attachment as a fallback
@@ -1887,6 +2027,14 @@ function VideoDateContent() {
   // Main effect to attach local video track to video element
   // This is the SINGLE SOURCE OF TRUTH for local video attachment
   useEffect(() => {
+    console.log('🔍 Main video attachment useEffect triggered:', {
+      hasRef: !!localVideoRef.current,
+      hasTrack: !!localVideoTrack,
+      refReady: localVideoRefReady,
+      countdownComplete,
+      trackId: localVideoTrack?.id
+    })
+    
     // CRITICAL: If we have a video ref but no track, try to find it from room publications
     if (localVideoRef.current && !localVideoTrack && room && room.state !== 'disconnected') {
       console.log('⚠️ No localVideoTrack in state, checking room publications...')
@@ -1908,18 +2056,31 @@ function VideoDateContent() {
     if (!localVideoRef.current || !localVideoTrack) {
       console.log('⚠️ Local video attachment skipped:', {
         hasRef: !!localVideoRef.current,
-        hasTrack: !!localVideoTrack
+        hasTrack: !!localVideoTrack,
+        refReady: localVideoRefReady
       })
       return
     }
 
     const videoElement = localVideoRef.current
+    
+    // CRITICAL: Verify this is actually the current element (not a stale ref)
+    if (videoElement !== localVideoRef.current) {
+      console.warn('⚠️ Video element changed during attachment, aborting')
+      return
+    }
 
     try {
-      // Ensure track is enabled
+      // CRITICAL: Ensure track is enabled and ready
       if (!localVideoTrack.enabled) {
         console.log('⚠️ Local video track disabled, enabling...')
         localVideoTrack.enabled = true
+      }
+      
+      // Verify track is actually active
+      if (localVideoTrack.readyState !== 'live') {
+        console.warn('⚠️ Local video track not live yet, readyState:', localVideoTrack.readyState)
+        // Track might still be initializing, but continue to attach anyway
       }
 
       // Check if track is already attached to avoid unnecessary re-attachment
@@ -1927,12 +2088,18 @@ function VideoDateContent() {
       const currentTrackId = currentStream?.getVideoTracks()[0]?.id
       const newTrackId = localVideoTrack.id
       
-      // Only reattach if track changed or srcObject is missing
-      if (!videoElement.srcObject || currentTrackId !== newTrackId) {
+      // Only attach if track is truly different or not attached (prevents flickering from unnecessary re-attachments)
+      // CRITICAL: Check if the existing stream actually contains the correct track before re-attaching
+      const needsAttachment = !videoElement.srcObject || (currentTrackId !== newTrackId && currentTrackId !== undefined)
+      
+      if (needsAttachment) {
         console.log('📹 Attaching local video track:', {
           currentTrackId,
           newTrackId,
-          hasSrcObject: !!videoElement.srcObject
+          hasSrcObject: !!videoElement.srcObject,
+          trackEnabled: localVideoTrack.enabled,
+          trackReadyState: localVideoTrack.readyState,
+          reason: !videoElement.srcObject ? 'no srcObject' : 'track changed'
         })
 
         // Clean up old stream first (but don't stop tracks - they're managed by LiveKit)
@@ -1952,7 +2119,16 @@ function VideoDateContent() {
         console.log('✅ Local video srcObject set:', {
           trackId: localVideoTrack.id,
           trackEnabled: localVideoTrack.enabled,
-          streamActive: stream.active
+          trackReadyState: localVideoTrack.readyState,
+          streamActive: stream.active,
+          videoElementReadyState: videoElement.readyState
+        })
+      } else {
+        // Track is already correctly attached - just ensure visibility and playing state
+        console.log('✅ Local video track already attached correctly:', {
+          trackId: newTrackId,
+          videoElementReadyState: videoElement.readyState,
+          videoElementPaused: videoElement.paused
         })
       }
       
@@ -1960,43 +2136,84 @@ function VideoDateContent() {
       setIsVideoOff(false)
       setCountdownVideoOff(false)
       
-      // Force video element to be visible with inline styles
+      // CRITICAL: Force video element to be visible with inline styles (must use !important to override style prop)
       videoElement.style.setProperty('opacity', '1', 'important')
       videoElement.style.setProperty('display', 'block', 'important')
       videoElement.style.setProperty('visibility', 'visible', 'important')
       
-      // Attempt to play - require user interaction for autoplay policies (especially on mobile)
-      // During countdown, try to play if user has interacted
-      // CRITICAL: If track exists and is attached, always try to play (user has interacted by enabling camera)
-      const shouldPlay = (hasUserInteracted || localVideoTrack) && videoElement.paused
+      // Verify the styles were applied and element is in DOM
+      const computedStyle = window.getComputedStyle(videoElement)
+      const isInDOM = videoElement.isConnected
+      console.log('✅ Local video visibility styles applied:', {
+        opacity: computedStyle.opacity,
+        display: computedStyle.display,
+        visibility: computedStyle.visibility,
+        videoElementReadyState: videoElement.readyState,
+        hasSrcObject: !!videoElement.srcObject,
+        isInDOM,
+        videoWidth: videoElement.videoWidth,
+        videoHeight: videoElement.videoHeight,
+        currentSrc: videoElement.currentSrc,
+        srcObjectType: videoElement.srcObject?.constructor.name
+      })
       
-      if (shouldPlay) {
-        const playPromise = videoElement.play()
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('✅ Local video playing successfully from main useEffect')
-            })
-            .catch(err => {
-              // Log all errors for debugging (don't silently ignore)
-              console.error('❌ Error playing local video:', {
-                name: err.name,
-                message: err.message,
-                hasUserInteracted,
-                countdownComplete,
-                paused: videoElement.paused,
-                trackExists: !!localVideoTrack
-              })
-            })
-        }
-      } else {
-        console.log('⚠️ Local video play skipped:', {
-          hasUserInteracted,
-          paused: videoElement.paused,
-          countdownComplete,
-          trackExists: !!localVideoTrack
-        })
+      // CRITICAL: If element is not in DOM, this won't work
+      if (!isInDOM) {
+        console.error('❌ Video element is not in DOM! This is the problem!')
       }
+      
+      // CRITICAL: Always attempt to play if track is attached (user has interacted by enabling camera)
+      // The track exists and is attached, so we should play it
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (!localVideoRef.current || localVideoRef.current !== videoElement) {
+          console.warn('⚠️ Video element changed before play attempt')
+          return
+        }
+        
+        if (videoElement.paused) {
+          console.log('▶️ Attempting to play local video (track attached, user has enabled camera)')
+          const playPromise = videoElement.play()
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('✅ Local video playing successfully from main useEffect:', {
+                  videoElementReadyState: videoElement.readyState,
+                  videoElementPaused: videoElement.paused,
+                  videoElementCurrentTime: videoElement.currentTime,
+                  videoWidth: videoElement.videoWidth,
+                  videoHeight: videoElement.videoHeight
+                })
+              })
+              .catch(err => {
+                // AbortError is expected when a new play() cancels a previous one - not an error
+                if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                  // Log other errors for debugging
+                  console.error('❌ Error playing local video:', {
+                    name: err.name,
+                    message: err.message,
+                    hasUserInteracted,
+                    countdownComplete,
+                    paused: videoElement.paused,
+                    trackExists: !!localVideoTrack,
+                    trackEnabled: localVideoTrack?.enabled,
+                    trackReadyState: localVideoTrack?.readyState,
+                    videoElementReadyState: videoElement.readyState,
+                    hasSrcObject: !!videoElement.srcObject,
+                    videoWidth: videoElement.videoWidth,
+                    videoHeight: videoElement.videoHeight
+                  })
+                }
+              })
+          }
+        } else {
+          console.log('✅ Local video already playing:', {
+            currentTime: videoElement.currentTime,
+            videoWidth: videoElement.videoWidth,
+            videoHeight: videoElement.videoHeight
+          })
+        }
+      })
     } catch (error) {
       console.error('❌ Error attaching local video track:', error)
     }
@@ -2004,7 +2221,82 @@ function VideoDateContent() {
     // NO CLEANUP FUNCTION - we don't want to clear srcObject when dependencies change
     // The video should persist once attached. Only clear on component unmount.
     // If we need cleanup, it should be in a separate useEffect with proper dependencies.
-  }, [localVideoTrack, hasUserInteracted, countdownComplete])
+  }, [localVideoTrack, hasUserInteracted, countdownComplete, localVideoRefReady])
+  
+  // CRITICAL: Re-attach track when transitioning between countdown and active date
+  // This handles the case where a new video element is mounted
+  useEffect(() => {
+    if (!localVideoTrack) {
+      return
+    }
+    
+    // Use a timeout to allow DOM to settle after countdownComplete changes
+    const timeoutId = setTimeout(() => {
+      const videoElement = localVideoRef.current
+      if (!videoElement || !localVideoRefReady) {
+        console.log('🔄 Transition effect: Video element or ref not ready yet, will retry')
+        return
+      }
+      
+      const currentStream = videoElement.srcObject as MediaStream | null
+      const currentTrackId = currentStream?.getVideoTracks()[0]?.id
+      const expectedTrackId = localVideoTrack.id
+      
+      // If track doesn't match or srcObject is missing, re-attach
+      if (!currentStream || currentTrackId !== expectedTrackId) {
+        console.log('🔄 Countdown/date transition detected, re-attaching track to new element:', {
+          currentTrackId,
+          expectedTrackId,
+          countdownComplete,
+          isInDOM: videoElement.isConnected
+        })
+        
+        // Ensure track is enabled
+        if (!localVideoTrack.enabled) {
+          localVideoTrack.enabled = true
+        }
+        
+        // Re-attach track
+        const stream = new MediaStream([localVideoTrack])
+        videoElement.srcObject = stream
+        videoElement.style.setProperty('opacity', '1', 'important')
+        videoElement.style.setProperty('display', 'block', 'important')
+        videoElement.style.setProperty('visibility', 'visible', 'important')
+        
+        // Attempt to play with retry
+        const attemptPlay = () => {
+          if (localVideoRef.current === videoElement && localVideoTrackRef.current === localVideoTrack) {
+            // Only play if not already playing (prevents AbortError)
+            if (videoElement.paused) {
+              videoElement.play()
+                .then(() => {
+                  console.log('✅ Video playing after transition:', {
+                    videoWidth: videoElement.videoWidth,
+                    videoHeight: videoElement.videoHeight
+                  })
+                })
+                .catch(err => {
+                  // AbortError is expected when a new play() cancels a previous one - not an error
+                  if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                    console.error('Error playing video after transition:', err)
+                    // Retry once after a delay
+                    setTimeout(attemptPlay, 500)
+                  }
+                })
+            } else {
+              console.log('✅ Video already playing after transition')
+            }
+          }
+        }
+        
+        requestAnimationFrame(() => {
+          requestAnimationFrame(attemptPlay)
+        })
+      }
+    }, 100) // Small delay to allow DOM to settle
+    
+    return () => clearTimeout(timeoutId)
+  }, [countdownComplete, localVideoTrack, localVideoRefReady])
   
   // Automatically enable video when track exists (since toggle buttons are removed)
   useEffect(() => {
@@ -2017,6 +2309,126 @@ function VideoDateContent() {
     }
   }, [localVideoTrack])
   
+  // Diagnostic and auto-fix: Monitor video element state and fix if needed
+  useEffect(() => {
+    if (!localVideoTrack) return
+    
+    let checkCount = 0
+    const maxChecks = 10 // Check 10 times (20 seconds total)
+    
+    const interval = setInterval(() => {
+      checkCount++
+      const element = localVideoRef.current
+      const currentTrack = localVideoTrackRef.current
+      
+      if (!element) {
+        if (checkCount <= 3) {
+          console.log('🔍 DIAGNOSTIC: Video element is null (check', checkCount, ')')
+        }
+        return
+      }
+      
+      if (!currentTrack) {
+        return // No track to attach
+      }
+      
+      const stream = element.srcObject as MediaStream | null
+      const attachedTrack = stream?.getVideoTracks()[0]
+      const computedStyle = window.getComputedStyle(element)
+      
+      const hasCorrectTrack = attachedTrack && attachedTrack.id === currentTrack.id
+      const isPlaying = !element.paused && element.readyState >= 2 // HAVE_CURRENT_DATA
+      const hasVideoDimensions = element.videoWidth > 0 && element.videoHeight > 0
+      const isVisible = computedStyle.opacity !== '0' && computedStyle.visibility !== 'hidden' && computedStyle.display !== 'none'
+      
+      // Log diagnostics every few checks
+      if (checkCount % 3 === 0) {
+        console.log('🔍 DIAGNOSTIC Video Element State:', {
+          hasElement: !!element,
+          isInDOM: element.isConnected,
+          hasSrcObject: !!stream,
+          hasCorrectTrack,
+          trackId: attachedTrack?.id,
+          expectedTrackId: currentTrack.id,
+          trackEnabled: currentTrack.enabled,
+          trackReadyState: currentTrack.readyState,
+          videoWidth: element.videoWidth,
+          videoHeight: element.videoHeight,
+          isPlaying,
+          hasVideoDimensions,
+          isVisible,
+          paused: element.paused,
+          readyState: element.readyState,
+          opacity: computedStyle.opacity,
+          visibility: computedStyle.visibility,
+          display: computedStyle.display
+        })
+      }
+      
+      // Auto-fix if track is missing or wrong
+      if (!hasCorrectTrack) {
+        console.warn('🔧 DIAGNOSTIC: Track missing or incorrect, fixing...', {
+          hasAttachedTrack: !!attachedTrack,
+          attachedTrackId: attachedTrack?.id,
+          expectedTrackId: currentTrack.id
+        })
+        
+        try {
+          if (!currentTrack.enabled) {
+            currentTrack.enabled = true
+          }
+          
+          const newStream = new MediaStream([currentTrack])
+          element.srcObject = newStream
+          element.style.setProperty('opacity', '1', 'important')
+          element.style.setProperty('display', 'block', 'important')
+          element.style.setProperty('visibility', 'visible', 'important')
+          
+          element.play()
+            .then(() => {
+              console.log('✅ DIAGNOSTIC: Track fixed and playing')
+            })
+            .catch(err => {
+              if (err.name !== 'NotAllowedError') {
+                console.error('Error playing after fix:', err)
+              }
+            })
+        } catch (err) {
+          console.error('Error fixing track:', err)
+        }
+      } else if (!isPlaying && element.readyState >= 2) {
+        // Track is correct but not playing, try to play
+        console.log('🔧 DIAGNOSTIC: Track correct but not playing, attempting to play')
+        // Only play if not already playing
+        if (element.paused) {
+          element.play().catch(err => {
+            // AbortError is expected when a new play() cancels a previous one - not an error
+            if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+              console.error('Error playing video:', err)
+            }
+          })
+        }
+      } else if (!isVisible) {
+        // Track is correct but hidden, fix visibility
+        console.warn('🔧 DIAGNOSTIC: Track correct but not visible, fixing styles')
+        element.style.setProperty('opacity', '1', 'important')
+        element.style.setProperty('display', 'block', 'important')
+        element.style.setProperty('visibility', 'visible', 'important')
+      }
+    }, 2000) // Check every 2 seconds
+    
+    return () => clearInterval(interval)
+  }, [localVideoTrack])
+  
+  // Process pending attachments when ref becomes available
+  useEffect(() => {
+    if (localVideoRefReady && pendingAttachmentRef.current) {
+      const pendingTrack = pendingAttachmentRef.current
+      console.log('🔄 Processing pending video track attachment now that ref is available')
+      attachTrackToVideoElement(pendingTrack)
+    }
+  }, [localVideoRefReady])
+
   // Dedicated effect to ensure video visibility when track exists
   useEffect(() => {
     if (!localVideoRef.current || !localVideoTrack) return
@@ -3698,7 +4110,7 @@ function VideoDateContent() {
 
     // Save rating and feedback if provided
     if (rating !== null || feedback.trim()) {
-      await supabase
+      const { error: ratingError } = await supabase
         .from('date_ratings')
         .upsert({
           video_date_id: videoDateId,
@@ -3707,6 +4119,34 @@ function VideoDateContent() {
           rating: rating || null,
           feedback: feedback || null
         })
+
+      // Send Telegram notification (don't block on this)
+      if (!ratingError) {
+        console.log('📱 Attempting to send Telegram notification for rating')
+        fetch('/api/admin/notify-telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'rating',
+            raterId: authUser.id,
+            ratedUserId: partner.id,
+            rating: rating,
+            feedback: feedback?.trim() || null,
+            videoDateId: videoDateId
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            console.log('✅ Telegram notification sent successfully')
+          } else {
+            console.error('❌ Telegram notification failed:', data)
+          }
+        })
+        .catch(err => {
+          console.error('❌ Failed to send Telegram notification:', err)
+        })
+      }
     }
 
     // Clean up all tracks before navigating away
@@ -3729,7 +4169,7 @@ function VideoDateContent() {
     if (!authUser) return
 
     // Save report
-    await supabase
+    const { error: reportError } = await supabase
       .from('reports')
       .insert({
         reporter_id: authUser.id,
@@ -3739,6 +4179,34 @@ function VideoDateContent() {
         details: reportReason
       })
 
+    // Send Telegram notification (don't block on this)
+    if (!reportError) {
+      console.log('📱 Attempting to send Telegram notification for report')
+      fetch('/api/admin/notify-telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'report',
+          reporterId: authUser.id,
+          reportedUserId: partner.id,
+          category: reportCategory || 'inappropriate_behaviour',
+          details: reportReason,
+          videoDateId: videoDateId
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('✅ Telegram notification sent successfully')
+        } else {
+          console.error('❌ Telegram notification failed:', data)
+        }
+      })
+      .catch(err => {
+        console.error('❌ Failed to send Telegram notification:', err)
+      })
+    }
+
     setShowReportModal(false)
     setShowPassModal(true)
     setTimeout(() => {
@@ -3747,20 +4215,28 @@ function VideoDateContent() {
   }
 
   // Update mute/video state based on room
+  // REMOVED: This effect was causing issues - it was resetting isVideoOff based on LiveKit state
+  // which could be stale or out of sync with our React state. Instead, we rely on:
+  // 1. Explicit state updates when enabling/disabling camera
+  // 2. Track existence (localVideoTrack) as source of truth
+  // If we need to sync with LiveKit state, it should be one-way (LiveKit -> React) only on mount,
+  // not a continuous sync that can override user actions.
+  
+  // One-time sync on room connection to initialize state
   useEffect(() => {
-    if (!room) return
-
-    const updateMediaState = async () => {
-      const localParticipant = room.localParticipant
-      const isMicEnabled = localParticipant.isMicrophoneEnabled
-      const isCamEnabled = localParticipant.isCameraEnabled
-
+    if (!room || room.state !== 'connected') return
+    
+    // Only sync once when room first connects, don't continuously sync
+    const localParticipant = room.localParticipant
+    const isMicEnabled = localParticipant.isMicrophoneEnabled
+    const isCamEnabled = localParticipant.isCameraEnabled
+    
+    // Only set if we don't have a track (initial state)
+    if (!localVideoTrack) {
       setIsMuted(!isMicEnabled)
       setIsVideoOff(!isCamEnabled)
     }
-
-    updateMediaState()
-  }, [room, isMuted, isVideoOff])
+  }, [room?.state]) // Only depend on room state, not the boolean states
 
   // Enable camera and microphone (called on user interaction - required for iPhone)
   // Helper function to safely check room connection state
@@ -3846,11 +4322,61 @@ function VideoDateContent() {
    * Directly attach a MediaStreamTrack to the video element using refs.
    * This bypasses React state delays for immediate visual feedback.
    */
-  const attachTrackToVideoElement = (track: MediaStreamTrack) => {
-    if (!localVideoRef.current) {
-      console.warn('⚠️ attachTrackToVideoElement: localVideoRef.current is null')
+  // Track pending attachments to retry when ref becomes available
+  const pendingAttachmentRef = useRef<MediaStreamTrack | null>(null)
+  const attachmentRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isRetryingRef = useRef<boolean>(false)
+  const hasLoggedRefNotReadyRef = useRef<boolean>(false)
+
+  const attachTrackToVideoElement = (track: MediaStreamTrack, retryCount: number = 0): boolean => {
+    // If ref is not available, queue for retry (max 10 retries over 2 seconds)
+    if (!localVideoRef.current || !localVideoRefReady) {
+      // Only log once, even if called multiple times
+      if (!hasLoggedRefNotReadyRef.current && retryCount === 0) {
+        console.log('ℹ️ attachTrackToVideoElement: localVideoRef not ready yet, will retry when element is mounted')
+        hasLoggedRefNotReadyRef.current = true
+      }
+      
+      // Queue the track for attachment when ref becomes available
+      pendingAttachmentRef.current = track
+      
+      // Only start retry loop if not already retrying (avoid overlapping retries)
+      if (!isRetryingRef.current && retryCount < 10) {
+        isRetryingRef.current = true
+        // Clear any existing timeout
+        if (attachmentRetryTimeoutRef.current) {
+          clearTimeout(attachmentRetryTimeoutRef.current)
+        }
+        attachmentRetryTimeoutRef.current = setTimeout(() => {
+          isRetryingRef.current = false
+          // Check if ref is ready before retrying
+          if (localVideoRef.current && localVideoRefReady) {
+            attachTrackToVideoElement(track, retryCount + 1)
+          } else if (retryCount < 9) {
+            // Continue retrying if not at max
+            attachTrackToVideoElement(track, retryCount + 1)
+          } else {
+            // Max retries reached, but don't warn - useEffect will handle it when ref becomes ready
+            console.log('ℹ️ attachTrackToVideoElement: Retries exhausted, will attach when ref becomes ready via useEffect')
+            isRetryingRef.current = false
+          }
+        }, 200)
+      } else if (retryCount >= 10) {
+        // Reset retrying flag on max retries
+        isRetryingRef.current = false
+        // Don't warn - the useEffect will handle attachment when ref becomes ready
+      }
       return false
     }
+
+    // Clear any pending retry since we have the ref now
+    if (attachmentRetryTimeoutRef.current) {
+      clearTimeout(attachmentRetryTimeoutRef.current)
+      attachmentRetryTimeoutRef.current = null
+    }
+    isRetryingRef.current = false
+    hasLoggedRefNotReadyRef.current = false
+    pendingAttachmentRef.current = null
 
     try {
       const videoElement = localVideoRef.current
@@ -3883,12 +4409,15 @@ function VideoDateContent() {
       
       console.log('✅ attachTrackToVideoElement: Track attached directly to video element:', track.id)
       
-      // Attempt to play
-      videoElement.play().catch(err => {
-        if (err.name !== 'NotAllowedError') {
-          console.error('Error playing video in attachTrackToVideoElement:', err)
-        }
-      })
+      // Attempt to play (only if paused - prevents AbortError)
+      if (videoElement.paused) {
+        videoElement.play().catch(err => {
+          // AbortError is expected when a new play() call cancels a previous one - not an error
+          if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+            console.error('Error playing video in attachTrackToVideoElement:', err)
+          }
+        })
+      }
       
       return true
     } catch (err) {
@@ -4046,10 +4575,14 @@ function VideoDateContent() {
             setIsVideoOff(false)
             setCountdownVideoOff(false)
             
-            // CRITICAL: Attach directly to video element using refs (bypasses React state delay)
+            // CRITICAL: Use centralized attachTrackToVideoElement function which has guards against re-attachment
+            // This prevents flickering from multiple attachment attempts
             const attached = attachTrackToVideoElement(detectedTrack)
             if (attached) {
-              console.log('✅ Video track attached directly to element, user should see video immediately')
+              console.log('✅ enableCameraAndMic: Video track attached via attachTrackToVideoElement')
+            } else {
+              // If attachment failed (ref not ready), it will retry automatically
+              console.log('ℹ️ enableCameraAndMic: Attachment queued, will attach when element is ready')
             }
             
             // Also handle audio track if available
@@ -4163,12 +4696,59 @@ function VideoDateContent() {
           setCountdownVideoOff(false) // Also set countdown video to on
           
           // CRITICAL: Use direct ref attachment (bypasses React state delay)
-          console.log('📹 Immediately attaching video track to local video element using direct ref')
+          console.log('📹 updateLocalTracks: Immediately attaching video track to local video element using direct ref')
+          
+          // Direct attachment function
+          const attachDirectly = () => {
+            const element = localVideoRef.current
+            if (element && track) {
+              try {
+                console.log('📹 updateLocalTracks: Directly attaching track')
+                const stream = new MediaStream([track])
+                element.srcObject = stream
+                element.style.setProperty('opacity', '1', 'important')
+                element.style.setProperty('display', 'block', 'important')
+                element.style.setProperty('visibility', 'visible', 'important')
+                
+                if (!track.enabled) {
+                  track.enabled = true
+                }
+                
+                  // Only play if not already playing (prevents AbortError)
+                  if (element.paused) {
+                    element.play()
+                      .then(() => {
+                        console.log('✅ updateLocalTracks: Track attached and playing:', {
+                          videoWidth: element.videoWidth,
+                          videoHeight: element.videoHeight
+                        })
+                      })
+                      .catch(err => {
+                        // AbortError is expected when a new play() cancels a previous one - not an error
+                        if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                          console.error('Error playing in updateLocalTracks:', err)
+                        }
+                      })
+                  } else {
+                    console.log('✅ updateLocalTracks: Video already playing')
+                  }
+              } catch (err) {
+                console.error('Error in updateLocalTracks direct attachment:', err)
+              }
+            }
+          }
+          
+          // Try immediately
+          attachDirectly()
+          
+          // Also use existing function
           const attached = attachTrackToVideoElement(track)
           if (attached) {
-            console.log('✅ Video track attached directly, user should see video immediately')
+            console.log('✅ Video track attached via attachTrackToVideoElement')
           } else {
-            console.warn('⚠️ Failed to attach video track directly')
+            // Retry direct attachment
+            setTimeout(attachDirectly, 100)
+            setTimeout(attachDirectly, 300)
           }
         } else {
           console.log('⚠️ No video track found yet (checked', videoPubs.length, 'publications)')
@@ -4643,27 +5223,31 @@ function VideoDateContent() {
                     <div className="relative aspect-video rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden bg-gradient-to-br from-teal-500/20 via-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-teal-300/50 lg:border-2 shadow-lg lg:shadow-2xl">
                       {/* CRITICAL: Always render video element so ref is available */}
                       <video
-                        ref={localVideoRef}
+                        ref={localVideoRefCallback}
                         autoPlay
                         playsInline
                         muted
-                        className="w-full h-full object-cover"
-                        style={{ 
-                          // Video should be visible when track exists (auto-enabled since toggle buttons removed)
-                          opacity: localVideoTrack ? 1 : 0,
-                          display: 'block'
-                        }}
+                          className="w-full h-full object-cover"
+                          style={{ 
+                            // Always render - opacity will be controlled by inline styles in useEffect with !important
+                            // Don't set opacity here as it can conflict with inline styles
+                            display: 'block'
+                          }}
                         onError={(e) => {
                           console.error('Countdown video element error:', e)
                         }}
                         onLoadedMetadata={() => {
                           console.log('✅ Countdown video metadata loaded')
                           if (localVideoRef.current && localVideoTrack) {
-                            localVideoRef.current.play().catch(err => {
-                              if (err.name !== 'NotAllowedError') {
-                                console.error('Error playing countdown video:', err)
-                              }
-                            })
+                            // Only play if not already playing (prevents AbortError)
+                            if (localVideoRef.current.paused) {
+                              localVideoRef.current.play().catch(err => {
+                                // AbortError is expected when a new play() cancels a previous one - not an error
+                                if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+                                  console.error('Error playing countdown video:', err)
+                                }
+                              })
+                            }
                           }
                         }}
                         onPlay={() => {
@@ -4712,15 +5296,6 @@ function VideoDateContent() {
                                 }}
                               />
                               <span>mic</span>
-                            </motion.div>
-                          )}
-                          {countdownMuted && (
-                            <motion.div
-                              className="absolute top-1 right-1 sm:top-2 sm:right-2 p-1 sm:p-1.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg"
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                            >
-                              <MicOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </motion.div>
                           )}
                         </div>
@@ -4942,13 +5517,13 @@ function VideoDateContent() {
                       <div className="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-teal-500/20 via-blue-500/20 to-purple-500/20 backdrop-blur-sm border-2 border-teal-300/50 shadow-2xl">
                         {/* CRITICAL: Always render video element so ref is available */}
                         <video
-                          ref={localVideoRef}
+                          ref={localVideoRefCallback}
                           autoPlay
                           playsInline
                           muted
                           className="w-full h-full object-cover"
                           style={{ 
-                            opacity: (countdownVideoOff || !localVideoTrack) ? 0 : 1,
+                            // Always render - opacity will be set by useEffect inline styles
                             display: 'block'
                           }}
                           onError={(e) => {
@@ -5009,15 +5584,6 @@ function VideoDateContent() {
                                   }}
                                 />
                                 <span>mic active</span>
-                              </motion.div>
-                            )}
-                            {countdownMuted && (
-                              <motion.div
-                                className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                              >
-                                <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                               </motion.div>
                             )}
                           </div>
@@ -5508,50 +6074,66 @@ function VideoDateContent() {
                   <div className="relative aspect-video rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden bg-white/5 backdrop-blur-sm border-2 border-white/10 group-hover:border-teal-300/50 transition-all duration-300 shadow-2xl">
                     {/* CRITICAL: Always render video element so ref is available and track can attach */}
                     <video
-                      ref={localVideoRef}
+                      ref={localVideoRefCallback}
                       autoPlay
                       playsInline
                       muted
                       className="w-full h-full object-cover"
                       style={{ 
-                        // Show video if track exists, even if isVideoOff is temporarily true
-                        opacity: !localVideoTrack ? 0 : 1,
-                        display: 'block',
-                        visibility: !localVideoTrack ? 'hidden' : 'visible'
+                        // Always render - opacity/visibility will be set by useEffect inline styles with !important
+                        display: 'block'
                       }}
                       onError={(e) => {
                         console.error('Local video element error:', e)
                       }}
                       onLoadedMetadata={() => {
                         console.log('✅ Local video metadata loaded, track:', !!localVideoTrack)
-                        // Always attempt play when metadata loads
-                        if (localVideoRef.current && localVideoTrack) {
+                        const element = localVideoRef.current
+                        if (!element) return
+                        
+                        // CRITICAL: If metadata loaded but srcObject is missing or wrong, attach track now
+                        const currentStream = element.srcObject as MediaStream | null
+                        const currentTrackId = currentStream?.getVideoTracks()[0]?.id
+                        
+                        if (localVideoTrack && (!currentStream || currentTrackId !== localVideoTrack.id)) {
+                          console.log('🔄 onLoadedMetadata: Track missing, attaching now:', {
+                            hasSrcObject: !!currentStream,
+                            currentTrackId,
+                            expectedTrackId: localVideoTrack.id
+                          })
+                          
+                          const stream = new MediaStream([localVideoTrack])
+                          element.srcObject = stream
+                          element.style.setProperty('opacity', '1', 'important')
+                          element.style.setProperty('display', 'block', 'important')
+                          element.style.setProperty('visibility', 'visible', 'important')
+                        }
+                        
+                        // Always attempt play when metadata loads (only if paused)
+                        if (element && localVideoTrack && element.paused) {
                           console.log('▶️ Attempting to play local video after metadata loaded')
-                          localVideoRef.current.play()
+                          element.play()
                             .then(() => {
-                              console.log('✅ Local video playing after metadata loaded')
+                              console.log('✅ Local video playing after metadata loaded:', {
+                                videoWidth: element.videoWidth,
+                                videoHeight: element.videoHeight
+                              })
                             })
                             .catch(err => {
-                              // Silently ignore NotAllowedError (expected on mobile without user interaction)
-                              if (err.name !== 'NotAllowedError') {
+                              // AbortError is expected when a new play() cancels a previous one - not an error
+                              // NotAllowedError is expected on mobile without user interaction
+                              if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
                                 console.error('Error playing local video after metadata loaded:', err)
                               }
                             })
+                        } else if (element && !element.paused) {
+                          console.log('✅ Local video already playing when metadata loaded')
                         }
                       }}
                       onPlay={() => {
                         console.log('▶️ Local video started playing')
                       }}
                     />
-                    {/* Show placeholder when video is off - but only if no track exists */}
-                    {isVideoOff && !localVideoTrack && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-center">
-                          <VideoOff className="w-20 h-20 text-white/30 mx-auto mb-2" />
-                          <p className="text-sm opacity-60 font-medium">video off</p>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 flex items-center gap-2 sm:gap-3">
                       <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden border-2 border-teal-300/50 bg-white/10 backdrop-blur-sm">
@@ -5573,24 +6155,6 @@ function VideoDateContent() {
                       </div>
                     </div>
 
-                    {isMuted && (
-                      <motion.div
-                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                      >
-                        <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                      </motion.div>
-                    )}
-                    {isVideoOff && (
-                      <motion.div
-                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                      >
-                        <VideoOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                      </motion.div>
-                    )}
                   </div>
                 </motion.div>
 
@@ -5708,15 +6272,6 @@ function VideoDateContent() {
                           }
                         }}
                       />
-                    {/* Show placeholder when video is off */}
-                    {(isPartnerVideoOff || !remoteVideoTrack) && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-center">
-                          <VideoOff className="w-20 h-20 text-white/30 mx-auto mb-2" />
-                          <p className="text-sm opacity-60 font-medium">partner video off</p>
-                        </div>
-                      </div>
-                    )}
                     <audio 
                       ref={remoteAudioRef} 
                       autoPlay 
@@ -5743,24 +6298,6 @@ function VideoDateContent() {
                       </div>
                     </div>
 
-                    {isPartnerMuted && (
-                      <motion.div
-                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                      >
-                        <MicOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                      </motion.div>
-                    )}
-                    {isPartnerVideoOff && (
-                      <motion.div
-                        className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 md:p-2.5 rounded-full bg-red-500/90 backdrop-blur-sm shadow-lg z-10"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                      >
-                        <VideoOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                      </motion.div>
-                    )}
                   </div>
                 </motion.div>
               </div>

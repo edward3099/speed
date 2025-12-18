@@ -15,16 +15,16 @@ DECLARE
   v_target_fairness INTEGER;
 BEGIN
   -- Apply fairness boost for users waiting 20-60 seconds (target: 5)
+  -- Use users_state.waiting_since directly (more reliable than queue table)
   UPDATE users_state
   SET
     fairness = 5,
     updated_at = NOW()
-  WHERE user_id IN (
-    SELECT user_id FROM queue
-    WHERE waiting_since < NOW() - INTERVAL '20 seconds'
-      AND waiting_since >= NOW() - INTERVAL '60 seconds'
-  )
-  AND fairness < 5;
+  WHERE state = 'waiting'
+    AND waiting_since IS NOT NULL
+    AND waiting_since < NOW() - INTERVAL '20 seconds'
+    AND waiting_since >= NOW() - INTERVAL '60 seconds'
+    AND (fairness IS NULL OR fairness < 5);
   
   GET DIAGNOSTICS v_boosted = ROW_COUNT;
   
@@ -33,35 +33,32 @@ BEGIN
   SET
     fairness = 10,
     updated_at = NOW()
-  WHERE user_id IN (
-    SELECT user_id FROM queue
-    WHERE waiting_since < NOW() - INTERVAL '60 seconds'
-      AND waiting_since >= NOW() - INTERVAL '120 seconds'
-  )
-  AND fairness < 10;
+  WHERE state = 'waiting'
+    AND waiting_since IS NOT NULL
+    AND waiting_since < NOW() - INTERVAL '60 seconds'
+    AND waiting_since >= NOW() - INTERVAL '120 seconds'
+    AND (fairness IS NULL OR fairness < 10);
   
   -- Apply fairness boost for users waiting 120-300 seconds (target: 15)
   UPDATE users_state
   SET
     fairness = 15,
     updated_at = NOW()
-  WHERE user_id IN (
-    SELECT user_id FROM queue
-    WHERE waiting_since < NOW() - INTERVAL '120 seconds'
-      AND waiting_since >= NOW() - INTERVAL '300 seconds'
-  )
-  AND fairness < 15;
+  WHERE state = 'waiting'
+    AND waiting_since IS NOT NULL
+    AND waiting_since < NOW() - INTERVAL '120 seconds'
+    AND waiting_since >= NOW() - INTERVAL '300 seconds'
+    AND (fairness IS NULL OR fairness < 15);
   
   -- Apply fairness boost for users waiting 300+ seconds (target: 20, capped)
   UPDATE users_state
   SET
     fairness = 20,
     updated_at = NOW()
-  WHERE user_id IN (
-    SELECT user_id FROM queue
-    WHERE waiting_since < NOW() - INTERVAL '300 seconds'
-  )
-  AND fairness < 20;
+  WHERE state = 'waiting'
+    AND waiting_since IS NOT NULL
+    AND waiting_since < NOW() - INTERVAL '300 seconds'
+    AND (fairness IS NULL OR fairness < 20);
   
   -- Update queue fairness to match users_state
   UPDATE queue

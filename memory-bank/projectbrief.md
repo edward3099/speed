@@ -1,12 +1,20 @@
 ## Project Brief
 
-- **Project**: Speed Date web experience
-- **Purpose**: Build an interactive, design-forward matchmaking experience that showcases various engagement flows (dashboard, onboarding, spin, video date) within a single Next.js app.
+- **Project**: Speed Date - Production Speed Dating Application
+- **Purpose**: A full-stack production speed dating platform where users can match, vote, and have video dates in real-time. The application handles real-time matching, voting windows, video conferencing, and complex state management.
 - **Core requirements**:
-  - Use the Next.js App Router with TypeScript, Tailwind, and Chakra UI for layout and styling primitives.
-  - Provide reusable UI components (cards, timers, controls) that support rapid experimentation.
-  - Ensure the project can be demoed remotely via Cloudflare Tunnel.
+  - Next.js 16 App Router with TypeScript, Tailwind CSS, and Chakra UI
+  - Supabase backend with PostgreSQL database for matching logic, state management, and user data
+  - Real-time matching system with queue management, fairness algorithms, and race condition prevention
+  - Voting system with time-limited windows and automatic outcome resolution
+  - LiveKit integration for real-time video dating
+  - WebSocket/Realtime subscriptions for live updates
+  - Comprehensive testing suite (Playwright, Vitest) with load testing capabilities
+  - Production features: cron jobs, heartbeat system, disconnect handling, admin dashboards
+  - Production deployment on Vercel at `https://speed-silk.vercel.app`
 - **High-level deliverables**:
-  - Production-ready Next.js project structure with global styling, layouts, and shared providers.
-  - Feature pages for onboarding, dashboard widgets, and interactive spin/video date flows.
-  - Cloudflare Tunnel workflow so stakeholders can access the dev server without direct network access.
+  - Complete user flow: Landing → Onboarding → Dashboard → Spin → Spinning → Voting Window → Video Date
+  - Database architecture with optimized matching functions, state management, and constraints
+  - Real-time matching engine with event-driven architecture
+  - Video dating experience with LiveKit integration
+  - Admin tools and monitoring systems

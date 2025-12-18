@@ -29,6 +29,14 @@ function ErrorDebugger() {
     const shouldFilterError = (args: any[]): boolean => {
       const errorString = args.join(' ')
       
+      // Filter AbortError - this is expected when multiple play() calls happen
+      // It's not an error, just normal browser behavior
+      if (errorString.includes('The operation was aborted') || 
+          errorString.includes('AbortError') ||
+          errorString.includes('operation was aborted')) {
+        return true
+      }
+      
       // Check all args for LiveKit error objects (details might be in any position)
       let hasLiveKitErrorObject = false
       for (const arg of args) {
@@ -43,6 +51,18 @@ function ErrorDebugger() {
               break
             }
           }
+          // Check if it's an AbortError DOMException
+          if (arg instanceof DOMException && arg.name === 'AbortError') {
+            return true
+          }
+          // Check if error object has name property indicating AbortError
+          if ('name' in arg && arg.name === 'AbortError') {
+            return true
+          }
+        }
+        // Check if it's an Error with AbortError name
+        if (arg instanceof Error && arg.name === 'AbortError') {
+          return true
         }
       }
       
@@ -50,6 +70,41 @@ function ErrorDebugger() {
       const firstArgString = typeof firstArg === 'object' && firstArg !== null 
         ? JSON.stringify(firstArg) 
         : String(firstArg || '')
+      
+      // Filter AbortError - this is expected when multiple play() calls happen
+      // It's not an error, just normal browser behavior
+      const isAbortError = 
+        errorString.includes('The operation was aborted') || 
+        errorString.includes('AbortError') ||
+        errorString.includes('operation was aborted') ||
+        (errorString.includes('Error playing') && errorString.includes('aborted')) ||
+        (errorString.includes('ref callback') && errorString.includes('aborted')) ||
+        (errorString.includes('enableCameraAndMic') && errorString.includes('aborted')) ||
+        (errorString.includes('updateLocalTracks') && errorString.includes('aborted'))
+      
+      // Check args for AbortError objects
+      let hasAbortError = false
+      if (!isAbortError) {
+        for (const arg of args) {
+          if (typeof arg === 'object' && arg !== null) {
+            // Check if it's an AbortError DOMException
+            if (arg instanceof DOMException && arg.name === 'AbortError') {
+              hasAbortError = true
+              break
+            }
+            // Check if error object has name property indicating AbortError
+            if ('name' in arg && arg.name === 'AbortError') {
+              hasAbortError = true
+              break
+            }
+          }
+          // Check if it's an Error with AbortError name
+          if (arg instanceof Error && arg.name === 'AbortError') {
+            hasAbortError = true
+            break
+          }
+        }
+      }
       
       // Filter LiveKit/WebRTC errors that are harmless
       const isLiveKitError = 
@@ -78,6 +133,9 @@ function ErrorDebugger() {
         errorString.includes('Error subscribing to') || // Retry logic handles this
         errorString.includes('could not find local track subscription') || // LiveKit internal warning during cleanup
         errorString.includes('local track subscription') || // LiveKit internal warnings
+        errorString.includes('Remote video suspended') || // Resume logic handles this
+        errorString.includes('video suspended') || // Resume logic handles this
+        errorString.includes('WebRTC engine not ready') || // Engine ready check handles this
         hasLiveKitErrorObject ||
         (typeof firstArg === 'object' && firstArg !== null && 'room' in firstArg && (
           ('error' in firstArg && Object.keys(firstArg.error || {}).length === 0) ||
@@ -97,7 +155,7 @@ function ErrorDebugger() {
         errorString.includes('NODE_OPTIONs are not supported') ||
         errorString.includes('electron/shell/common/node_bindings')
 
-      return isLiveKitError || isRpcError || isDevtoolsError
+      return isAbortError || hasAbortError || isLiveKitError || isRpcError || isDevtoolsError
     }
 
     // Function to add error to log

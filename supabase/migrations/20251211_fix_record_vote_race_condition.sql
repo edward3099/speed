@@ -78,8 +78,83 @@ BEGIN
     END IF;
   END IF;
 
-  -- CRITICAL: Re-read from database to get current vote state (handles race conditions)
-  -- Use retry mechanism to handle simultaneous votes
+  -- CRITICAL: If current vote is "pass" (respin), resolve immediately regardless of partner's vote
+  -- This ensures both users are redirected to spinning immediately when one votes respin
+  IF p_vote = 'pass' THEN
+    -- Re-read to get current state (partner might have voted in parallel)
+    SELECT user1_vote, user2_vote
+    INTO v_match.user1_vote, v_match.user2_vote
+    FROM matches
+    WHERE match_id = p_match_id;
+
+    -- Determine outcome based on what we know
+    IF v_match.user1_vote IS NOT NULL AND v_match.user2_vote IS NOT NULL THEN
+      -- Both voted - determine outcome
+      v_outcome := CASE
+        WHEN v_match.user1_vote = 'yes' AND v_match.user2_vote = 'yes' THEN 'both_yes'
+        WHEN v_match.user1_vote = 'yes' AND v_match.user2_vote = 'pass' THEN 'yes_pass'
+        WHEN v_match.user1_vote = 'pass' AND v_match.user2_vote = 'yes' THEN 'yes_pass'
+        WHEN v_match.user1_vote = 'pass' AND v_match.user2_vote = 'pass' THEN 'pass_pass'
+        ELSE 'pass_pass' -- Fallback
+      END;
+    ELSE
+      -- Only one voted (the pass vote) - treat as pass_pass and redirect both immediately
+      v_outcome := 'pass_pass';
+    END IF;
+
+    -- Update match with outcome - CLEAR vote_window_expires_at to satisfy constraint
+    UPDATE matches
+    SET 
+      outcome = v_outcome,
+      status = 'completed',
+      vote_window_expires_at = NULL,
+      vote_window_started_at = NULL,
+      updated_at = NOW()
+    WHERE match_id = p_match_id;
+
+    -- Handle outcome - redirect both users to spinning (waiting state)
+    IF v_outcome = 'both_yes' THEN
+      -- Both → idle, create video_date (handled by API)
+      UPDATE users_state
+      SET state = 'idle', match_id = NULL, partner_id = NULL, updated_at = NOW()
+      WHERE user_id IN (v_match.user1_id, v_match.user2_id);
+      
+    ELSIF v_outcome = 'yes_pass' THEN
+      -- Both → waiting (auto-requeue), yes user gets +10 boost
+      UPDATE users_state
+      SET 
+        state = 'waiting',
+        waiting_since = NOW(),
+        match_id = NULL,
+        partner_id = NULL,
+        fairness = fairness + CASE WHEN (user_id = v_match.user1_id AND v_match.user1_vote = 'yes') 
+                                      OR (user_id = v_match.user2_id AND v_match.user2_vote = 'yes')
+                                    THEN 10 ELSE 0 END,
+        last_active = NOW(),
+        updated_at = NOW()
+      WHERE user_id IN (v_match.user1_id, v_match.user2_id);
+      
+    ELSIF v_outcome = 'pass_pass' THEN
+      -- Both → waiting (auto-requeue), no boosts
+      UPDATE users_state
+      SET 
+        state = 'waiting',
+        waiting_since = NOW(),
+        match_id = NULL,
+        partner_id = NULL,
+        last_active = NOW(),
+        updated_at = NOW()
+      WHERE user_id IN (v_match.user1_id, v_match.user2_id);
+    END IF;
+
+    RETURN jsonb_build_object(
+      'outcome', v_outcome,
+      'completed', true,
+      'message', 'Match resolved immediately due to respin vote - both users redirected to spinning'
+    );
+  END IF;
+
+  -- For "yes" votes, use retry mechanism to handle simultaneous votes
   LOOP
     -- Select with FOR UPDATE SKIP LOCKED to avoid deadlocks, but we'll check without locking first
     -- (FOR UPDATE would lock the row, which could cause issues with simultaneous votes)
@@ -114,6 +189,83 @@ BEGIN
       EXIT; -- Exit loop, both votes present after retry
     END IF;
   END LOOP;
+
+  -- CRITICAL: If current vote is "pass" (respin), resolve immediately regardless of partner's vote
+  -- This ensures both users are redirected to spinning immediately when one votes respin
+  IF p_vote = 'pass' THEN
+    -- Pass vote triggers immediate resolution - don't wait for partner
+    -- Determine outcome based on what we know
+    IF v_both_votes_present THEN
+      -- Both voted - determine outcome
+      v_outcome := CASE
+        WHEN v_match.user1_vote = 'yes' AND v_match.user2_vote = 'yes' THEN 'both_yes'
+        WHEN v_match.user1_vote = 'yes' AND v_match.user2_vote = 'pass' THEN 'yes_pass'
+        WHEN v_match.user1_vote = 'pass' AND v_match.user2_vote = 'yes' THEN 'yes_pass'
+        WHEN v_match.user1_vote = 'pass' AND v_match.user2_vote = 'pass' THEN 'pass_pass'
+        ELSE 'pass_pass' -- Fallback
+      END;
+    ELSE
+      -- Only one voted (the pass vote) - treat as pass_pass and redirect both immediately
+      v_outcome := 'pass_pass';
+    END IF;
+
+    -- Update match with outcome - CLEAR vote_window_expires_at to satisfy constraint
+    UPDATE matches
+    SET 
+      outcome = v_outcome,
+      status = 'completed',
+      vote_window_expires_at = NULL,
+      vote_window_started_at = NULL,
+      updated_at = NOW()
+    WHERE match_id = p_match_id;
+
+    -- Handle outcome (all in one place)
+    v_partner_id := CASE 
+      WHEN v_user_is_user1 THEN v_match.user2_id
+      ELSE v_match.user1_id
+    END;
+
+    -- Apply outcome logic
+    IF v_outcome = 'both_yes' THEN
+      -- Both → idle, create video_date (handled by API)
+      UPDATE users_state
+      SET state = 'idle', match_id = NULL, partner_id = NULL, updated_at = NOW()
+      WHERE user_id IN (v_match.user1_id, v_match.user2_id);
+      
+    ELSIF v_outcome = 'yes_pass' THEN
+      -- Both → waiting (auto-requeue), yes user gets +10 boost
+      UPDATE users_state
+      SET 
+        state = 'waiting',
+        waiting_since = NOW(),
+        match_id = NULL,
+        partner_id = NULL,
+        fairness = fairness + CASE WHEN (user_id = v_match.user1_id AND v_match.user1_vote = 'yes') 
+                                      OR (user_id = v_match.user2_id AND v_match.user2_vote = 'yes')
+                                    THEN 10 ELSE 0 END,
+        last_active = NOW(),
+        updated_at = NOW()
+      WHERE user_id IN (v_match.user1_id, v_match.user2_id);
+      
+    ELSIF v_outcome = 'pass_pass' THEN
+      -- Both → waiting (auto-requeue), no boosts
+      UPDATE users_state
+      SET 
+        state = 'waiting',
+        waiting_since = NOW(),
+        match_id = NULL,
+        partner_id = NULL,
+        last_active = NOW(),
+        updated_at = NOW()
+      WHERE user_id IN (v_match.user1_id, v_match.user2_id);
+    END IF;
+
+    RETURN jsonb_build_object(
+      'outcome', v_outcome,
+      'completed', true,
+      'message', 'Match resolved immediately due to respin vote'
+    );
+  END IF;
 
   -- Check if both votes received (using fresh database values)
   IF v_both_votes_present THEN
@@ -182,7 +334,7 @@ BEGIN
       'completed', true
     );
   ELSE
-    -- Waiting for partner
+    -- Waiting for partner (only for "yes" votes - pass votes are handled above)
     RETURN jsonb_build_object(
       'outcome', NULL,
       'completed', false,

@@ -662,8 +662,8 @@ function VotingWindowContent() {
           router.push(`/video-date?matchId=${matchId}`)
           return
         } else if (data.outcome === 'yes_pass' || data.outcome === 'pass_pass') {
-          // Yes+pass or pass+pass → auto-requeued, redirect to spinning
-          console.log('Match completed, auto-requeued', { outcome: data.outcome })
+          // Yes+pass or pass+pass → auto-requeued, redirect to spinning immediately
+          console.log('✅ Match completed, redirecting to spinning immediately', { outcome: data.outcome, message: data.message })
           router.push('/spinning')
           return
         }

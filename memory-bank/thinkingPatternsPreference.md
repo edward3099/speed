@@ -56,3 +56,24 @@ When analyzing a problem:
 15. Model temporally with temporal_thinking
 
 Then synthesize all insights into a comprehensive solution.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -32,12 +32,23 @@ export async function GET(request: NextRequest) {
     // Use pooled service client for better performance
     const supabase = getPooledServiceClient()
 
-    // Find waiting users with recent activity (eligible for matching)
+    // IMPROVED: Use new function to retry matching for stuck users (>30s waiting)
+    // This handles users stuck due to race conditions or high load
+    const { data: stuckUsersResult, error: stuckError } = await supabase
+      .rpc('retry_matching_stuck_users')
+
+    if (stuckError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Error retrying stuck users:', stuckError)
+      }
+    }
+
+    // Also retry regular waiting users with recent activity (standard retry)
     const { data: waitingUsers, error: queryError } = await supabase
       .from('users_state')
       .select('user_id')
       .eq('state', 'waiting')
-      .gt('last_active', new Date(Date.now() - 10000).toISOString())
+      .gt('last_active', new Date(Date.now() - 30000).toISOString()) // Extended to 30s
       .limit(50) // Process max 50 users per run to prevent overload
 
     if (queryError) {
@@ -54,20 +65,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (!waitingUsers || waitingUsers.length === 0) {
-      return NextResponse.json({
-        success: true,
-        retriedCount: 0,
-        matchedCount: 0,
-        timestamp: new Date().toISOString(),
-      })
-    }
-
-    // Retry matching for each waiting user
-    let matchedCount = 0
+    // Retry matching for regular waiting users
+    let regularMatchedCount = 0
     const errors: string[] = []
 
-    for (const user of waitingUsers) {
+    for (const user of waitingUsers || []) {
       const { data: matchId, error: matchError } = await supabase.rpc('try_match_user', {
         p_user_id: user.user_id
       })
@@ -78,21 +80,31 @@ export async function GET(request: NextRequest) {
         }
         errors.push(`${user.user_id}: ${matchError.message}`)
       } else if (matchId) {
-        matchedCount++
+        regularMatchedCount++
       }
     }
 
+    // Combine results from stuck users and regular retries
+    const stuckRetried = stuckUsersResult?.[0]?.retried_count || 0
+    const stuckMatched = stuckUsersResult?.[0]?.matched_count || 0
+    const totalRetried = stuckRetried + (waitingUsers?.length || 0)
+    const totalMatched = stuckMatched + regularMatchedCount
+
     const result = {
       success: true,
-      retriedCount: waitingUsers.length,
-      matchedCount,
+      retriedCount: totalRetried,
+      matchedCount: totalMatched,
+      stuckUsersRetried: stuckRetried,
+      stuckUsersMatched: stuckMatched,
+      regularUsersRetried: waitingUsers?.length || 0,
+      regularUsersMatched: regularMatchedCount,
       errors: errors.length > 0 ? errors : undefined,
       timestamp: new Date().toISOString(),
     }
 
     // Only log if matches were created (reduce noise)
-    if (matchedCount > 0 && process.env.NODE_ENV === 'development') {
-      console.log(`✅ Retry matching: ${matchedCount} matches created from ${waitingUsers.length} waiting users`)
+    if (totalMatched > 0 && process.env.NODE_ENV === 'development') {
+      console.log(`✅ Retry matching: ${totalMatched} matches created (${stuckMatched} from stuck users, ${regularMatchedCount} from regular users)`)
     }
 
     return NextResponse.json(result)
@@ -114,6 +126,28 @@ export async function GET(request: NextRequest) {
 
 // Also support POST for flexibility
 export const POST = GET
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

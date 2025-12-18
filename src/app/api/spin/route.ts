@@ -110,33 +110,80 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Event-driven matching: Immediately try to match this user
-    const { data: matchId, error: matchError } = await supabase.rpc('try_match_user', {
+    // Event-driven matching: Try to match this user with retry mechanism
+    // CRITICAL FIX: Retry matching to handle race conditions when both users spin simultaneously
+    // When both users click at the same time, one might try to match before the other joins queue
+    let finalMatchId: string | null = null
+    let matchError: any = null
+    
+    // First attempt: immediate match
+    const { data: matchId, error: firstMatchError } = await supabase.rpc('try_match_user', {
       p_user_id: user.id
     })
     
-    // Release connection throttle token on success
-    connectionThrottle.release()
-    
-    if (matchError && process.env.NODE_ENV === 'development') {
-      // Log but don't fail - matching might fail if no partner available
-      console.warn('Matching attempt failed (may be normal):', matchError.message)
+    if (firstMatchError && process.env.NODE_ENV === 'development') {
+      console.warn('First matching attempt failed:', firstMatchError.message)
     }
     
-    // CRITICAL FIX: If try_match_user returned NULL, check again if user is now matched
-    // This handles race conditions where partner matched this user while we were trying to match
-    let finalMatchId = matchId
-    if (!matchId) {
-      const { data: recheckStatus } = await supabase.rpc('get_user_match_status', {
+    finalMatchId = matchId
+    
+    // CRITICAL FIX: If no match found, wait briefly and retry (handles simultaneous spin race condition)
+    // When both users click simultaneously, one might try to match before the other joins queue
+    if (!finalMatchId) {
+      // Wait 100ms for other users to join queue
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Retry matching
+      const { data: retryMatchId, error: retryError } = await supabase.rpc('try_match_user', {
         p_user_id: user.id
       })
-      if (recheckStatus?.match?.match_id) {
-        finalMatchId = recheckStatus.match.match_id
+      
+      if (retryError && process.env.NODE_ENV === 'development') {
+        console.warn('Retry matching attempt failed:', retryError.message)
+      }
+      
+      if (retryMatchId) {
+        finalMatchId = retryMatchId
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ User was matched by partner while we were trying to match them')
+          console.log('✅ Match found on retry (race condition handled)')
         }
       }
     }
+    
+    // CRITICAL FIX: Final check with retry - user might have been matched by partner while we were trying to match
+    // This handles race conditions where partner matched this user while we were trying to match
+    // Add retry with delay to handle transaction visibility delays
+    if (!finalMatchId) {
+      // First immediate check
+      let recheckStatus = await supabase.rpc('get_user_match_status', {
+        p_user_id: user.id
+      })
+      
+      if (recheckStatus.data?.match?.match_id) {
+        finalMatchId = recheckStatus.data.match.match_id
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ User was matched by partner (immediate recheck)')
+        }
+      } else {
+        // Retry after small delay to handle transaction visibility
+        // When both users spin simultaneously, one creates match, other might not see it immediately
+        await new Promise(resolve => setTimeout(resolve, 150))
+        
+        recheckStatus = await supabase.rpc('get_user_match_status', {
+          p_user_id: user.id
+        })
+        
+        if (recheckStatus.data?.match?.match_id) {
+          finalMatchId = recheckStatus.data.match.match_id
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ User was matched by partner (retry recheck)')
+          }
+        }
+      }
+    }
+    
+    // Release connection throttle token on success
+    connectionThrottle.release()
     
     // CRITICAL: Invalidate cache for this user (match status changed)
     // This ensures the spinning page gets fresh data and redirects correctly
@@ -145,12 +192,12 @@ export async function POST(request: NextRequest) {
     
     // If matched, also invalidate partner's cache IMMEDIATELY
     // This is critical - partner must see match status change instantly
-    if (matchId) {
+    if (finalMatchId) {
       // Get partner ID from match - use the match data we already have
       const { data: matchData, error: matchDataError } = await supabase
         .from('matches')
         .select('user1_id, user2_id')
-        .eq('match_id', matchId)
+        .eq('match_id', finalMatchId)
         .single()
       
       if (!matchDataError && matchData) {
@@ -169,9 +216,9 @@ export async function POST(request: NextRequest) {
     // Return match status
     return NextResponse.json({
       success: true,
-      matched: matchId !== null,
-      match_id: matchId || undefined,
-      message: matchId ? 'Matched immediately' : 'Joined queue, waiting for partner'
+      matched: finalMatchId !== null,
+      match_id: finalMatchId || undefined,
+      message: finalMatchId ? 'Matched immediately' : 'Joined queue, waiting for partner'
     })
     
   } catch (error: any) {

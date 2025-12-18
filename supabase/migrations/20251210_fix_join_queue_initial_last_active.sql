@@ -149,3 +149,26 @@ COMMENT ON FUNCTION join_queue IS 'CRITICAL FIX: Sets last_active on initial joi
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

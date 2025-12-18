@@ -34,24 +34,41 @@ export function startMatchingScheduler() {
             const { getPooledServiceClient } = await import('@/lib/supabase/pooled-client')
             const supabase = getPooledServiceClient()
             
-            // Find waiting users with recent activity
+            // IMPROVED: First retry stuck users (>30s waiting)
+            let stuckResult: any = null
+            try {
+              const { data, error } = await supabase.rpc('retry_matching_stuck_users')
+              if (!error) {
+                stuckResult = { data }
+              }
+            } catch {
+              // Ignore errors
+            }
+            
+            // Also retry regular waiting users with recent activity (extended to 30s)
             const { data: waitingUsers, error: queryError } = await supabase
               .from('users_state')
               .select('user_id')
               .eq('state', 'waiting')
-              .gt('last_active', new Date(Date.now() - 10000).toISOString())
+              .gt('last_active', new Date(Date.now() - 30000).toISOString()) // Extended to 30s
               .limit(50)
             
             if (queryError || !waitingUsers || waitingUsers.length === 0) {
               return
             }
             
-            // Retry matching for each waiting user
-            for (const user of waitingUsers) {
-              await supabase.rpc('try_match_user', {
-                p_user_id: user.user_id
-              })
-            }
+            // Retry matching for each waiting user (in parallel for better performance)
+            const retryPromises = waitingUsers.map(async user => {
+              try {
+                await supabase.rpc('try_match_user', {
+                  p_user_id: user.user_id
+                })
+              } catch {
+                // Ignore individual errors
+              }
+            })
+            
+            await Promise.all(retryPromises)
           } catch (error) {
             // Silently fail - don't log expected errors
           }
