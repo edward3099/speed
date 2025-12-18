@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Filter, Sparkles as SparklesIcon, MapPin, User, Calendar, MessageCircle } from "lucide-react"
+import { Filter, Sparkles as SparklesIcon, MapPin, User, Calendar, MessageCircle, Users } from "lucide-react"
 import { PrimaryButton } from "@/components/ui/primary-button"
 import { Modal } from "@/components/ui/modal"
 import { ShimmerButton } from "@/components/magicui/shimmer-button"
@@ -63,7 +63,89 @@ export default function spin() {
   })
   const [showFilters, setShowFilters] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
+  const [supportMessage, setSupportMessage] = useState("")
+  const [sendingSupport, setSendingSupport] = useState(false)
   const [started, setStarted] = useState(false)
+  const [profileModalWidth, setProfileModalWidth] = useState<string>("85%")
+  const [onlineCount, setOnlineCount] = useState<number>(100)
+  
+  // Set responsive modal width - compact but readable
+  useEffect(() => {
+    const updateWidth = () => {
+      if (window.innerWidth >= 768) {
+        setProfileModalWidth("500px")
+      } else if (window.innerWidth >= 640) {
+        setProfileModalWidth("450px")
+      } else {
+        setProfileModalWidth("85%")
+      }
+    }
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
+
+  // Count that changes up/down based on time (same for all users, variable intervals 3-10 seconds)
+  useEffect(() => {
+    // Deterministic random function based on seed (ensures all users see same changes)
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed) * 10000
+      return x - Math.floor(x)
+    }
+    
+    const updateCount = () => {
+      // Use current time in seconds for real-time updates
+      const now = Date.now()
+      const baseTimestamp = new Date('2024-01-01T00:00:00Z').getTime()
+      const elapsedSeconds = Math.floor((now - baseTimestamp) / 1000)
+      
+      // Start from a base count
+      let count = 500
+      let timeAccumulated = 0
+      let periodIndex = 0
+      
+      // Process periods until we reach current time
+      // Limit iterations to prevent infinite loops
+      const maxIterations = 100000
+      
+      while (timeAccumulated < elapsedSeconds && periodIndex < maxIterations) {
+        // Calculate interval for this period (3-10 seconds, deterministic)
+        const intervalSeed = periodIndex * 137
+        const interval = 3 + Math.floor(seededRandom(intervalSeed) * 8) // 3-10 seconds
+        
+        const periodEnd = timeAccumulated + interval
+        
+        // If this period has passed, apply the change
+        if (periodEnd <= elapsedSeconds) {
+          // Calculate change amount for this period (-5 to +5)
+          const changeSeed = periodIndex * 271
+          const changeAmount = Math.floor(seededRandom(changeSeed) * 11) - 5
+          
+          count += changeAmount
+          
+          // Keep within bounds
+          count = Math.max(100, Math.min(1000, count))
+        } else {
+          // We haven't reached this period yet, stop processing
+          break
+        }
+        
+        timeAccumulated = periodEnd
+        periodIndex++
+      }
+      
+      setOnlineCount(count)
+    }
+    
+    // Update immediately
+    updateCount()
+    
+    // Update every 2 seconds to catch changes promptly
+    const interval = setInterval(updateCount, 2000)
+    
+    return () => clearInterval(interval)
+  }, [])
   const [currentRuleIndex, setCurrentRuleIndex] = useState(0)
   const [userVote, setUserVote] = useState<'yes' | 'pass' | null>(null)
   
@@ -451,8 +533,30 @@ export default function spin() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-          className="flex-shrink-0"
+          className="flex items-center gap-2 sm:gap-3"
         >
+          {/* Online count indicator */}
+          <motion.div
+            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300 flex-shrink-0" />
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={onlineCount}
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                transition={{ duration: 0.3 }}
+                className="text-xs sm:text-sm font-medium text-white whitespace-nowrap"
+              >
+                {onlineCount} people online
+              </motion.span>
+            </AnimatePresence>
+          </motion.div>
+
           <ShimmerButton
             onClick={() => setShowFilters(true)}
             className="h-9 sm:h-12 md:h-14 bg-teal-300 text-black hover:bg-teal-300 hover:text-black active:scale-95 touch-manipulation !px-3 sm:!px-5 md:!px-6"
@@ -614,7 +718,7 @@ export default function spin() {
                 ease: "easeInOut",
               }}
             >
-              <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-teal-300/20 rounded-full blur-3xl" />
+              <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-teal-300/15 rounded-full blur-3xl sm:blur-3xl md:blur-3xl" style={{ transform: 'translateZ(0)', willChange: 'opacity, transform' }} />
             </motion.div>
 
             <motion.div
@@ -877,28 +981,29 @@ export default function spin() {
       <Modal
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}
-        title="your profile"
-        className="max-w-sm sm:max-w-md"
+        title={user.name}
+        className="max-w-[85%] sm:max-w-[450px] md:max-w-[500px]"
+        style={{ maxWidth: profileModalWidth }}
       >
         <motion.div
-          className="flex flex-col gap-2.5 sm:gap-3 md:gap-4 min-w-0 max-w-full overflow-x-hidden"
+          className="flex flex-col gap-2 min-w-0 w-full overflow-hidden max-h-[75vh] px-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
         >
+          {/* Profile Header - Very Compact */}
           <motion.div
-            className="flex flex-col items-center gap-2 sm:gap-3 min-w-0 max-w-full overflow-x-hidden"
+            className="flex flex-row items-center justify-center gap-2 pb-2 border-b border-white/15"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="scale-70 sm:scale-90">
+            <div className="scale-50">
               <EditableProfilePicture
                 src={user.photo || undefined}
                 alt={`${user.name}'s profile`}
                 size="lg"
                 onImageChange={async (file) => {
-                  // UI only - create local URL for preview
                   const reader = new FileReader()
                   reader.onloadend = () => {
                     const dataUrl = reader.result as string
@@ -908,79 +1013,153 @@ export default function spin() {
                 }}
               />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-teal-300">{user.name}</h2>
           </motion.div>
 
-          <motion.div
-            className="flex flex-col gap-1 sm:gap-1.5 min-w-0 max-w-full overflow-x-hidden"
+          {/* Profile Details - Very Compact */}
+          <div className="flex flex-col gap-2 w-full flex-1 min-h-0 overflow-y-auto">
+            {/* Age - Very Compact */}
+            <motion.div
+              className="w-full bg-white/5 rounded-lg p-2 border border-white/10"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-teal-300 flex-shrink-0" />
+                  <label className="text-xs font-semibold text-teal-300">Age</label>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-lg sm:text-xl font-bold text-white leading-none">{user.age}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Location - Very Compact */}
+            <motion.div
+              className="w-full bg-white/5 rounded-lg p-2 border border-white/10"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 text-teal-300 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <label className="text-xs font-semibold text-teal-300 inline-block mr-2">Location:</label>
+                  <p className="text-xs text-white break-words leading-tight inline">{user.location || "Not set"}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Bio - Very Compact */}
+            <motion.div
+              className="w-full bg-white/5 rounded-lg p-2 border border-white/10"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <div className="flex items-start gap-2">
+                <MessageCircle className="w-3.5 h-3.5 text-teal-300 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <label className="text-xs font-semibold text-teal-300 inline-block mr-2">Bio:</label>
+                  <p className="text-xs text-white/90 break-words leading-tight inline">{user.bio || "Not set"}</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Support Button - Very Compact */}
+          <motion.button
+            onClick={() => {
+              setShowProfile(false)
+              setShowSupportModal(true)
+            }}
+            className="mt-0 w-full bg-teal-300/20 hover:bg-teal-300/30 border border-teal-300/40 hover:border-teal-300/60 text-teal-300 px-3 py-2 rounded-lg font-semibold text-xs transition-all duration-200 active:scale-[0.98] touch-manipulation flex items-center justify-center gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <label className="text-xs sm:text-sm font-medium opacity-80 flex items-center gap-2">
-              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-teal-300" />
-              age
-            </label>
-            <div className="p-2.5 sm:p-3 rounded-xl bg-white/5 border border-white/10 min-w-0 max-w-full overflow-x-hidden">
-              <p className="text-sm sm:text-base opacity-80 break-words">{user.age}</p>
-            </div>
-            <p className="text-[10px] sm:text-xs opacity-60">age cannot be changed</p>
-          </motion.div>
-
-          <motion.div
-            className="flex flex-col gap-1 sm:gap-1.5 min-w-0 max-w-full overflow-x-hidden"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <label className="text-xs sm:text-sm font-medium opacity-80 flex items-center gap-2">
-              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-teal-300" />
-              location
-            </label>
-            <EditableBio
-              initialBio={user.location}
-              onBioChange={(newLocation) => {
-                saveProfile({ location: newLocation })
-              }}
-              maxLength={100}
-            />
-          </motion.div>
-
-          <motion.div
-            className="min-w-0 max-w-full overflow-x-hidden"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <label className="text-xs sm:text-sm font-medium opacity-80 mb-1 sm:mb-1.5 block flex items-center gap-2">
-              <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 text-teal-300" />
-              bio
-            </label>
-            <EditableBio
-              initialBio={user.bio}
-              onBioChange={(newBio) => {
-                saveProfile({ bio: newBio })
-              }}
-              maxLength={20}
-            />
-          </motion.div>
-
-          <motion.div
-            className="p-2.5 sm:p-3 rounded-xl bg-teal-300/10 border border-teal-300/20 min-w-0 max-w-full overflow-x-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
           >
-            <div className="flex items-start gap-2 sm:gap-2.5 min-w-0">
-              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-300 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] sm:text-xs font-medium text-teal-300 mb-0.5 break-words">profile tips</p>
-                <p className="text-[10px] sm:text-xs opacity-70 leading-relaxed break-words overflow-wrap-anywhere">
-                  keep your bio and location updated. this helps others find you and get to know the real you!
-                </p>
-              </div>
-            </div>
-          </motion.div>
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>Chat to Support</span>
+          </motion.button>
+        </motion.div>
+      </Modal>
+
+      {/* Support Modal */}
+      <Modal
+        isOpen={showSupportModal}
+        onClose={() => {
+          setShowSupportModal(false)
+          setSupportMessage("")
+        }}
+        title="chat to support"
+        className="max-w-xs sm:max-w-sm"
+      >
+        <motion.div
+          className="flex flex-col gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex flex-col gap-2">
+            <label className="text-xs sm:text-sm font-medium opacity-80">
+              your message
+            </label>
+            <textarea
+              value={supportMessage}
+              onChange={(e) => setSupportMessage(e.target.value)}
+              placeholder="Type your message here..."
+              className="w-full p-3 sm:p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 outline-none focus:bg-white/15 focus:border-teal-300/50 transition-all duration-300 resize-none min-h-[120px] text-sm sm:text-base"
+              style={{ minHeight: '120px' }}
+            />
+          </div>
+
+          <button
+            onClick={async () => {
+              if (!supportMessage.trim()) return
+              
+              setSendingSupport(true)
+              try {
+                const { data: { user } } = await supabase.auth.getUser()
+                const userEmail = user?.email || 'Not provided'
+                const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Unknown'
+                
+                const response = await fetch('/api/admin/notify-telegram', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    type: 'support',
+                    userId: user?.id,
+                    userName: userName,
+                    userEmail: userEmail,
+                    message: supportMessage.trim(),
+                  }),
+                })
+
+                const data = await response.json()
+                
+                if (data.success) {
+                  setShowSupportModal(false)
+                  setSupportMessage("")
+                  // You could show a success toast here
+                } else {
+                  console.error('Failed to send support message:', data.error)
+                  // You could show an error toast here
+                }
+              } catch (error) {
+                console.error('Error sending support message:', error)
+                // You could show an error toast here
+              } finally {
+                setSendingSupport(false)
+              }
+            }}
+            disabled={!supportMessage.trim() || sendingSupport}
+            className="w-full bg-teal-300 text-black px-4 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 active:scale-95 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed hover:bg-teal-200"
+          >
+            {sendingSupport ? "sending..." : "send"}
+          </button>
         </motion.div>
       </Modal>
     </div>
