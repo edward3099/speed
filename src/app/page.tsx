@@ -22,7 +22,37 @@ export default function landing() {
   const router = useRouter()
   const supabase = createClient()
   const [showModal, setShowModal] = useState(false)
+  const [showLearnMoreModal, setShowLearnMoreModal] = useState(false)
+  const [learnMoreStep, setLearnMoreStep] = useState(1)
+  const [aboutPage, setAboutPage] = useState(0)
+  const [privacyPolicySections, setPrivacyPolicySections] = useState<string[]>([])
+  const [privacyPolicyPage, setPrivacyPolicyPage] = useState(0)
+  const [loadingPrivacyPolicy, setLoadingPrivacyPolicy] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  
+  // About content split into pages
+  const aboutPages = [
+    {
+      title: "about meetchristians.live",
+      content: `MeetChristians.live is a Christian speed dating platform that connects believers for real-time video speed dating experiences.
+
+How it works
+
+Press spin to join the matching queue. When matched, you'll see your partner and have 60 seconds to vote yes or pass.`
+    },
+    {
+      title: "video dates",
+      content: `When both users vote yes, you'll be connected for a real-time video date.
+
+This allows you to have meaningful conversations and get to know each other in a safe, controlled environment.`
+    },
+    {
+      title: "fair matching",
+      content: `Our algorithm respects your preferences (age, location, gender) and ensures fair matching based on wait times.
+
+We prioritize creating connections that align with your values and preferences while maintaining fairness for all users.`
+    }
+  ]
   const [mode, setMode] = useState("signin")
   const [onboardingStep, setOnboardingStep] = useState(1)
   const [email, setEmail] = useState("")
@@ -34,6 +64,108 @@ export default function landing() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [signUpSession, setSignUpSession] = useState<any>(null)
   
+  // Load privacy policy when navigating to step 2
+  useEffect(() => {
+    if (showLearnMoreModal && learnMoreStep === 2 && privacyPolicySections.length === 0 && !loadingPrivacyPolicy) {
+      setLoadingPrivacyPolicy(true)
+      
+      // Use our designed privacy policy for Christian speed dating platform
+      const privacyPolicyContent = [
+        `Privacy Policy
+
+Last Updated: December 2024
+
+Welcome to meetchristians.live, a Christian speed dating platform designed to help believers connect in a safe and meaningful way. We are committed to protecting your privacy and ensuring a secure environment for our community.
+
+This privacy policy explains how we collect, use, and protect your personal information when you use our platform.`,
+        
+        `Information We Collect
+
+We collect information that you provide directly to us:
+
+• Account Information: Name, email address, password, and profile details
+• Profile Information: Photos, bio, age, gender, location, and preferences
+• Matching Preferences: Age range, location preferences, and matching criteria
+• Communication Data: Messages, votes, and interactions with other users
+• Video Session Data: Information related to video dating sessions
+• Technical Data: Device information, IP address, and usage analytics`,
+        
+        `How We Use Your Information
+
+We use the information we collect to:
+
+• Create and manage your account on our platform
+• Match you with compatible Christian users based on your preferences
+• Facilitate video speed dating sessions through our platform
+• Send you important updates, notifications, and service communications
+• Ensure platform safety, security, and prevent fraud
+• Improve our services and user experience
+• Comply with legal obligations and protect our rights`,
+        
+        `Data Sharing and Disclosure
+
+We do not sell your personal information. We may share your information only in the following circumstances:
+
+• With Matched Users: Basic profile information is shared when you are matched with another user
+• Service Providers: We work with trusted partners who help us operate our platform (hosting, analytics, payment processing)
+• Legal Requirements: When required by law, court order, or to protect our rights and safety
+• With Your Consent: We may share information when you explicitly consent`,
+        
+        `Your Privacy Rights
+
+You have the following rights regarding your personal information:
+
+• Access: Request a copy of the personal information we hold about you
+• Correction: Update or correct inaccurate information in your profile
+• Deletion: Request deletion of your account and associated data
+• Opt-Out: Unsubscribe from marketing communications (service emails will continue)
+• Data Portability: Request your data in a portable format
+• Account Controls: Manage your privacy settings through your account dashboard`,
+        
+        `Security Measures
+
+We implement industry-standard security measures to protect your personal information:
+
+• Encrypted data transmission (SSL/TLS)
+• Secure password storage and authentication
+• Regular security audits and monitoring
+• Access controls and employee training
+
+However, no method of transmission over the internet is 100% secure. We encourage you to use strong passwords and be cautious when sharing information.`,
+        
+        `Christian Community Standards
+
+As a Christian platform, we are committed to:
+
+• Creating a safe, respectful environment for believers
+• Upholding biblical values in our community guidelines
+• Protecting the privacy and dignity of our users
+• Fostering meaningful connections based on shared faith`,
+        
+        `Children's Privacy
+
+Our platform is intended for users 18 years and older. We do not knowingly collect personal information from children under 18. If we become aware that we have collected information from a child under 18, we will take steps to delete such information promptly.`,
+        
+        `Changes to This Policy
+
+We may update this privacy policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the "Last Updated" date. We encourage you to review this policy periodically.`,
+        
+        `Contact Us
+
+If you have questions, concerns, or requests regarding this privacy policy or your personal information, please contact us:
+
+Email: privacy@meetchristians.live
+Platform: meetchristians.live
+
+We are committed to addressing your privacy concerns and will respond to your inquiries in a timely manner.`
+      ]
+      
+      setPrivacyPolicySections(privacyPolicyContent)
+      setPrivacyPolicyPage(0)
+      setLoadingPrivacyPolicy(false)
+    }
+  }, [showLearnMoreModal, learnMoreStep, privacyPolicySections.length, loadingPrivacyPolicy])
+
   // Onboarding form data
   const [onboardingData, setOnboardingData] = useState({
     name: "",
@@ -188,9 +320,12 @@ export default function landing() {
         bio: onboardingData.bio,
         photo: photoUrl,
         location: onboardingData.location || (() => {
+          // Location should be a single city, not filter cities
+          // If no location provided, use first city from filter (if available) or country
           const cities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
           if (cities.length > 0 && onboardingData.country) {
-            return `${cities.join(', ')}, ${onboardingData.country}`
+            // Use only the first city for location, not all filter cities
+            return `${cities[0]}, ${onboardingData.country}`
           }
           return onboardingData.country || ''
         })(),
@@ -345,7 +480,7 @@ export default function landing() {
       />
 
       {/* Mobile-first symmetrical design - S.P.A.R.K. Framework */}
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-center md:justify-between px-4 sm:px-5 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto pt-safe sm:pt-12 md:pt-16 lg:pt-20 pb-safe sm:pb-12 md:pb-16 gap-10 sm:gap-12 md:gap-14 lg:gap-16">
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-center md:justify-between px-4 sm:px-5 md:px-8 lg:px-12 xl:px-16 max-w-7xl mx-auto pt-14 sm:pt-16 pb-safe sm:pb-12 md:pb-16 gap-10 sm:gap-12 md:gap-14 lg:gap-16">
         {/* Hero content - Perfectly centered on mobile */}
         <motion.div 
           className="flex flex-col gap-5 sm:gap-6 md:gap-7 max-w-xl w-full text-center md:text-left"
@@ -360,7 +495,10 @@ export default function landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6 }}
           >
-            <TextReveal text="meet someone new" />
+            <TextReveal text="Meet Someone" />{" "}
+            <span className="whitespace-nowrap">
+              <TextReveal text="Special" />
+            </span>
           </motion.h1>
 
           {/* Description with refined spacing */}
@@ -370,7 +508,7 @@ export default function landing() {
             animate={{ opacity: 0.75, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
-            a clean modern way to connect through short face to face conversations. simple flow and smooth interactions.
+            Connect With Fellow Believers Through Real-Time Video Speed Dating. Find Meaningful Connections Based On Shared Faith And Values.
           </motion.p>
 
           {/* Action buttons - Perfectly symmetrical on mobile */}
@@ -390,6 +528,7 @@ export default function landing() {
             </ShimmerButton>
 
             <motion.button
+              onClick={() => setShowLearnMoreModal(true)}
               className="px-8 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold bg-white/10 text-white backdrop-blur-sm border border-white/20 transition-all hover:bg-white/20 hover:border-white/30 active:scale-95 w-full sm:w-auto touch-manipulation"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
@@ -416,8 +555,8 @@ export default function landing() {
         </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-95 backdrop-blur-sm flex items-start sm:items-center justify-center z-30 fade-in p-3 sm:p-4 overflow-y-auto">
-          <div className="w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md bg-[#0a0f1f] border border-white/30 p-5 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl flex flex-col gap-4 sm:gap-5 md:gap-6 mt-4 sm:mt-0 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-2xl flex items-start sm:items-center justify-center z-30 fade-in p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md bg-[#0a0f1f]/95 backdrop-blur-3xl border border-white/40 p-5 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl flex flex-col gap-4 sm:gap-5 md:gap-6 mt-4 sm:mt-0 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {/* Close button */}
             <button
               onClick={() => setShowModal(false)}
@@ -625,6 +764,197 @@ export default function landing() {
               close
             </button>
 
+          </div>
+        </div>
+      )}
+
+      {/* Learn More Modal */}
+      {showLearnMoreModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-30 fade-in p-3 sm:p-4">
+          <div className="w-full max-w-[calc(100vw-1.5rem)] sm:max-w-md bg-[#0a0f1f]/95 backdrop-blur-2xl border border-white/30 rounded-xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowLearnMoreModal(false)
+                setLearnMoreStep(1)
+                setAboutPage(0)
+                setPrivacyPolicyPage(0)
+                setPrivacyPolicySections([])
+              }}
+              className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition-all duration-200 touch-manipulation"
+              style={{ minWidth: '40px', minHeight: '40px' }}
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Step 1: About meetchristians.live */}
+            {learnMoreStep === 1 && (
+              <>
+                {/* Header - Fixed */}
+                <div className="px-5 sm:px-6 pt-4 sm:pt-5 pb-2 flex-shrink-0 border-b border-white/10">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl sm:text-2xl font-bold text-teal-300">
+                      {aboutPages[aboutPage].title}
+                    </h2>
+                    <span className="text-white/50 text-xs">
+                      {aboutPage + 1} / {aboutPages.length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Content - No scroll, fits in modal */}
+                <div className="flex-1 px-5 sm:px-6 py-3 overflow-hidden">
+                  <div className="whitespace-pre-wrap text-white/90 text-xs sm:text-sm leading-relaxed h-full">
+                    {aboutPages[aboutPage].content}
+                  </div>
+                </div>
+
+                {/* Buttons - Fixed at bottom */}
+                <div className="px-5 sm:px-6 py-3 border-t border-white/10 flex-shrink-0 bg-[#0a0f1f]/90 backdrop-blur-sm">
+                  <div className="flex gap-3">
+                    <button
+                      className="flex-1 bg-white/10 text-white px-4 py-2.5 rounded-lg font-semibold active:scale-95 text-xs sm:text-sm touch-manipulation border border-white/20 hover:bg-white/20 transition-all duration-300"
+                      onClick={() => {
+                        if (aboutPage > 0) {
+                          setAboutPage(aboutPage - 1)
+                        } else {
+                          setShowLearnMoreModal(false)
+                          setAboutPage(0)
+                        }
+                      }}
+                    >
+                      {aboutPage === 0 ? 'close' : 'previous'}
+                    </button>
+                    {aboutPage < aboutPages.length - 1 ? (
+                      <button
+                        className="flex-1 bg-teal-300 text-black px-4 py-2.5 rounded-lg font-semibold active:scale-95 text-xs sm:text-sm touch-manipulation shadow-lg shadow-teal-300/30 transition-all duration-300 hover:bg-teal-200"
+                        onClick={() => setAboutPage(aboutPage + 1)}
+                      >
+                        next
+                      </button>
+                    ) : (
+                      <button
+                        className="flex-1 bg-teal-300 text-black px-4 py-2.5 rounded-lg font-semibold active:scale-95 text-xs sm:text-sm touch-manipulation shadow-lg shadow-teal-300/30 transition-all duration-300 hover:bg-teal-200"
+                        onClick={() => {
+                          setLearnMoreStep(2)
+                          setPrivacyPolicyPage(0)
+                          setAboutPage(0)
+                        }}
+                      >
+                        privacy policy
+                      </button>
+                    )}
+                  </div>
+                  {aboutPage === 0 && (
+                    <button
+                      className="text-teal-300 text-center text-xs py-1.5 w-full touch-manipulation active:opacity-70 transition-opacity mt-1.5"
+                      onClick={() => {
+                        setShowLearnMoreModal(false)
+                        setLearnMoreStep(1)
+                        setAboutPage(0)
+                        setPrivacyPolicyPage(0)
+                        setPrivacyPolicySections([])
+                      }}
+                    >
+                      close
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Step 2: Privacy Policy */}
+            {learnMoreStep === 2 && (
+              <>
+                {/* Header - Fixed */}
+                <div className="px-5 sm:px-6 pt-4 sm:pt-5 pb-2 flex-shrink-0 border-b border-white/10">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl sm:text-2xl font-bold text-teal-300">
+                      privacy policy
+                    </h2>
+                    {privacyPolicySections.length > 0 && (
+                      <span className="text-white/50 text-xs">
+                        {privacyPolicyPage + 1} / {privacyPolicySections.length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Content - No scroll, fits in modal */}
+                <div className="flex-1 px-5 sm:px-6 py-3 overflow-hidden">
+                  {loadingPrivacyPolicy ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-white/70 text-sm">loading privacy policy...</p>
+                    </div>
+                  ) : privacyPolicySections.length > 0 ? (
+                    <div className="whitespace-pre-wrap text-white/90 text-xs sm:text-sm leading-relaxed h-full overflow-hidden">
+                      {privacyPolicySections[privacyPolicyPage]}
+                    </div>
+                  ) : (
+                    <div className="text-white/90 text-xs sm:text-sm">
+                      Privacy policy content not available
+                    </div>
+                  )}
+                </div>
+
+                {/* Buttons - Fixed at bottom */}
+                <div className="px-5 sm:px-6 py-3 border-t border-white/10 flex-shrink-0 bg-[#0a0f1f]/90 backdrop-blur-sm">
+                  <div className="flex gap-3">
+                    <button
+                      className="flex-1 bg-white/10 text-white px-4 py-2.5 rounded-lg font-semibold active:scale-95 text-xs sm:text-sm touch-manipulation border border-white/20 hover:bg-white/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => {
+                        if (privacyPolicyPage > 0) {
+                          setPrivacyPolicyPage(privacyPolicyPage - 1)
+                        } else {
+                          setLearnMoreStep(1)
+                          setAboutPage(aboutPages.length - 1)
+                        }
+                      }}
+                      disabled={loadingPrivacyPolicy}
+                    >
+                      previous
+                    </button>
+                    {privacyPolicyPage < privacyPolicySections.length - 1 ? (
+                      <button
+                        className="flex-1 bg-teal-300 text-black px-4 py-2.5 rounded-lg font-semibold active:scale-95 text-xs sm:text-sm touch-manipulation shadow-lg shadow-teal-300/30 transition-all duration-300 hover:bg-teal-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setPrivacyPolicyPage(privacyPolicyPage + 1)}
+                        disabled={loadingPrivacyPolicy || privacyPolicyPage >= privacyPolicySections.length - 1}
+                      >
+                        next
+                      </button>
+                    ) : (
+                      <button
+                        className="flex-1 bg-teal-300 text-black px-4 py-2.5 rounded-lg font-semibold active:scale-95 text-xs sm:text-sm touch-manipulation shadow-lg shadow-teal-300/30 transition-all duration-300 hover:bg-teal-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          setShowLearnMoreModal(false)
+                          setLearnMoreStep(1)
+                          setAboutPage(0)
+                          setPrivacyPolicyPage(0)
+                          setShowModal(true)
+                        }}
+                        disabled={loadingPrivacyPolicy}
+                      >
+                        get started
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    className="text-teal-300 text-center text-xs py-1.5 w-full touch-manipulation active:opacity-70 transition-opacity mt-1.5"
+                    onClick={() => {
+                      setShowLearnMoreModal(false)
+                      setLearnMoreStep(1)
+                      setAboutPage(0)
+                      setPrivacyPolicyPage(0)
+                      setPrivacyPolicySections([])
+                    }}
+                  >
+                    close
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1043,7 +1373,8 @@ export default function landing() {
                           setOnboardingData({
                             ...onboardingData,
                             city: newCities,
-                            location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                            // Don't update location here - location is set in step 7 (user's actual city)
+                            // Step 8 is for filter preferences only
                           })
                         }}
                         className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
@@ -1066,7 +1397,8 @@ export default function landing() {
                           setOnboardingData({
                             ...onboardingData,
                             city: newCities,
-                            location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                            // Don't update location here - location is set in step 7 (user's actual city)
+                            // Step 8 is for filter preferences only
                           })
                         }}
                         className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
@@ -1089,7 +1421,8 @@ export default function landing() {
                           setOnboardingData({
                             ...onboardingData,
                             city: newCities,
-                            location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                            // Don't update location here - location is set in step 7 (user's actual city)
+                            // Step 8 is for filter preferences only
                           })
                         }}
                         className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
@@ -1112,7 +1445,8 @@ export default function landing() {
                           setOnboardingData({
                             ...onboardingData,
                             city: newCities,
-                            location: newCities.length > 0 ? `${newCities.join(', ')}, ${onboardingData.country}` : onboardingData.country,
+                            // Don't update location here - location is set in step 7 (user's actual city)
+                            // Step 8 is for filter preferences only
                           })
                         }}
                         className={`p-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 touch-manipulation ${
@@ -1173,7 +1507,15 @@ export default function landing() {
               </button>
               <button
                 onClick={() => {
-                  // Validate gender on step 2
+                  // Validate step 1: Name
+                  if (onboardingStep === 1) {
+                    if (!onboardingData.name || onboardingData.name.trim().length === 0) {
+                      showWarning("Please enter your name")
+                      return
+                    }
+                  }
+                  
+                  // Validate step 2: Gender
                   if (onboardingStep === 2) {
                     if (!onboardingData.gender) {
                       showWarning("Please select your gender")
@@ -1181,18 +1523,57 @@ export default function landing() {
                     }
                   }
                   
-                  // Validate country on step 6
+                  // Step 3: Age - always valid (slider has default value)
+                  
+                  // Validate step 4: Bio
+                  if (onboardingStep === 4) {
+                    if (!onboardingData.bio || onboardingData.bio.trim().length === 0) {
+                      showWarning("Please tell us about yourself")
+                      return
+                    }
+                    // Bio has maxLength of 20, so we just need to check it's not empty
+                    if (onboardingData.bio.trim().length < 5) {
+                      showWarning("Please write at least 5 characters about yourself")
+                      return
+                    }
+                  }
+                  
+                  // Validate step 5: Photo
+                  if (onboardingStep === 5) {
+                    if (!onboardingData.photo || onboardingData.photo.trim().length === 0 || onboardingData.photo.includes('pravatar.cc')) {
+                      showWarning("Please upload your profile photo")
+                      return
+                    }
+                  }
+                  
+                  // Validate step 6: Country
                   if (onboardingStep === 6) {
                     if (!onboardingData.country) {
                       showWarning("Please select a country from the suggestions")
                       return
                     }
                   }
-                  // Validate city on step 7 (single selection required)
+                  
+                  // Validate step 7: City (single selection required)
                   if (onboardingStep === 7) {
                     const cities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
                     if (cities.length === 0) {
                       showWarning("Please select your city")
+                      return
+                    }
+                  }
+                  
+                  // Validate step 8: Preferences
+                  if (onboardingStep === 8) {
+                    // Age range is always valid (sliders have defaults)
+                    // City filters - at least one city should be selected
+                    const filterCities = Array.isArray(onboardingData.city) ? onboardingData.city : (onboardingData.city ? [onboardingData.city] : [])
+                    // Note: In step 8, city is used for filter preferences, not user location
+                    // The user location was set in step 7, so we need to check if they selected filter cities
+                    // Actually, looking at the code, step 8 uses the same city field but for filters
+                    // We should validate that at least one filter city is selected
+                    if (filterCities.length === 0) {
+                      showWarning("Please select at least one location for your preferences")
                       return
                     }
                   }
