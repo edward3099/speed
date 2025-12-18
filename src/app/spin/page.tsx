@@ -991,12 +991,61 @@ export default function spin() {
                 alt={`${user.name}'s profile`}
                 size="lg"
                 onImageChange={async (file) => {
-                  const reader = new FileReader()
-                  reader.onloadend = () => {
-                    const dataUrl = reader.result as string
-                    setUser(prev => prev ? { ...prev, photo: dataUrl } : null)
+                  try {
+                    const { data: { user: authUser } } = await supabase.auth.getUser()
+                    if (!authUser) {
+                      console.error('No authenticated user found')
+                      return
+                    }
+
+                    // Convert file to blob
+                    const blob = await new Promise<Blob>((resolve) => {
+                      const reader = new FileReader()
+                      reader.onloadend = () => {
+                        fetch(reader.result as string)
+                          .then(res => res.blob())
+                          .then(resolve)
+                      }
+                      reader.readAsDataURL(file)
+                    })
+
+                    // Upload to Supabase Storage
+                    const fileExt = file.name.split('.').pop() || 'jpg'
+                    const fileName = `${authUser.id}-${Date.now()}.${fileExt}`
+                    const filePath = `${authUser.id}/${fileName}`
+
+                    const { error: uploadError } = await supabase.storage
+                      .from('profile-pictures')
+                      .upload(filePath, blob, {
+                        cacheControl: '3600',
+                        upsert: true
+                      })
+
+                    if (uploadError) {
+                      throw uploadError
+                    }
+
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('profile-pictures')
+                      .getPublicUrl(filePath)
+
+                    // Update profile in database
+                    const { error: updateError } = await supabase
+                      .from('profiles')
+                      .update({ photo: publicUrl })
+                      .eq('id', authUser.id)
+
+                    if (updateError) {
+                      throw updateError
+                    }
+
+                    // Update local state
+                    setUser(prev => prev ? { ...prev, photo: publicUrl } : null)
+                  } catch (error) {
+                    console.error('Error uploading image:', error)
+                    alert('Failed to upload image. Please try again.')
                   }
-                  reader.readAsDataURL(file)
                 }}
               />
             </div>
