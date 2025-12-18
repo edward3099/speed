@@ -100,30 +100,27 @@ export default function spin() {
       const baseTimestamp = new Date('2024-01-01T00:00:00Z').getTime()
       const elapsedSeconds = Math.floor((now - baseTimestamp) / 1000)
       
-      // Start from a base count
-      let count = 500
-      
       // Use longer segments for slower changes (30 seconds per segment)
       const segmentDuration = 30 // 30 seconds per segment
       const segmentIndex = Math.floor(elapsedSeconds / segmentDuration)
       
-      // Calculate base count from completed segments
-      // Use a slower sine wave pattern for gradual variation (much smaller changes)
-      const baseVariation = Math.sin(segmentIndex * 0.05) * 50 // -50 to +50 variation, slower
-      count = 500 + Math.floor(baseVariation)
+      // Base count varies between 200-800 using sine wave
+      // Use a slower sine wave pattern for gradual variation across wider range
+      const baseVariation = Math.sin(segmentIndex * 0.05) * 300 // -300 to +300 variation
+      let count = 500 + Math.floor(baseVariation) // This gives us 200-800 range
       
-      // Add smaller variations based on segment index (very subtle)
+      // Add smaller variations based on segment index
       const segmentSeed = segmentIndex * 137
-      const segmentVariation = Math.floor(seededRandom(segmentSeed) * 20) - 10 // -10 to +10
+      const segmentVariation = Math.floor(seededRandom(segmentSeed) * 40) - 20 // -20 to +20
       count += segmentVariation
       
-      // Add time-of-day variation (makes it more realistic, very slow, very subtle)
+      // Add time-of-day variation (makes it more realistic, very slow)
       const hoursSinceBase = elapsedSeconds / 3600
-      const dailyVariation = Math.sin((hoursSinceBase / 24) * Math.PI * 2) * 30 // Daily cycle, very small amplitude
+      const dailyVariation = Math.sin((hoursSinceBase / 24) * Math.PI * 2) * 100 // Daily cycle
       count += Math.floor(dailyVariation)
       
-      // Keep within bounds
-      count = Math.max(100, Math.min(1000, count))
+      // Keep within bounds (200-800 range)
+      count = Math.max(200, Math.min(800, count))
       
       setOnlineCount(count)
     }
