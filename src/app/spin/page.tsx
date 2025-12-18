@@ -102,38 +102,34 @@ export default function spin() {
       
       // Start from a base count
       let count = 500
-      let timeAccumulated = 0
-      let periodIndex = 0
       
-      // Process periods until we reach current time
-      // Limit iterations to prevent infinite loops
-      const maxIterations = 100000
+      // Simplified approach: use time-based segments
+      // Each segment is 5 seconds, and we calculate changes deterministically
+      const segmentDuration = 5 // 5 seconds per segment
+      const segmentIndex = Math.floor(elapsedSeconds / segmentDuration)
+      const secondsInSegment = elapsedSeconds % segmentDuration
       
-      while (timeAccumulated < elapsedSeconds && periodIndex < maxIterations) {
-        // Calculate interval for this period (3-10 seconds, deterministic)
-        const intervalSeed = periodIndex * 137
-        const interval = 3 + Math.floor(seededRandom(intervalSeed) * 8) // 3-10 seconds
-        
-        const periodEnd = timeAccumulated + interval
-        
-        // If this period has passed, apply the change
-        if (periodEnd <= elapsedSeconds) {
-          // Calculate change amount for this period (-5 to +5)
-          const changeSeed = periodIndex * 271
-          const changeAmount = Math.floor(seededRandom(changeSeed) * 11) - 5
-          
-          count += changeAmount
-          
-          // Keep within bounds
-          count = Math.max(100, Math.min(1000, count))
-        } else {
-          // We haven't reached this period yet, stop processing
-          break
-        }
-        
-        timeAccumulated = periodEnd
-        periodIndex++
-      }
+      // Calculate base count from completed segments
+      // Use a sine wave pattern for smooth variation
+      const baseVariation = Math.sin(segmentIndex * 0.1) * 200 // -200 to +200 variation
+      count = 500 + Math.floor(baseVariation)
+      
+      // Add smaller variations based on segment index
+      const segmentSeed = segmentIndex * 137
+      const segmentVariation = Math.floor(seededRandom(segmentSeed) * 100) - 50 // -50 to +50
+      count += segmentVariation
+      
+      // Add time-of-day variation (makes it more realistic)
+      const hoursSinceBase = elapsedSeconds / 3600
+      const dailyVariation = Math.sin((hoursSinceBase / 24) * Math.PI * 2) * 150 // Daily cycle
+      count += Math.floor(dailyVariation)
+      
+      // Add small random walk based on seconds in current segment
+      const microVariation = Math.floor(seededRandom(segmentIndex * 271 + secondsInSegment) * 20) - 10
+      count += microVariation
+      
+      // Keep within bounds
+      count = Math.max(100, Math.min(1000, count))
       
       setOnlineCount(count)
     }
