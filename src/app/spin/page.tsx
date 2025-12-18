@@ -103,30 +103,24 @@ export default function spin() {
       // Start from a base count
       let count = 500
       
-      // Simplified approach: use time-based segments
-      // Each segment is 5 seconds, and we calculate changes deterministically
-      const segmentDuration = 5 // 5 seconds per segment
+      // Use longer segments for slower changes (30 seconds per segment)
+      const segmentDuration = 30 // 30 seconds per segment
       const segmentIndex = Math.floor(elapsedSeconds / segmentDuration)
-      const secondsInSegment = elapsedSeconds % segmentDuration
       
       // Calculate base count from completed segments
-      // Use a sine wave pattern for smooth variation
-      const baseVariation = Math.sin(segmentIndex * 0.1) * 200 // -200 to +200 variation
+      // Use a slower sine wave pattern for gradual variation
+      const baseVariation = Math.sin(segmentIndex * 0.05) * 200 // -200 to +200 variation, slower
       count = 500 + Math.floor(baseVariation)
       
-      // Add smaller variations based on segment index
+      // Add smaller variations based on segment index (less frequent)
       const segmentSeed = segmentIndex * 137
-      const segmentVariation = Math.floor(seededRandom(segmentSeed) * 100) - 50 // -50 to +50
+      const segmentVariation = Math.floor(seededRandom(segmentSeed) * 80) - 40 // -40 to +40
       count += segmentVariation
       
-      // Add time-of-day variation (makes it more realistic)
+      // Add time-of-day variation (makes it more realistic, very slow)
       const hoursSinceBase = elapsedSeconds / 3600
-      const dailyVariation = Math.sin((hoursSinceBase / 24) * Math.PI * 2) * 150 // Daily cycle
+      const dailyVariation = Math.sin((hoursSinceBase / 24) * Math.PI * 2) * 100 // Daily cycle, smaller amplitude
       count += Math.floor(dailyVariation)
-      
-      // Add small random walk based on seconds in current segment
-      const microVariation = Math.floor(seededRandom(segmentIndex * 271 + secondsInSegment) * 20) - 10
-      count += microVariation
       
       // Keep within bounds
       count = Math.max(100, Math.min(1000, count))
@@ -137,8 +131,8 @@ export default function spin() {
     // Update immediately
     updateCount()
     
-    // Update every 2 seconds to catch changes promptly
-    const interval = setInterval(updateCount, 2000)
+    // Update every 10 seconds for slower, more gradual changes
+    const interval = setInterval(updateCount, 10000)
     
     return () => clearInterval(interval)
   }, [])
