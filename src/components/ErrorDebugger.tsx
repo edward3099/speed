@@ -14,6 +14,10 @@ interface ErrorLog {
 }
 
 function ErrorDebugger() {
+  // DISABLED: Always return null to hide the error debugger
+  return null
+
+  // All code below is unreachable but kept for reference
   const [errors, setErrors] = useState<ErrorLog[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(true)
